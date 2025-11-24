@@ -9,7 +9,7 @@ export default function Home() {
       title: "Picpay",
       description:
         "Redesign of PicPay website homepage. Achieved 40% increase in new account registrations and 25% growth in user retention time through improved UX, standardized components, and clearer navigation.",
-      image: "/project-picpay.jpg",
+      image: "/picpay-new-version.webp",
       link: "https://www.behance.net/gallery/221095447/Picpay",
       tags: ["UX Design", "Web Design", "Fintech"],
     },
@@ -17,7 +17,7 @@ export default function Home() {
       title: "C6 Bank",
       description:
         "Digital banking platform design focusing on user-centered interactions and intuitive financial workflows.",
-      image: "/project-c6bank.jpg",
+      image: "/c6bank-project.webp",
       link: "https://www.behance.net/kahue",
       tags: ["Product Design", "Fintech", "Mobile"],
     },
@@ -25,7 +25,7 @@ export default function Home() {
       title: "BTG+",
       description:
         "Investment platform redesign combining research, design systems, and data-informed iteration for better user engagement.",
-      image: "/project-btg.jpg",
+      image: "/btg-project.webp",
       link: "https://www.behance.net/kahue",
       tags: ["Product Design", "Finance", "UX Research"],
     },
@@ -33,7 +33,7 @@ export default function Home() {
       title: "Bell App",
       description:
         "Mobile application design with focus on accessibility and seamless user experience across all touchpoints.",
-      image: "/project-bell.jpg",
+      image: "/bell-app-project.webp",
       link: "https://www.behance.net/kahue",
       tags: ["Mobile Design", "App Design", "UX"],
     },
@@ -41,7 +41,7 @@ export default function Home() {
       title: "Le Biscuit",
       description:
         "E-commerce platform redesign with improved product discovery and checkout experience.",
-      image: "/project-lebiscuit.jpg",
+      image: "/lebiscuit-project.webp",
       link: "https://www.behance.net/kahue",
       tags: ["E-commerce", "Web Design", "UX"],
     },

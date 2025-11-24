@@ -45,3 +45,11 @@
 - [x] Update all padding and margins to MD3 standards
 - [x] Apply proper border radius following MD3
 - [x] Implement MD3 interactions and animations
+
+## Real Project Images
+- [x] Extract real Picpay project images from Behance
+- [x] Extract real C6 Bank project images from Behance
+- [x] Extract real BTG+ project images from Behance
+- [x] Extract real Bell App project images from Behance
+- [x] Extract real Le Biscuit project images from Behance
+- [x] Update project card image paths with real images
