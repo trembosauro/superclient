@@ -24,14 +24,16 @@ export default function ProjectCard({
   return (
     <div className="group flex flex-col h-full bg-card border border-border rounded-2xl overflow-hidden transition-all duration-300 hover:border-accent hover:shadow-lg hover:shadow-accent/10 hover:-translate-y-1">
       {image && (
-        <div className="relative w-full h-56 overflow-hidden bg-muted">
-          <img
-            src={image}
-            alt={title}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        </div>
+        <Link href={internalLink}>
+          <div className="relative w-full h-56 overflow-hidden bg-muted cursor-pointer">
+            <img
+              src={image}
+              alt={title}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          </div>
+        </Link>
       )}
       
       <div className="flex flex-col flex-1 p-6 md:p-7">
