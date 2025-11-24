@@ -88,20 +88,7 @@ export default function Home() {
               </a>
             </div>
 
-            <div className="grid grid-cols-3 gap-8 pt-12 border-t border-border/50">
-              <div>
-                <div className="text-3xl font-bold text-accent mb-2">923</div>
-                <div className="text-sm text-foreground/60 font-medium">Project Views</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-accent mb-2">15</div>
-                <div className="text-sm text-foreground/60 font-medium">Appreciations</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-accent mb-2">7</div>
-                <div className="text-sm text-foreground/60 font-medium">Followers</div>
-              </div>
-            </div>
+
           </div>
         </div>
       </section>
