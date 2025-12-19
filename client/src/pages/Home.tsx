@@ -73,7 +73,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
               <a
                 href="#projects"
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-accent text-accent-foreground rounded-full font-semibold hover:opacity-90 transition-opacity shadow-md hover:shadow-lg"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-accent text-accent-foreground rounded-[var(--radius-button)] font-semibold hover:opacity-90 transition-opacity shadow-md hover:shadow-lg"
               >
                 View My Work
                 <ArrowRight className="w-4 h-4" />
@@ -82,7 +82,7 @@ export default function Home() {
                 href="https://www.behance.net/kahue"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 border border-border text-foreground rounded-full font-semibold hover:bg-card/50 transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 border border-border text-foreground rounded-[var(--radius-button)] font-semibold hover:bg-card/50 transition-colors"
               >
                 Behance
               </a>
@@ -168,7 +168,7 @@ export default function Home() {
                   ].map((skill) => (
                     <div
                       key={skill}
-                      className="px-4 py-3 bg-card border border-border rounded-xl text-sm text-foreground/70 font-medium hover:border-accent/50 transition-colors"
+                      className="px-4 py-3 bg-card border border-border rounded-[var(--radius-card)] text-sm text-foreground/70 font-medium hover:border-accent/50 transition-colors"
                     >
                       {skill}
                     </div>

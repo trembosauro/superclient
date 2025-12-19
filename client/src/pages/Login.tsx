@@ -65,7 +65,6 @@ export default function Login() {
             sx={{
               mt: 3,
               p: 3,
-              borderRadius: 4,
               background:
                 "linear-gradient(120deg, rgba(34, 201, 166, 0.16), rgba(245, 158, 11, 0.12))",
               border: "1px solid rgba(255,255,255,0.1)",
@@ -93,7 +92,6 @@ export default function Login() {
         elevation={0}
         sx={{
           p: { xs: 3, md: 4 },
-          borderRadius: 4,
           border: "1px solid rgba(255,255,255,0.1)",
           backgroundColor: "rgba(15, 23, 32, 0.9)",
           backdropFilter: "blur(18px)",

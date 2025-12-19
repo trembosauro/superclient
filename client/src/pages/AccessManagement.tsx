@@ -38,7 +38,6 @@ export default function AccessManagement() {
           elevation={0}
           sx={{
             p: { xs: 3, md: 4 },
-            borderRadius: 4,
             border: "1px solid rgba(255,255,255,0.1)",
             backgroundColor: "rgba(15, 23, 32, 0.9)",
           }}
@@ -56,7 +55,6 @@ export default function AccessManagement() {
                   elevation={0}
                   sx={{
                     p: 2.5,
-                    borderRadius: 3,
                     border: "1px solid rgba(255,255,255,0.08)",
                     minWidth: 200,
                   }}
@@ -84,7 +82,6 @@ export default function AccessManagement() {
           elevation={0}
           sx={{
             p: { xs: 3, md: 4 },
-            borderRadius: 4,
             border: "1px solid rgba(255,255,255,0.1)",
             backgroundColor: "rgba(15, 23, 32, 0.9)",
           }}

@@ -30,6 +30,22 @@ const theme = createTheme({
   shape: {
     borderRadius: 16,
   },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: "var(--radius-card)",
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: "var(--radius-button)",
+        },
+      },
+    },
+  },
 });
 
 export default theme;

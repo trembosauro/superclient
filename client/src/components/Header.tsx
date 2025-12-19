@@ -60,7 +60,7 @@ export default function Header() {
             href="https://www.linkedin.com/in/ukahue/"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-6 py-2.5 bg-accent text-accent-foreground rounded-full font-medium text-sm hover:opacity-90 transition-opacity shadow-sm hover:shadow-md"
+            className="px-6 py-2.5 bg-accent text-accent-foreground rounded-[var(--radius-button)] font-medium text-sm hover:opacity-90 transition-opacity shadow-sm hover:shadow-md"
           >
             LinkedIn
           </a>

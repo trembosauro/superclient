@@ -7,6 +7,9 @@
   color-scheme: dark;
   color: #e6edf3;
   background-color: #0b0f14;
+  --radius-card: 16px;
+  --radius-button: 16px;
+  --radius: var(--radius-button);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

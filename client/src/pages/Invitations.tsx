@@ -31,7 +31,6 @@ export default function Invitations() {
           elevation={0}
           sx={{
             p: { xs: 3, md: 4 },
-            borderRadius: 4,
             border: "1px solid rgba(255,255,255,0.1)",
             backgroundColor: "rgba(15, 23, 32, 0.9)",
           }}
@@ -71,7 +70,6 @@ export default function Invitations() {
           elevation={0}
           sx={{
             p: { xs: 3, md: 4 },
-            borderRadius: 4,
             border: "1px solid rgba(255,255,255,0.1)",
             backgroundColor: "rgba(15, 23, 32, 0.9)",
           }}

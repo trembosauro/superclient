@@ -37,7 +37,6 @@ export default function Signup() {
         elevation={0}
         sx={{
           p: { xs: 3, md: 4 },
-          borderRadius: 4,
           border: "1px solid rgba(255,255,255,0.1)",
           backgroundColor: "rgba(15, 23, 32, 0.9)",
         }}
@@ -52,8 +51,7 @@ export default function Signup() {
 
           <Stack spacing={2}>
             <TextField label="Nome completo" fullWidth />
-            <TextField label="Email corporativo" type="email" fullWidth />
-            <TextField label="Empresa" fullWidth />
+            <TextField label="Email" type="email" fullWidth />
             <TextField label="Senha" type="password" fullWidth />
             <TextField label="Confirmar senha" type="password" fullWidth />
           </Stack>
@@ -64,18 +62,16 @@ export default function Signup() {
 
           <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
 
-          <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            Ja possui conta?{" "}
-            <Button
-              component={RouterLink}
-              href="/login"
-              variant="text"
-              size="small"
-              sx={{ textTransform: "none", fontWeight: 600, px: 0.5 }}
-            >
-              Entrar
-            </Button>
-          </Typography>
+          <Button
+            component={RouterLink}
+            href="/login"
+            variant="outlined"
+            size="large"
+            fullWidth
+            sx={{ textTransform: "none", fontWeight: 600 }}
+          >
+            Entrar
+          </Button>
         </Stack>
       </Paper>
 
@@ -97,7 +93,6 @@ export default function Signup() {
               elevation={0}
               sx={{
                 p: 3,
-                borderRadius: 3,
                 border: "1px solid rgba(255,255,255,0.08)",
                 background:
                   "linear-gradient(135deg, rgba(34, 201, 166, 0.14), rgba(15, 23, 32, 0.9))",
@@ -120,7 +115,6 @@ export default function Signup() {
           elevation={0}
           sx={{
             p: 3,
-            borderRadius: 3,
             border: "1px solid rgba(255,255,255,0.08)",
             backgroundColor: "rgba(15, 23, 32, 0.85)",
           }}

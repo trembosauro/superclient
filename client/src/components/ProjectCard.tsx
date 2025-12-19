@@ -22,7 +22,7 @@ export default function ProjectCard({
   const internalLink = detailPath || `/project/${projectSlug}`;
 
   return (
-    <div className="group flex flex-col h-full bg-card border border-border rounded-2xl overflow-hidden transition-all duration-300 hover:border-accent hover:shadow-lg hover:shadow-accent/10 hover:-translate-y-1">
+    <div className="group flex flex-col h-full bg-card border border-border rounded-[var(--radius-card)] overflow-hidden transition-all duration-300 hover:border-accent hover:shadow-lg hover:shadow-accent/10 hover:-translate-y-1">
       {image && (
         <Link href={internalLink}>
           <div className="relative w-full h-56 overflow-hidden bg-muted cursor-pointer">

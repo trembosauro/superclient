@@ -270,7 +270,7 @@ export default function ProjectDetail() {
                 {data.skills.map((skill: string) => (
                   <div
                     key={skill}
-                    className="px-4 py-3 bg-card border border-border rounded-xl text-sm text-foreground/70 font-medium"
+                    className="px-4 py-3 bg-card border border-border rounded-[var(--radius-card)] text-sm text-foreground/70 font-medium"
                   >
                     {skill}
                   </div>
@@ -283,7 +283,7 @@ export default function ProjectDetail() {
                 href={data.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-7 py-3.5 bg-accent text-accent-foreground rounded-full font-semibold hover:opacity-90 transition-opacity shadow-md hover:shadow-lg"
+                className="inline-flex items-center gap-2 px-7 py-3.5 bg-accent text-accent-foreground rounded-[var(--radius-button)] font-semibold hover:opacity-90 transition-opacity shadow-md hover:shadow-lg"
               >
                 View on Behance
                 <ExternalLink className="w-4 h-4" />
