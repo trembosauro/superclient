@@ -6,8 +6,10 @@ import {
   Button,
   Paper,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
+import { useMemo, useState } from "react";
 
 const faqItems = [
   {
@@ -36,6 +38,18 @@ const whatsappUrl =
   "https://wa.me/5500000000000?text=Ola%2C%20preciso%20de%20suporte%20no%20Superclient.";
 
 export default function Support() {
+  const [query, setQuery] = useState("");
+  const filteredItems = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) {
+      return faqItems;
+    }
+    return faqItems.filter((item) => {
+      const haystack = `${item.title} ${item.content}`.toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [query]);
+
   return (
     <Box sx={{ maxWidth: 900 }}>
       <Stack spacing={3}>
@@ -56,40 +70,56 @@ export default function Support() {
             backgroundColor: "rgba(15, 23, 32, 0.8)",
           }}
         >
-          <Stack spacing={1.5}>
-            {faqItems.map((item) => (
-              <Accordion
-                key={item.title}
-                elevation={0}
-                disableGutters
-                sx={{
-                  backgroundColor: "transparent",
-                  borderBottom: "1px solid rgba(255,255,255,0.08)",
-                  "&:before": { display: "none" },
-                }}
-              >
-                <AccordionSummary
-                  expandIcon={
-                    <Box component="span" sx={{ fontWeight: 700 }}>
-                      +
-                    </Box>
-                  }
-                  sx={{
-                    px: 0,
-                    "& .MuiAccordionSummary-content": { my: 0.5 },
-                  }}
-                >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    {item.title}
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ px: 0, pt: 0 }}>
-                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    {item.content}
-                  </Typography>
-                </AccordionDetails>
-              </Accordion>
-            ))}
+          <Stack spacing={2}>
+            <TextField
+              fullWidth
+              label="Buscar duvida"
+              placeholder="Digite palavra-chave"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+
+            <Stack spacing={1.5}>
+              {filteredItems.length ? (
+                filteredItems.map((item) => (
+                  <Accordion
+                    key={item.title}
+                    elevation={0}
+                    disableGutters
+                    sx={{
+                      backgroundColor: "transparent",
+                      borderBottom: "1px solid rgba(255,255,255,0.08)",
+                      "&:before": { display: "none" },
+                    }}
+                  >
+                    <AccordionSummary
+                      expandIcon={
+                        <Box component="span" sx={{ fontWeight: 700 }}>
+                          +
+                        </Box>
+                      }
+                      sx={{
+                        px: 0,
+                        "& .MuiAccordionSummary-content": { my: 0.5 },
+                      }}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                        {item.title}
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ px: 0, pt: 0 }}>
+                      <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                        {item.content}
+                      </Typography>
+                    </AccordionDetails>
+                  </Accordion>
+                ))
+              ) : (
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  Nenhuma duvida encontrada.
+                </Typography>
+              )}
+            </Stack>
           </Stack>
         </Paper>
 

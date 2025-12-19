@@ -7,10 +7,12 @@ import {
   Breadcrumbs,
   Dialog,
   DialogContent,
+  IconButton,
   Link,
   Stack,
   Typography,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { Link as RouterLink, Route, Switch, useLocation } from "wouter";
 import theme from "./theme";
 import api from "./api";
@@ -227,14 +229,14 @@ function App() {
             }}
           >
             <Typography variant="h6">Confirmar logout</Typography>
-            <Button
+            <IconButton
               type="button"
-              variant="text"
               onClick={() => setLogoutOpen(false)}
-              sx={{ minWidth: 0, px: 1, fontWeight: 700 }}
+              aria-label="Fechar"
+              sx={{ color: "text.secondary" }}
             >
-              X
-            </Button>
+              <CloseRoundedIcon fontSize="small" />
+            </IconButton>
           </Box>
           <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
             Voce quer sair da sua conta agora?
