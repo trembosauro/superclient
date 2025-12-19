@@ -1,4 +1,4 @@
-# Portfolio Website TODO
+# Superclient Website TODO
 
 ## Design & Setup
 - [x] Configure dark theme with custom color palette
@@ -88,4 +88,4 @@
 - [x] Build project for production
 - [x] Configure GitHub Pages settings
 - [x] Deploy to GitHub Pages
-- [ ] Verify site is live at https://trembosauro.github.io/portfolio
+- [ ] Verify site is live at https://trembosauro.github.io/superclient

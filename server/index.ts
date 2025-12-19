@@ -1,33 +1,69 @@
-import express from "express";
-import { createServer } from "http";
-import path from "path";
-import { fileURLToPath } from "url";
+import express from 'express';
+import cors from 'cors';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const app = express();
+const port = 3001;
 
-async function startServer() {
-  const app = express();
-  const server = createServer(app);
+app.use(cors());
+app.use(express.json());
 
-  // Serve static files from dist/public in production
-  const staticPath =
-    process.env.NODE_ENV === "production"
-      ? path.resolve(__dirname, "public")
-      : path.resolve(__dirname, "..", "dist", "public");
+import express from 'express';
+import cors from 'cors';
 
-  app.use(express.static(staticPath));
+const app = express();
+const port = 3001;
 
-  // Handle client-side routing - serve index.html for all routes
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(staticPath, "index.html"));
-  });
+app.use(cors());
+app.use(express.json());
 
-  const port = process.env.PORT || 3000;
+// In-memory database
+const db = {
+  clients: [] as { id: number; name: string; email: string }[],
+  notes: [] as { id: number; clientId: number; text: string }[],
+};
+let clientIdCounter = 1;
+let noteIdCounter = 1;
 
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
-  });
-}
+app.get('/api/clients', (req, res) => {
+  res.json(db.clients);
+});
 
-startServer().catch(console.error);
+app.get('/api/notes', (req, res) => {
+  res.json(db.notes);
+});
+
+app.post('/api/command', (req, res) => {
+  const { command } = req.body;
+  console.log(`Received command: ${command}`);
+
+  let response = `Unknown command: "${command}"`;
+
+  const addClientMatch = command.match(/add client (.*) email (.*)/i);
+  if (addClientMatch) {
+    const name = addClientMatch[1].trim();
+    const email = addClientMatch[2].trim();
+    const newClient = { id: clientIdCounter++, name, email };
+    db.clients.push(newClient);
+    response = `Added client: ${name} (${email})`;
+  }
+
+  const addNoteMatch = command.match(/add note for (.*): (.*)/i);
+  if (addNoteMatch) {
+    const clientName = addNoteMatch[1].trim();
+    const noteText = addNoteMatch[2].trim();
+    const client = db.clients.find(c => c.name.toLowerCase() === clientName.toLowerCase());
+    if (client) {
+      const newNote = { id: noteIdCounter++, clientId: client.id, text: noteText };
+      db.notes.push(newNote);
+      response = `Added note for ${client.name}`;
+    } else {
+      response = `Client not found: ${clientName}`;
+    }
+  }
+
+  res.json({ response });
+});
+
+app.listen(port, () => {
+  console.log(`Server listening at http://localhost:${port}`);
+});

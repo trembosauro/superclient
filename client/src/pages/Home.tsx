@@ -9,7 +9,7 @@ export default function Home() {
       title: "Picpay",
       description:
         "Redesign of PicPay website homepage. Achieved 40% increase in new account registrations and 25% growth in user retention time through improved UX, standardized components, and clearer navigation.",
-      image: "/portfolio/picpay-new-version.webp",
+      image: "/superclient/picpay-new-version.webp",
       link: "https://www.behance.net/gallery/221095447/Picpay",
       tags: ["UX Design", "Web Design", "Fintech"],
     },
@@ -17,7 +17,7 @@ export default function Home() {
       title: "C6 Bank",
       description:
         "Digital banking platform design focusing on user-centered interactions and intuitive financial workflows.",
-      image: "/portfolio/c6bank-project.webp",
+      image: "/superclient/c6bank-project.webp",
       link: "https://www.behance.net/kahue",
       tags: ["Product Design", "Fintech", "Mobile"],
     },
@@ -25,7 +25,7 @@ export default function Home() {
       title: "BTG+",
       description:
         "Investment platform redesign combining research, design systems, and data-informed iteration for better user engagement.",
-      image: "/portfolio/btg-project.webp",
+      image: "/superclient/btg-project.webp",
       link: "https://www.behance.net/kahue",
       tags: ["Product Design", "Finance", "UX Research"],
     },
@@ -33,7 +33,7 @@ export default function Home() {
       title: "Bell App",
       description:
         "Mobile application design with focus on accessibility and seamless user experience across all touchpoints.",
-      image: "/portfolio/bell-app-project.webp",
+      image: "/superclient/bell-app-project.webp",
       link: "https://www.behance.net/kahue",
       tags: ["Mobile Design", "App Design", "UX"],
     },
@@ -41,7 +41,7 @@ export default function Home() {
       title: "Le Biscuit",
       description:
         "E-commerce platform redesign with improved product discovery and checkout experience.",
-      image: "/portfolio/lebiscuit-project.webp",
+      image: "/superclient/lebiscuit-project.webp",
       link: "https://www.behance.net/kahue",
       tags: ["E-commerce", "Web Design", "UX"],
     },
@@ -84,7 +84,7 @@ export default function Home() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 px-7 py-3.5 border border-border text-foreground rounded-full font-semibold hover:bg-card/50 transition-colors"
               >
-                Behance Portfolio
+                Behance
               </a>
             </div>
 
