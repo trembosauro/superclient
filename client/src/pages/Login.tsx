@@ -12,6 +12,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import api from "../api";
 
 const highlights = [
   "Controle de acessos com trilhas por time",
@@ -34,9 +35,60 @@ const plans = [
 
 export default function Login() {
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const handleAuth = () => {
-    window.localStorage.setItem("isLoggedIn", "true");
-    window.dispatchEvent(new Event("auth-change"));
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [signupName, setSignupName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupConfirm, setSignupConfirm] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [signupError, setSignupError] = useState("");
+
+  const handleLogin = async () => {
+    setLoginError("");
+    if (!loginEmail || !loginPassword) {
+      setLoginError("Informe email e senha.");
+      return;
+    }
+    try {
+      await api.post("/api/auth/login", {
+        email: loginEmail,
+        password: loginPassword,
+      });
+      window.dispatchEvent(new Event("auth-change"));
+    } catch {
+      setLoginError("Email ou senha invalidos.");
+    }
+  };
+
+  const handleSignup = async () => {
+    setSignupError("");
+    if (!signupName || !signupEmail || !signupPassword || !signupConfirm) {
+      setSignupError("Preencha todos os campos.");
+      return;
+    }
+    if (signupPassword !== signupConfirm) {
+      setSignupError("As senhas nao conferem.");
+      return;
+    }
+    try {
+      await api.post("/api/auth/signup", {
+        name: signupName,
+        email: signupEmail,
+        password: signupPassword,
+      });
+      window.dispatchEvent(new Event("auth-change"));
+    } catch (error) {
+      if ((error as { response?: { status?: number } })?.response?.status === 409) {
+        setSignupError("Email ja cadastrado.");
+        return;
+      }
+      setSignupError("Nao foi possivel criar a conta.");
+    }
+  };
+
+  const handleOauth = (provider: string) => {
+    setLoginError(`${provider} ainda nao configurado.`);
   };
 
   return (
@@ -150,7 +202,11 @@ export default function Login() {
         <Stack spacing={3}>
           <Tabs
             value={mode}
-            onChange={(_, value) => setMode(value)}
+            onChange={(_, value) => {
+              setMode(value);
+              setLoginError("");
+              setSignupError("");
+            }}
             textColor="primary"
             indicatorColor="primary"
           >
@@ -168,12 +224,21 @@ export default function Login() {
               </Stack>
 
               <Stack spacing={2}>
-                <TextField label="Email" type="email" fullWidth variant="outlined" />
+                <TextField
+                  label="Email"
+                  type="email"
+                  fullWidth
+                  variant="outlined"
+                  value={loginEmail}
+                  onChange={(event) => setLoginEmail(event.target.value)}
+                />
                 <TextField
                   label="Senha"
                   type="password"
                   fullWidth
                   variant="outlined"
+                  value={loginPassword}
+                  onChange={(event) => setLoginPassword(event.target.value)}
                 />
                 <Stack
                   direction="row"
@@ -190,7 +255,7 @@ export default function Login() {
                 </Stack>
               </Stack>
 
-              <Button variant="contained" size="large" fullWidth onClick={handleAuth}>
+              <Button variant="contained" size="large" fullWidth onClick={handleLogin}>
                 Entrar
               </Button>
 
@@ -201,20 +266,32 @@ export default function Login() {
                 size="large"
                 fullWidth
                 color="secondary"
-                onClick={handleAuth}
+                onClick={() => handleOauth("SSO")}
               >
                 Entrar com SSO
               </Button>
 
-              <Button variant="outlined" size="large" fullWidth onClick={handleAuth}>
+              <Button
+                variant="outlined"
+                size="large"
+                fullWidth
+                onClick={() => handleOauth("Google")}
+              >
                 Entrar com Google
               </Button>
 
+              {loginError ? (
+                <Typography variant="caption" color="error">
+                  {loginError}
+                </Typography>
+              ) : null}
+
               <Button
                 variant="text"
-                size="small"
+                size="large"
                 onClick={() => setMode("signup")}
-                sx={{ textTransform: "none", fontWeight: 600, alignSelf: "flex-start" }}
+                fullWidth
+                sx={{ textTransform: "none", fontWeight: 600 }}
               >
                 Criar conta
               </Button>
@@ -229,15 +306,44 @@ export default function Login() {
               </Stack>
 
               <Stack spacing={2}>
-                <TextField label="Nome completo" fullWidth />
-                <TextField label="Email" type="email" fullWidth />
-                <TextField label="Senha" type="password" fullWidth />
-                <TextField label="Confirmar senha" type="password" fullWidth />
+                <TextField
+                  label="Nome completo"
+                  fullWidth
+                  value={signupName}
+                  onChange={(event) => setSignupName(event.target.value)}
+                />
+                <TextField
+                  label="Email"
+                  type="email"
+                  fullWidth
+                  value={signupEmail}
+                  onChange={(event) => setSignupEmail(event.target.value)}
+                />
+                <TextField
+                  label="Senha"
+                  type="password"
+                  fullWidth
+                  value={signupPassword}
+                  onChange={(event) => setSignupPassword(event.target.value)}
+                />
+                <TextField
+                  label="Confirmar senha"
+                  type="password"
+                  fullWidth
+                  value={signupConfirm}
+                  onChange={(event) => setSignupConfirm(event.target.value)}
+                />
               </Stack>
 
-              <Button variant="contained" size="large" fullWidth onClick={handleAuth}>
+              <Button variant="contained" size="large" fullWidth onClick={handleSignup}>
                 Criar conta
               </Button>
+
+              {signupError ? (
+                <Typography variant="caption" color="error">
+                  {signupError}
+                </Typography>
+              ) : null}
 
               <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
 

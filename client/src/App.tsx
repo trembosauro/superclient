@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { Link as RouterLink, Route, Switch, useLocation } from "wouter";
 import theme from "./theme";
+import api from "./api";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import AccessManagement from "./pages/AccessManagement";
@@ -25,17 +26,21 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const syncAuth = () => {
-      setIsLoggedIn(window.localStorage.getItem("isLoggedIn") === "true");
+    const syncAuth = async () => {
+      try {
+        await api.get("/api/auth/me");
+        setIsLoggedIn(true);
+      } catch {
+        setIsLoggedIn(false);
+      }
     };
 
-    syncAuth();
-    window.addEventListener("storage", syncAuth);
-    window.addEventListener("auth-change", syncAuth);
+    void syncAuth();
+    const handleAuthChange = () => void syncAuth();
+    window.addEventListener("auth-change", handleAuthChange);
 
     return () => {
-      window.removeEventListener("storage", syncAuth);
-      window.removeEventListener("auth-change", syncAuth);
+      window.removeEventListener("auth-change", handleAuthChange);
     };
   }, []);
   const isActive = (href: string) => {
@@ -47,7 +52,7 @@ function App() {
 
   const visibleNavItems = isLoggedIn
     ? navItems.filter((item) => item.href !== "/login")
-    : navItems;
+    : navItems.filter((item) => item.href === "/login");
 
   return (
     <ThemeProvider theme={theme}>
@@ -139,9 +144,10 @@ function App() {
                     variant="text"
                     color="inherit"
                     onClick={() => {
-                      window.localStorage.removeItem("isLoggedIn");
-                      window.dispatchEvent(new Event("auth-change"));
-                      setLocation("/login");
+                      void api.post("/api/auth/logout").finally(() => {
+                        window.dispatchEvent(new Event("auth-change"));
+                        setLocation("/login");
+                      });
                     }}
                     sx={{
                       textTransform: "none",
