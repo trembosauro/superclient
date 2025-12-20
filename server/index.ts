@@ -107,6 +107,8 @@ db.exec(`
     user_id INTEGER PRIMARY KEY,
     email_notifications INTEGER NOT NULL DEFAULT 1,
     single_session INTEGER NOT NULL DEFAULT 0,
+    module_pipeline INTEGER NOT NULL DEFAULT 1,
+    module_finance INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY(user_id) REFERENCES users(id)
@@ -162,6 +164,21 @@ if (moduleCount.count === 0) {
     ["Relatorios", "Exportacao e auditoria.", 1],
   ].forEach((module) => insertModule.run(...module));
 }
+
+const ensureUserPreferencesColumns = () => {
+  const columns = db.prepare("PRAGMA table_info(user_preferences)").all() as {
+    name: string;
+  }[];
+  const names = new Set(columns.map((column) => column.name));
+  if (!names.has("module_pipeline")) {
+    db.prepare("ALTER TABLE user_preferences ADD COLUMN module_pipeline INTEGER NOT NULL DEFAULT 1").run();
+  }
+  if (!names.has("module_finance")) {
+    db.prepare("ALTER TABLE user_preferences ADD COLUMN module_finance INTEGER NOT NULL DEFAULT 1").run();
+  }
+};
+
+ensureUserPreferencesColumns();
 
 const hashToken = (token: string) =>
   crypto.createHash("sha256").update(token).digest("hex");
@@ -362,10 +379,15 @@ app.get("/api/profile", requireAuth, (req, res) => {
 
   const preferences = db
     .prepare(
-      "SELECT email_notifications, single_session FROM user_preferences WHERE user_id = ?"
+      "SELECT email_notifications, single_session, module_pipeline, module_finance FROM user_preferences WHERE user_id = ?"
     )
     .get(userId) as
-    | { email_notifications: number; single_session: number }
+    | {
+        email_notifications: number;
+        single_session: number;
+        module_pipeline: number;
+        module_finance: number;
+      }
     | undefined;
 
   res.json({
@@ -374,6 +396,8 @@ app.get("/api/profile", requireAuth, (req, res) => {
     preferences: {
       emailNotifications: preferences ? Boolean(preferences.email_notifications) : true,
       singleSession: preferences ? Boolean(preferences.single_session) : false,
+      modulePipeline: preferences ? Boolean(preferences.module_pipeline) : true,
+      moduleFinance: preferences ? Boolean(preferences.module_finance) : true,
     },
   });
 });
@@ -410,6 +434,8 @@ app.put("/api/profile", requireAuth, (req, res) => {
     typeof req.body.timezone === "string" ? req.body.timezone.trim() : "";
   const emailNotifications = Boolean(req.body.preferences?.emailNotifications);
   const singleSession = Boolean(req.body.preferences?.singleSession);
+  const modulePipeline = Boolean(req.body.preferences?.modulePipeline);
+  const moduleFinance = Boolean(req.body.preferences?.moduleFinance);
   const now = new Date().toISOString();
 
   db.prepare(
@@ -424,13 +450,23 @@ app.put("/api/profile", requireAuth, (req, res) => {
   ).run(userId, phone, team, role, timezone, now, now);
 
   db.prepare(
-    `INSERT INTO user_preferences (user_id, email_notifications, single_session, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?)
+    `INSERT INTO user_preferences (user_id, email_notifications, single_session, module_pipeline, module_finance, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(user_id) DO UPDATE SET
        email_notifications = excluded.email_notifications,
        single_session = excluded.single_session,
+       module_pipeline = excluded.module_pipeline,
+       module_finance = excluded.module_finance,
        updated_at = excluded.updated_at`
-  ).run(userId, emailNotifications ? 1 : 0, singleSession ? 1 : 0, now, now);
+  ).run(
+    userId,
+    emailNotifications ? 1 : 0,
+    singleSession ? 1 : 0,
+    modulePipeline ? 1 : 0,
+    moduleFinance ? 1 : 0,
+    now,
+    now
+  );
 
   const updated = db
     .prepare("SELECT id, email, name FROM users WHERE id = ?")
@@ -439,7 +475,7 @@ app.put("/api/profile", requireAuth, (req, res) => {
   res.json({
     user: updated,
     profile: { phone, team, role, timezone },
-    preferences: { emailNotifications, singleSession },
+    preferences: { emailNotifications, singleSession, modulePipeline, moduleFinance },
   });
 });
 
@@ -591,7 +627,8 @@ app.get("/api/pipeline/board", requireAuth, (req, res) => {
 });
 
 app.put("/api/pipeline/board", requireAuth, (req, res) => {
-  const pipeline = req.body?.columns ?? req.body;
+  const payload = req.body?.data ?? req.body;
+  const pipeline = payload?.columns ? payload : { columns: payload };
   const now = new Date().toISOString();
   db.prepare(
     `INSERT INTO pipeline_state (id, data_json, updated_at)

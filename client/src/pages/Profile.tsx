@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
-  Divider,
+  Dialog,
+  DialogContent,
+  IconButton,
   Paper,
   Stack,
   Switch,
   TextField,
   Typography,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { useLocation } from "wouter";
 import api from "../api";
 
@@ -23,7 +26,13 @@ export default function Profile() {
   const [preferences, setPreferences] = useState({
     email: true,
     singleSession: false,
+    modulePipeline: true,
+    moduleFinance: true,
   });
+  const [moduleDialog, setModuleDialog] = useState<{
+    key: "modulePipeline" | "moduleFinance";
+    nextValue: boolean;
+  } | null>(null);
   const isLoadedRef = useRef(false);
   const saveTimeoutRef = useRef<number | null>(null);
 
@@ -57,6 +66,8 @@ export default function Profile() {
         setPreferences({
           email: Boolean(prefs?.emailNotifications),
           singleSession: Boolean(prefs?.singleSession),
+          modulePipeline: Boolean(prefs?.modulePipeline ?? true),
+          moduleFinance: Boolean(prefs?.moduleFinance ?? true),
         });
         if (user?.email) {
           window.localStorage.setItem(
@@ -101,6 +112,8 @@ export default function Profile() {
         preferences: {
           emailNotifications: preferences.email,
           singleSession: preferences.singleSession,
+          modulePipeline: preferences.modulePipeline,
+          moduleFinance: preferences.moduleFinance,
         },
       })
       .then((response) => {
@@ -133,6 +146,34 @@ export default function Profile() {
       }
     };
   }, [name, email, phone, team, role, timezone, preferences]);
+
+  const requestModuleToggle = (
+    key: "modulePipeline" | "moduleFinance",
+    nextValue: boolean
+  ) => {
+    setModuleDialog({ key, nextValue });
+  };
+
+  const confirmModuleToggle = () => {
+    if (!moduleDialog) {
+      return;
+    }
+    setPreferences((prev) => ({ ...prev, [moduleDialog.key]: moduleDialog.nextValue }));
+    setModuleDialog(null);
+  };
+
+  const moduleLabels = {
+    modulePipeline: {
+      title: "Pipeline",
+      price: "R$ 89/mes",
+      description: "Gestao de oportunidades e tasks.",
+    },
+    moduleFinance: {
+      title: "Financas",
+      price: "R$ 79/mes",
+      description: "Controle de gastos e categorias.",
+    },
+  };
 
   return (
     <Box sx={{ maxWidth: 980, mx: "auto" }}>
@@ -243,11 +284,11 @@ export default function Profile() {
               >
                 Atualizar senha
               </Button>
-            </Stack>
-          </Paper>
+          </Stack>
+        </Paper>
 
-          <Paper
-            elevation={0}
+        <Paper
+          elevation={0}
             sx={{
               p: { xs: 3, md: 4 },
               border: "1px solid rgba(255,255,255,0.1)",
@@ -385,7 +426,112 @@ export default function Profile() {
           </Stack>
         </Paper>
 
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 3, md: 4 },
+            border: "1px solid rgba(255,255,255,0.1)",
+            backgroundColor: "rgba(15, 23, 32, 0.9)",
+          }}
+        >
+          <Stack spacing={2.5}>
+            <Typography variant="h6">Modulos pagos</Typography>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                gap: 2,
+              }}
+            >
+              {(Object.keys(moduleLabels) as Array<"modulePipeline" | "moduleFinance">).map(
+                (key) => (
+                  <Paper
+                    key={key}
+                    elevation={0}
+                    onClick={() => requestModuleToggle(key, !preferences[key])}
+                    sx={{
+                      p: 2.5,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      background:
+                        "linear-gradient(135deg, rgba(15, 23, 32, 0.9), rgba(34, 201, 166, 0.08))",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Stack spacing={1.5}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 2,
+                        }}
+                      >
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          {moduleLabels[key].title}
+                        </Typography>
+                        <Switch
+                          checked={preferences[key]}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            requestModuleToggle(key, !preferences[key]);
+                          }}
+                          onChange={() => {}}
+                        />
+                      </Box>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        {moduleLabels[key].description}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        {moduleLabels[key].price}
+                      </Typography>
+                    </Stack>
+                  </Paper>
+                )
+              )}
+            </Box>
+          </Stack>
+        </Paper>
+
       </Stack>
+
+      <Dialog open={Boolean(moduleDialog)} onClose={() => setModuleDialog(null)} maxWidth="xs" fullWidth>
+        <DialogContent>
+          <Stack spacing={2}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography variant="h6">
+                {moduleDialog
+                  ? moduleDialog.nextValue
+                    ? "Ativar modulo"
+                    : "Desativar modulo"
+                  : "Modulo"}
+              </Typography>
+              <IconButton onClick={() => setModuleDialog(null)} sx={{ color: "text.secondary" }}>
+                <CloseRoundedIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            {moduleDialog ? (
+              <Stack spacing={1.5}>
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  {moduleDialog.nextValue
+                    ? `Voce confirma a ativacao do modulo ${moduleLabels[moduleDialog.key].title}?`
+                    : `Voce confirma a desativacao do modulo ${moduleLabels[moduleDialog.key].title}?`}
+                </Typography>
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  {moduleLabels[moduleDialog.key].price} por modulo.
+                </Typography>
+              </Stack>
+            ) : null}
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button variant="outlined" onClick={() => setModuleDialog(null)}>
+                Cancelar
+              </Button>
+              <Button variant="contained" onClick={confirmModuleToggle}>
+                Confirmar
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

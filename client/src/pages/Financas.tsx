@@ -6,12 +6,24 @@ import {
   Box,
   Button,
   Chip,
+  Checkbox,
   Dialog,
   DialogContent,
-  Divider,
+  FormControl,
   IconButton,
+  InputLabel,
+  ListItemText,
+  ListSubheader,
   MenuItem,
+  OutlinedInput,
   Paper,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Stack,
   TextField,
   Typography,
@@ -39,21 +51,33 @@ type Expense = {
 
 const STORAGE_KEY = "finance_data_v1";
 const DEFAULT_COLORS = [
-  "#22c9a6",
-  "#f59e0b",
-  "#38bdf8",
-  "#a78bfa",
-  "#f97316",
-  "#ef4444",
-  "#84cc16",
-  "#e879f9",
+  "#0f766e",
+  "#1d4ed8",
+  "#6d28d9",
+  "#7c2d12",
+  "#7c4a03",
+  "#0f172a",
+  "#334155",
+  "#166534",
+  "#9d174d",
+  "#312e81",
+  "#1f2937",
+  "#0f3d3e",
 ];
 
 const defaultCategories: Category[] = [
-  { id: "cat-outros", name: "Outros", color: "#94a3b8" },
-  { id: "cat-pessoal", name: "Pessoal", color: "#22c9a6" },
-  { id: "cat-infra", name: "Infra", color: "#38bdf8" },
-  { id: "cat-servicos", name: "Servicos", color: "#f59e0b" },
+  { id: "cat-moradia", name: "Moradia", color: DEFAULT_COLORS[0] },
+  { id: "cat-alimentacao", name: "Alimentacao", color: DEFAULT_COLORS[1] },
+  { id: "cat-transporte", name: "Transporte", color: DEFAULT_COLORS[2] },
+  { id: "cat-saude", name: "Saude", color: DEFAULT_COLORS[3] },
+  { id: "cat-lazer", name: "Lazer", color: DEFAULT_COLORS[4] },
+  { id: "cat-educacao", name: "Educacao", color: DEFAULT_COLORS[5] },
+  { id: "cat-assinaturas", name: "Assinaturas", color: DEFAULT_COLORS[6] },
+  { id: "cat-impostos", name: "Impostos", color: DEFAULT_COLORS[7] },
+  { id: "cat-investimentos", name: "Investimentos", color: DEFAULT_COLORS[8] },
+  { id: "cat-viagem", name: "Viagem", color: DEFAULT_COLORS[9] },
+  { id: "cat-compras", name: "Compras", color: DEFAULT_COLORS[10] },
+  { id: "cat-outros", name: "Outros", color: DEFAULT_COLORS[11] },
 ];
 
 const defaultExpenses: Expense[] = [
@@ -61,62 +85,83 @@ const defaultExpenses: Expense[] = [
     id: "exp-1",
     title: "Assinatura Cloud",
     amount: 2800,
-    categoryId: "cat-infra",
+    categoryId: "cat-assinaturas",
     comment: "Infra mensal",
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
   },
   {
     id: "exp-2",
     title: "Equipe de suporte",
     amount: 9200,
-    categoryId: "cat-pessoal",
+    categoryId: "cat-outros",
     comment: "Fixo",
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
+  },
+  {
+    id: "exp-3",
+    title: "Aluguel escritorio",
+    amount: 5400,
+    categoryId: "cat-moradia",
+    comment: "Mensal",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
+  },
+  {
+    id: "exp-4",
+    title: "Plano de saude",
+    amount: 1600,
+    categoryId: "cat-saude",
+    comment: "Equipe",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString(),
+  },
+  {
+    id: "exp-5",
+    title: "Passagens e deslocamento",
+    amount: 1200,
+    categoryId: "cat-transporte",
+    comment: "Visitas",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 24).toISOString(),
+  },
+  {
+    id: "exp-6",
+    title: "Workshop interno",
+    amount: 900,
+    categoryId: "cat-educacao",
+    comment: "Treinamento",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 31).toISOString(),
+  },
+  {
+    id: "exp-7",
+    title: "Campanha digital",
+    amount: 2400,
+    categoryId: "cat-compras",
+    comment: "Midia paga",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 38).toISOString(),
+  },
+  {
+    id: "exp-8",
+    title: "Happy hour time",
+    amount: 680,
+    categoryId: "cat-lazer",
+    comment: "Equipe",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 45).toISOString(),
+  },
+  {
+    id: "exp-9",
+    title: "Impostos trimestrais",
+    amount: 3100,
+    categoryId: "cat-impostos",
+    comment: "DARF",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 52).toISOString(),
+  },
+  {
+    id: "exp-10",
+    title: "Reserva investimento",
+    amount: 3500,
+    categoryId: "cat-investimentos",
+    comment: "Caixa",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
   },
 ];
-
-const isValidColor = (value: string) => {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return false;
-  }
-  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed)) {
-    return true;
-  }
-  if (/^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/.test(trimmed)) {
-    return true;
-  }
-  return false;
-};
-
-const getContrastColor = (value: string) => {
-  const trimmed = value.trim();
-  let r = 0;
-  let g = 0;
-  let b = 0;
-
-  if (/^#([0-9a-fA-F]{3})$/.test(trimmed)) {
-    const hex = trimmed.slice(1);
-    r = parseInt(hex[0] + hex[0], 16);
-    g = parseInt(hex[1] + hex[1], 16);
-    b = parseInt(hex[2] + hex[2], 16);
-  } else if (/^#([0-9a-fA-F]{6})$/.test(trimmed)) {
-    const hex = trimmed.slice(1);
-    r = parseInt(hex.slice(0, 2), 16);
-    g = parseInt(hex.slice(2, 4), 16);
-    b = parseInt(hex.slice(4, 6), 16);
-  } else {
-    const match = trimmed.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/);
-    if (match) {
-      r = Math.min(255, Number(match[1]));
-      g = Math.min(255, Number(match[2]));
-      b = Math.min(255, Number(match[3]));
-    }
-  }
-
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.6 ? "#0b0f14" : "#e6edf3";
-};
 
 const darkenColor = (value: string, factor: number) => {
   const trimmed = value.trim();
@@ -151,17 +196,19 @@ export default function Financas() {
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [expenses, setExpenses] = useState<Expense[]>(defaultExpenses);
   const [open, setOpen] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState(defaultCategories[0]?.id || "");
   const [comment, setComment] = useState("");
+  const [expenseQuery, setExpenseQuery] = useState("");
+  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+  const [categorySearch, setCategorySearch] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_COLORS[0]);
-  const [customColor, setCustomColor] = useState(DEFAULT_COLORS[0]);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState("");
   const [editingCategoryColor, setEditingCategoryColor] = useState(DEFAULT_COLORS[0]);
-  const [editingCustomColor, setEditingCustomColor] = useState(DEFAULT_COLORS[0]);
   const [expanded, setExpanded] = useState<"expense" | "categories" | false>("expense");
   const isLoadedRef = useRef(false);
   const saveTimeoutRef = useRef<number | null>(null);
@@ -227,6 +274,13 @@ export default function Financas() {
     return map;
   }, [categories]);
 
+  useEffect(() => {
+    if (categoryId && categories.some((cat) => cat.id === categoryId)) {
+      return;
+    }
+    setCategoryId(categories[0]?.id || "");
+  }, [categories, categoryId]);
+
   const totalsByCategory = useMemo(() => {
     const totals = new Map<string, number>();
     expenses.forEach((expense) => {
@@ -256,32 +310,77 @@ export default function Financas() {
       .map(([month, value]) => ({ month, value }));
   }, [expenses]);
 
-  const handleAddExpense = () => {
+  const sortedExpenses = useMemo(() => {
+    return [...expenses].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [expenses]);
+
+  const filteredExpenses = useMemo(() => {
+    const normalizedQuery = expenseQuery.trim().toLowerCase();
+    return sortedExpenses.filter((expense) => {
+      if (categoryFilters.length > 0 && !categoryFilters.includes(expense.categoryId)) {
+        return false;
+      }
+      if (!normalizedQuery) {
+        return true;
+      }
+      const haystack = `${expense.title} ${expense.comment}`.toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [sortedExpenses, expenseQuery, categoryFilters]);
+
+  const filteredCategories = useMemo(() => {
+    const normalized = categorySearch.trim().toLowerCase();
+    if (!normalized) {
+      return categories;
+    }
+    return categories.filter((cat) => cat.name.toLowerCase().includes(normalized));
+  }, [categories, categorySearch]);
+
+  const handleSaveExpense = () => {
     const parsed = Number(amount.replace(",", "."));
     if (!title.trim() || Number.isNaN(parsed)) {
       return;
     }
-    const id = `exp-${Date.now()}`;
-    setExpenses((prev) => [
-      {
-        id,
-        title: title.trim(),
-        amount: parsed,
-        categoryId,
-        comment: comment.trim(),
-        createdAt: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
+    if (editingExpenseId) {
+      setExpenses((prev) =>
+        prev.map((expense) =>
+          expense.id === editingExpenseId
+            ? {
+                ...expense,
+                title: title.trim(),
+                amount: parsed,
+                categoryId,
+                comment: comment.trim(),
+              }
+            : expense
+        )
+      );
+    } else {
+      const id = `exp-${Date.now()}`;
+      setExpenses((prev) => [
+        {
+          id,
+          title: title.trim(),
+          amount: parsed,
+          categoryId,
+          comment: comment.trim(),
+          createdAt: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+    }
     setTitle("");
     setAmount("");
     setComment("");
+    setEditingExpenseId(null);
     setOpen(false);
   };
 
   const handleAddCategory = () => {
     const name = newCategoryName.trim();
-    const color = isValidColor(customColor) ? customColor.trim() : newCategoryColor;
+    const color = newCategoryColor;
     if (!name) {
       return;
     }
@@ -291,8 +390,15 @@ export default function Financas() {
   };
 
   const handleRemoveCategory = (id: string) => {
-    const fallback = categories[0]?.id || "cat-outros";
-    setCategories((prev) => prev.filter((cat) => cat.id !== id));
+    let nextCategories = categories.filter((cat) => cat.id !== id);
+    if (nextCategories.length === 0) {
+      nextCategories = [
+        { id: `cat-${Date.now()}`, name: "Sem categoria", color: DEFAULT_COLORS[0] },
+      ];
+    }
+    const fallback = nextCategories[0]?.id || "";
+    setCategories(nextCategories);
+    setCategoryId(fallback);
     setExpenses((prev) =>
       prev.map((expense) =>
         expense.categoryId === id ? { ...expense, categoryId: fallback } : expense
@@ -304,7 +410,6 @@ export default function Financas() {
     setEditingCategoryId(cat.id);
     setEditingCategoryName(cat.name);
     setEditingCategoryColor(cat.color);
-    setEditingCustomColor(cat.color);
   };
 
   const cancelEditCategory = () => {
@@ -319,9 +424,7 @@ export default function Financas() {
     if (!name) {
       return;
     }
-    const color = isValidColor(editingCustomColor)
-      ? editingCustomColor.trim()
-      : editingCategoryColor;
+    const color = editingCategoryColor;
     setCategories((prev) =>
       prev.map((cat) =>
         cat.id === editingCategoryId ? { ...cat, name, color } : cat
@@ -344,7 +447,15 @@ export default function Financas() {
           </Box>
           <Button
             variant="contained"
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              setEditingExpenseId(null);
+              setTitle("");
+              setAmount("");
+              setComment("");
+              setCategoryId(categories[0]?.id || "");
+              setExpanded("expense");
+              setOpen(true);
+            }}
             sx={{ textTransform: "none", fontWeight: 600 }}
           >
             Adicionar gasto
@@ -429,14 +540,182 @@ export default function Financas() {
             </Box>
           </Paper>
         </Stack>
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            border: "1px solid rgba(255,255,255,0.08)",
+            backgroundColor: "rgba(15, 23, 32, 0.85)",
+          }}
+        >
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            spacing={2}
+            alignItems={{ xs: "stretch", md: "center" }}
+            justifyContent="space-between"
+            sx={{ mb: 2 }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Detalhe dos gastos
+            </Typography>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2}
+              sx={{ width: { xs: "100%", md: "auto" } }}
+            >
+              <TextField
+                label="Buscar gastos"
+                value={expenseQuery}
+                onChange={(event) => setExpenseQuery(event.target.value)}
+                sx={{ minWidth: { xs: "100%", sm: 240 } }}
+              />
+              <FormControl sx={{ minWidth: { xs: "100%", sm: 240 } }}>
+                <InputLabel>Categorias</InputLabel>
+                <Select
+                  multiple
+                  value={categoryFilters}
+                  onChange={(event) =>
+                    setCategoryFilters(
+                      typeof event.target.value === "string"
+                        ? event.target.value.split(",")
+                        : event.target.value
+                    )
+                  }
+                  input={<OutlinedInput label="Categorias" />}
+                  renderValue={(selected) =>
+                    selected
+                      .map((id) => categoryMap.get(id)?.name)
+                      .filter(Boolean)
+                      .join(", ")
+                  }
+                  MenuProps={{
+                    PaperProps: {
+                      sx: { maxHeight: 320 },
+                    },
+                  }}
+                >
+                  {categories.length > 6 ? (
+                    <ListSubheader sx={{ backgroundColor: "rgba(15, 23, 32, 0.95)" }}>
+                      <TextField
+                        label="Buscar categoria"
+                        value={categorySearch}
+                        onChange={(event) => setCategorySearch(event.target.value)}
+                        size="small"
+                        fullWidth
+                      />
+                    </ListSubheader>
+                  ) : null}
+                  {filteredCategories.map((cat) => (
+                    <MenuItem key={cat.id} value={cat.id}>
+                      <Checkbox checked={categoryFilters.includes(cat.id)} />
+                      <ListItemText primary={cat.name} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+          </Stack>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ color: "text.secondary", fontWeight: 600 }}>
+                    Titulo
+                  </TableCell>
+                  <TableCell sx={{ color: "text.secondary", fontWeight: 600 }}>
+                    Categoria
+                  </TableCell>
+                  <TableCell sx={{ color: "text.secondary", fontWeight: 600 }}>
+                    Valor
+                  </TableCell>
+                  <TableCell sx={{ color: "text.secondary", fontWeight: 600 }}>
+                    Data
+                  </TableCell>
+                  <TableCell sx={{ color: "text.secondary", fontWeight: 600 }}>
+                    Comentario
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredExpenses.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} sx={{ color: "text.secondary" }}>
+                      Nenhum gasto registrado.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredExpenses.map((expense) => {
+                    const category = categoryMap.get(expense.categoryId);
+                    return (
+                      <TableRow
+                        key={expense.id}
+                        hover
+                        onClick={() => {
+                          setEditingExpenseId(expense.id);
+                          setTitle(expense.title);
+                          setAmount(String(expense.amount));
+                          setCategoryId(expense.categoryId);
+                          setComment(expense.comment);
+                          setExpanded("expense");
+                          setOpen(true);
+                        }}
+                        sx={{ cursor: "pointer" }}
+                      >
+                        <TableCell>{expense.title}</TableCell>
+                        <TableCell>
+                          {category ? (
+                            <Chip
+                              size="small"
+                              label={category.name}
+                              sx={{
+                                color: "#e6edf3",
+                                backgroundColor: darkenColor(category.color, 0.5),
+                              }}
+                            />
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell>{expense.amount.toLocaleString("pt-BR")}</TableCell>
+                        <TableCell>
+                          {new Date(expense.createdAt).toLocaleDateString("pt-BR")}
+                        </TableCell>
+                        <TableCell sx={{ color: "text.secondary" }}>
+                          {expense.comment || "-"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       </Stack>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          setEditingExpenseId(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogContent>
           <Stack spacing={2.5}>
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Typography variant="h6">Adicionar gasto</Typography>
-              <IconButton onClick={() => setOpen(false)} sx={{ color: "text.secondary" }}>
+              <Typography variant="h6">
+                {editingExpenseId ? "Editar gasto" : "Adicionar gasto"}
+              </Typography>
+              <IconButton
+                onClick={() => {
+                  setOpen(false);
+                  setEditingExpenseId(null);
+                }}
+                sx={{ color: "text.secondary" }}
+              >
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -540,13 +819,12 @@ export default function Financas() {
                           value={editingCategoryName}
                           onChange={(event) => setEditingCategoryName(event.target.value)}
                         />
-                        <Stack direction="row" spacing={1} flexWrap="wrap">
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                           {DEFAULT_COLORS.map((color) => (
                             <Box
                               key={color}
                               onClick={() => {
                                 setEditingCategoryColor(color);
-                                setEditingCustomColor(color);
                               }}
                               sx={{
                                 width: 28,
@@ -562,35 +840,6 @@ export default function Financas() {
                             />
                           ))}
                         </Stack>
-                        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                          <TextField
-                            label="Cor (hex ou rgb)"
-                            fullWidth
-                            value={editingCustomColor}
-                            onChange={(event) => setEditingCustomColor(event.target.value)}
-                          />
-                          <TextField
-                            type="color"
-                            label="Cor"
-                            value={
-                              isValidColor(editingCustomColor)
-                                ? editingCustomColor
-                                : editingCategoryColor
-                            }
-                            onChange={(event) => {
-                              setEditingCustomColor(event.target.value);
-                              setEditingCategoryColor(event.target.value);
-                            }}
-                            sx={{
-                              width: { xs: "100%", sm: 140 },
-                              "& input": {
-                                padding: "10px 12px",
-                                height: 44,
-                                borderRadius: "var(--radius-card)",
-                              },
-                            }}
-                          />
-                        </Stack>
                         <Stack direction="row" spacing={2} justifyContent="flex-end">
                           <Button variant="outlined" onClick={cancelEditCategory}>
                             Cancelar
@@ -602,22 +851,20 @@ export default function Financas() {
                       </Stack>
                     </Box>
                   ) : null}
-                  <Stack direction="row" spacing={1} flexWrap="wrap">
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                     {categories.map((cat) => (
                       <Chip
                         key={cat.id}
                         label={cat.name}
                         onClick={() => startEditCategory(cat)}
-                    onDelete={
-                      cat.id === "cat-outros" ? undefined : () => handleRemoveCategory(cat.id)
-                    }
-                    sx={{
-                      color: "#e6edf3",
-                      backgroundColor: darkenColor(cat.color, 0.5),
-                    }}
-                  />
-                ))}
-              </Stack>
+                        onDelete={() => handleRemoveCategory(cat.id)}
+                        sx={{
+                          color: "#e6edf3",
+                          backgroundColor: darkenColor(cat.color, 0.5),
+                        }}
+                      />
+                    ))}
+                  </Stack>
 
                   {editingCategoryId ? null : (
                     <Box>
@@ -631,13 +878,12 @@ export default function Financas() {
                         value={newCategoryName}
                         onChange={(event) => setNewCategoryName(event.target.value)}
                       />
-                      <Stack direction="row" spacing={1} flexWrap="wrap">
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                         {DEFAULT_COLORS.map((color) => (
                           <Box
                             key={color}
                             onClick={() => {
                               setNewCategoryColor(color);
-                              setCustomColor(color);
                             }}
                             sx={{
                               width: 28,
@@ -653,31 +899,6 @@ export default function Financas() {
                           />
                         ))}
                       </Stack>
-                      <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                        <TextField
-                          label="Cor (hex ou rgb)"
-                          fullWidth
-                          value={customColor}
-                          onChange={(event) => setCustomColor(event.target.value)}
-                        />
-                        <TextField
-                          type="color"
-                          label="Cor"
-                          value={isValidColor(customColor) ? customColor : newCategoryColor}
-                          onChange={(event) => {
-                            setCustomColor(event.target.value);
-                            setNewCategoryColor(event.target.value);
-                          }}
-                          sx={{
-                            width: { xs: "100%", sm: 140 },
-                            "& input": {
-                              padding: "10px 12px",
-                              height: 44,
-                              borderRadius: "var(--radius-card)",
-                            },
-                          }}
-                        />
-                      </Stack>
                       <Button
                         variant="outlined"
                         onClick={handleAddCategory}
@@ -685,8 +906,8 @@ export default function Financas() {
                         sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
                       >
                         Criar categoria
-                  </Button>
-                </Stack>
+                      </Button>
+                    </Stack>
                     </Box>
                   )}
                 </Stack>
@@ -697,8 +918,8 @@ export default function Financas() {
               <Button variant="outlined" onClick={() => setOpen(false)}>
                 Cancelar
               </Button>
-              <Button variant="contained" onClick={handleAddExpense}>
-                Salvar gasto
+              <Button variant="contained" onClick={handleSaveExpense}>
+                {editingExpenseId ? "Salvar alteracoes" : "Salvar gasto"}
               </Button>
             </Stack>
           </Stack>

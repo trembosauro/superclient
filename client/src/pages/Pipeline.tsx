@@ -6,8 +6,10 @@ import {
   Divider,
   Dialog,
   DialogContent,
+  Snackbar,
   IconButton,
   Paper,
+  Alert,
   Stack,
   TextField,
   Typography,
@@ -41,6 +43,7 @@ type Deal = {
   owner: string;
   link?: string;
   comments?: string;
+  categoryId?: string;
 };
 
 type Column = {
@@ -50,37 +53,121 @@ type Column = {
   description?: string;
 };
 
+type Category = {
+  id: string;
+  name: string;
+  color: string;
+};
+
+const DEFAULT_COLORS = [
+  "#0f766e",
+  "#1d4ed8",
+  "#6d28d9",
+  "#7c2d12",
+  "#7c4a03",
+  "#0f172a",
+  "#334155",
+  "#166534",
+  "#9d174d",
+  "#312e81",
+  "#1f2937",
+  "#0f3d3e",
+];
+
+const defaultCategories: Category[] = [
+  { id: "cat-moradia", name: "Moradia", color: DEFAULT_COLORS[0] },
+  { id: "cat-alimentacao", name: "Alimentacao", color: DEFAULT_COLORS[1] },
+  { id: "cat-transporte", name: "Transporte", color: DEFAULT_COLORS[2] },
+  { id: "cat-saude", name: "Saude", color: DEFAULT_COLORS[3] },
+  { id: "cat-lazer", name: "Lazer", color: DEFAULT_COLORS[4] },
+  { id: "cat-educacao", name: "Educacao", color: DEFAULT_COLORS[5] },
+  { id: "cat-assinaturas", name: "Assinaturas", color: DEFAULT_COLORS[6] },
+  { id: "cat-impostos", name: "Impostos", color: DEFAULT_COLORS[7] },
+  { id: "cat-investimentos", name: "Investimentos", color: DEFAULT_COLORS[8] },
+  { id: "cat-viagem", name: "Viagem", color: DEFAULT_COLORS[9] },
+  { id: "cat-compras", name: "Compras", color: DEFAULT_COLORS[10] },
+  { id: "cat-outros", name: "Outros", color: DEFAULT_COLORS[11] },
+];
+
 const defaultColumns: Column[] = [
   {
     id: "leads",
     title: "Leads",
     deals: [
-      { id: "orbit", name: "Orbit Media", value: "R$ 18k", owner: "Ana C." },
-      { id: "silo", name: "Silo Retail", value: "R$ 22k", owner: "Lucas M." },
+      {
+        id: "orbit",
+        name: "Orbit Media",
+        value: "R$ 18k",
+        owner: "Ana C.",
+        categoryId: defaultCategories[0]?.id,
+      },
+      {
+        id: "silo",
+        name: "Silo Retail",
+        value: "R$ 22k",
+        owner: "Lucas M.",
+        categoryId: defaultCategories[0]?.id,
+      },
     ],
   },
   {
     id: "qualified",
     title: "Qualificados",
     deals: [
-      { id: "argo", name: "Argo Health", value: "R$ 92k", owner: "Lucas M." },
-      { id: "nova", name: "Nova Terra", value: "R$ 36k", owner: "Sofia L." },
+      {
+        id: "argo",
+        name: "Argo Health",
+        value: "R$ 92k",
+        owner: "Lucas M.",
+        categoryId: defaultCategories[1]?.id,
+      },
+      {
+        id: "nova",
+        name: "Nova Terra",
+        value: "R$ 36k",
+        owner: "Sofia L.",
+        categoryId: defaultCategories[1]?.id,
+      },
     ],
   },
   {
     id: "proposal",
     title: "Proposta",
     deals: [
-      { id: "prisma", name: "Prisma Bank", value: "R$ 68k", owner: "Rafael P." },
-      { id: "bluebay", name: "Bluebay", value: "R$ 41k", owner: "Joana S." },
+      {
+        id: "prisma",
+        name: "Prisma Bank",
+        value: "R$ 68k",
+        owner: "Rafael P.",
+        categoryId: defaultCategories[2]?.id,
+      },
+      {
+        id: "bluebay",
+        name: "Bluebay",
+        value: "R$ 41k",
+        owner: "Joana S.",
+        categoryId: defaultCategories[2]?.id,
+      },
     ],
   },
   {
     id: "closing",
     title: "Fechamento",
     deals: [
-      { id: "caravel", name: "Studio Caravel", value: "R$ 48k", owner: "Ana C." },
-      { id: "gema", name: "Gema Labs", value: "R$ 31k", owner: "Diego M." },
+      {
+        id: "caravel",
+        name: "Studio Caravel",
+        value: "R$ 48k",
+        owner: "Ana C.",
+        categoryId: defaultCategories[3]?.id,
+      },
+      {
+        id: "gema",
+        name: "Gema Labs",
+        value: "R$ 31k",
+        owner: "Diego M.",
+        categoryId: defaultCategories[3]?.id,
+      },
     ],
   },
 ];
@@ -91,18 +178,63 @@ const isColumnId = (id: string) => id.startsWith("column:");
 const isCardId = (id: string) => id.startsWith("card:");
 const stripPrefix = (id: string) => id.split(":")[1] || id;
 
+const darkenColor = (value: string, factor: number) => {
+  const trimmed = value.trim();
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  if (/^#([0-9a-fA-F]{3})$/.test(trimmed)) {
+    const hex = trimmed.slice(1);
+    r = parseInt(hex[0] + hex[0], 16);
+    g = parseInt(hex[1] + hex[1], 16);
+    b = parseInt(hex[2] + hex[2], 16);
+  } else if (/^#([0-9a-fA-F]{6})$/.test(trimmed)) {
+    const hex = trimmed.slice(1);
+    r = parseInt(hex.slice(0, 2), 16);
+    g = parseInt(hex.slice(2, 4), 16);
+    b = parseInt(hex.slice(4, 6), 16);
+  } else {
+    const match = trimmed.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/);
+    if (match) {
+      r = Math.min(255, Number(match[1]));
+      g = Math.min(255, Number(match[2]));
+      b = Math.min(255, Number(match[3]));
+    }
+  }
+
+  const next = (channel: number) => Math.max(0, Math.round(channel * factor));
+  return `rgb(${next(r)}, ${next(g)}, ${next(b)})`;
+};
+
+const normalizeColumns = (incoming: Column[]) => incoming;
+
 export default function Pipeline() {
   const [columns, setColumns] = useState<Column[]>(() => defaultColumns);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
+  const [lastRemoved, setLastRemoved] = useState<{
+    deal: Deal;
+    columnId: string;
+    index: number;
+  } | null>(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [editName, setEditName] = useState("");
   const [editValue, setEditValue] = useState("");
   const [editOwner, setEditOwner] = useState("");
   const [editLink, setEditLink] = useState("");
   const [editComments, setEditComments] = useState("");
+  const [editCategoryId, setEditCategoryId] = useState(defaultCategories[0]?.id || "");
   const [editingColumn, setEditingColumn] = useState<Column | null>(null);
   const [editColumnTitle, setEditColumnTitle] = useState("");
   const [editColumnDescription, setEditColumnDescription] = useState("");
+  const [categories, setCategories] = useState<Category[]>(defaultCategories);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_COLORS[0]);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState("");
+  const [editingCategoryColor, setEditingCategoryColor] = useState(DEFAULT_COLORS[0]);
+  const [taskQuery, setTaskQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef(0);
@@ -116,11 +248,22 @@ export default function Pipeline() {
       try {
         const response = await api.get("/api/pipeline/board");
         const pipeline = response?.data?.pipeline;
-        const incoming = Array.isArray(pipeline) ? pipeline : pipeline?.columns;
-        if (Array.isArray(incoming) && incoming.length) {
-          setColumns(incoming);
+        if (Array.isArray(pipeline)) {
+          if (pipeline.length) {
+            setColumns(normalizeColumns(pipeline));
+          }
+        } else if (pipeline?.columns) {
+          const incomingCategories = Array.isArray(pipeline.categories)
+            ? pipeline.categories
+            : defaultCategories;
+          if (incomingCategories.length) {
+            setCategories(incomingCategories);
+          }
+          setColumns(normalizeColumns(pipeline.columns));
         } else {
-          await api.put("/api/pipeline/board", { columns: defaultColumns });
+          await api.put("/api/pipeline/board", {
+            data: { columns: defaultColumns, categories: defaultCategories },
+          });
         }
       } catch {
         // Keep defaults if the request fails.
@@ -139,19 +282,36 @@ export default function Pipeline() {
       window.clearTimeout(saveTimeoutRef.current);
     }
     saveTimeoutRef.current = window.setTimeout(() => {
-      void api.put("/api/pipeline/board", { columns });
+      void api.put("/api/pipeline/board", { data: { columns, categories } });
     }, 600);
     return () => {
       if (saveTimeoutRef.current) {
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [columns]);
+  }, [columns, categories]);
 
   const columnItems = useMemo(
     () => columns.map((column) => columnDragId(column.id)),
     [columns]
   );
+  const normalizedQuery = taskQuery.trim().toLowerCase();
+
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, Category>();
+    categories.forEach((cat) => map.set(cat.id, cat));
+    return map;
+  }, [categories]);
+
+  useEffect(() => {
+    if (!editCategoryId) {
+      return;
+    }
+    if (categories.some((cat) => cat.id === editCategoryId)) {
+      return;
+    }
+    setEditCategoryId("");
+  }, [categories, editCategoryId]);
 
   const findColumnByCard = (cardId: string) =>
     columns.find((column) => column.deals.some((deal) => deal.id === cardId));
@@ -176,6 +336,8 @@ export default function Pipeline() {
     setEditOwner(deal.owner);
     setEditLink(deal.link || "");
     setEditComments(deal.comments || "");
+    setEditCategoryId(deal.categoryId || "");
+    setEditingCategoryId(null);
   };
 
   const handleEditClose = () => {
@@ -198,6 +360,7 @@ export default function Pipeline() {
                 owner: editOwner.trim() || deal.owner,
                 link: editLink.trim(),
                 comments: editComments.trim(),
+                categoryId: editCategoryId,
               }
             : deal
         ),
@@ -210,6 +373,24 @@ export default function Pipeline() {
     if (!editingDeal) {
       return;
     }
+    const removal = columns.reduce<{
+      deal: Deal;
+      columnId: string;
+      index: number;
+    } | null>((found, column) => {
+      if (found) {
+        return found;
+      }
+      const index = column.deals.findIndex((deal) => deal.id === editingDeal.id);
+      if (index === -1) {
+        return null;
+      }
+      return { deal: column.deals[index], columnId: column.id, index };
+    }, null);
+    if (removal) {
+      setLastRemoved(removal);
+      setSnackbarOpen(true);
+    }
     setColumns((prev) =>
       prev.map((column) => ({
         ...column,
@@ -217,6 +398,81 @@ export default function Pipeline() {
       }))
     );
     setEditingDeal(null);
+  };
+
+  const handleUndoRemove = () => {
+    if (!lastRemoved) {
+      return;
+    }
+    setColumns((prev) =>
+      prev.map((column) => {
+        if (column.id !== lastRemoved.columnId) {
+          return column;
+        }
+        const nextDeals = [...column.deals];
+        const insertIndex = Math.min(lastRemoved.index, nextDeals.length);
+        nextDeals.splice(insertIndex, 0, lastRemoved.deal);
+        return { ...column, deals: nextDeals };
+      })
+    );
+    setSnackbarOpen(false);
+    setLastRemoved(null);
+  };
+
+  const handleAddCategory = () => {
+    const name = newCategoryName.trim();
+    if (!name) {
+      return;
+    }
+    const id = `cat-${Date.now()}`;
+    setCategories((prev) => [...prev, { id, name, color: newCategoryColor }]);
+    setNewCategoryName("");
+  };
+
+  const handleRemoveCategory = (id: string) => {
+    let nextCategories = categories.filter((cat) => cat.id !== id);
+    if (nextCategories.length === 0) {
+      nextCategories = [
+        { id: `cat-${Date.now()}`, name: "Sem categoria", color: DEFAULT_COLORS[0] },
+      ];
+    }
+    const fallback = nextCategories[0]?.id || "";
+    setCategories(nextCategories);
+    setEditCategoryId((prev) => (prev === id ? fallback : prev));
+    setColumns((prev) =>
+      prev.map((column) => ({
+        ...column,
+        deals: column.deals.map((deal) =>
+          deal.categoryId === id ? { ...deal, categoryId: fallback } : deal
+        ),
+      }))
+    );
+  };
+
+  const startEditCategory = (cat: Category) => {
+    setEditingCategoryId(cat.id);
+    setEditingCategoryName(cat.name);
+    setEditingCategoryColor(cat.color);
+  };
+
+  const cancelEditCategory = () => {
+    setEditingCategoryId(null);
+  };
+
+  const saveCategory = () => {
+    if (!editingCategoryId) {
+      return;
+    }
+    const name = editingCategoryName.trim();
+    if (!name) {
+      return;
+    }
+    setCategories((prev) =>
+      prev.map((cat) =>
+        cat.id === editingCategoryId ? { ...cat, name, color: editingCategoryColor } : cat
+      )
+    );
+    setEditingCategoryId(null);
   };
 
   const handleColumnEditOpen = (column: Column) => {
@@ -476,6 +732,7 @@ export default function Pipeline() {
                   name: "Nova oportunidade",
                   value: "R$ 0",
                   owner: "Responsavel",
+                  categoryId: "",
                 },
               ],
             }
@@ -542,7 +799,21 @@ export default function Pipeline() {
           </Button>
         </Box>
 
-        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 2,
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <TextField
+            label="Buscar tasks"
+            value={taskQuery}
+            onChange={(event) => setTaskQuery(event.target.value)}
+            sx={{ minWidth: { xs: "100%", sm: 280 } }}
+          />
           <Button
             variant="outlined"
             onClick={handleAddColumn}
@@ -587,6 +858,8 @@ export default function Pipeline() {
                     onEdit={handleEditOpen}
                     onEditColumn={handleColumnEditOpen}
                     onAddDeal={handleAddDeal}
+                    categoryMap={categoryMap}
+                    taskQuery={normalizedQuery}
                   />
                 ))}
               </Stack>
@@ -698,6 +971,149 @@ export default function Pipeline() {
               value={editComments}
               onChange={(event) => setEditComments(event.target.value)}
             />
+            <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
+            <Stack spacing={1.5}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                Categoria do card
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <Chip
+                  label="Sem categoria"
+                  onClick={() => setEditCategoryId("")}
+                  sx={{
+                    color: "#e6edf3",
+                    backgroundColor: "rgba(148, 163, 184, 0.18)",
+                    border:
+                      editCategoryId === ""
+                        ? "1px solid rgba(255,255,255,0.7)"
+                        : "1px solid transparent",
+                  }}
+                />
+                {categories.map((cat) => (
+                  <Chip
+                    key={cat.id}
+                    label={cat.name}
+                    onClick={() => setEditCategoryId(cat.id)}
+                    sx={{
+                      color: "#e6edf3",
+                      backgroundColor: darkenColor(cat.color, 0.5),
+                      border:
+                        editCategoryId === cat.id
+                          ? "1px solid rgba(255,255,255,0.7)"
+                          : "1px solid transparent",
+                    }}
+                  />
+                ))}
+              </Stack>
+            </Stack>
+            <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
+            <Stack spacing={2}>
+              {editingCategoryId ? (
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    backgroundColor: "rgba(10, 16, 23, 0.7)",
+                  }}
+                >
+                  <Stack spacing={1.5}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Editar categoria
+                    </Typography>
+                    <TextField
+                      label="Nome"
+                      fullWidth
+                      value={editingCategoryName}
+                      onChange={(event) => setEditingCategoryName(event.target.value)}
+                    />
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {DEFAULT_COLORS.map((color) => (
+                        <Box
+                          key={color}
+                          onClick={() => setEditingCategoryColor(color)}
+                          sx={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 1,
+                            backgroundColor: color,
+                            border:
+                              editingCategoryColor === color
+                                ? "2px solid rgba(255,255,255,0.8)"
+                                : "1px solid rgba(255,255,255,0.2)",
+                            cursor: "pointer",
+                          }}
+                        />
+                      ))}
+                    </Stack>
+                    <Stack direction="row" spacing={2} justifyContent="flex-end">
+                      <Button variant="outlined" onClick={cancelEditCategory}>
+                        Cancelar
+                      </Button>
+                      <Button variant="contained" onClick={saveCategory}>
+                        Salvar
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Box>
+              ) : null}
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {categories.map((cat) => (
+                  <Chip
+                    key={cat.id}
+                    label={cat.name}
+                    onClick={() => startEditCategory(cat)}
+                    onDelete={() => handleRemoveCategory(cat.id)}
+                    sx={{
+                      color: "#e6edf3",
+                      backgroundColor: darkenColor(cat.color, 0.5),
+                    }}
+                  />
+                ))}
+              </Stack>
+              {editingCategoryId ? null : (
+                <Box>
+                  <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
+                    Nova categoria
+                  </Typography>
+                  <Stack spacing={1.5}>
+                    <TextField
+                      label="Nome"
+                      fullWidth
+                      value={newCategoryName}
+                      onChange={(event) => setNewCategoryName(event.target.value)}
+                    />
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {DEFAULT_COLORS.map((color) => (
+                        <Box
+                          key={color}
+                          onClick={() => setNewCategoryColor(color)}
+                          sx={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 1,
+                            backgroundColor: color,
+                            border:
+                              newCategoryColor === color
+                                ? "2px solid rgba(255,255,255,0.8)"
+                                : "1px solid rgba(255,255,255,0.2)",
+                            cursor: "pointer",
+                          }}
+                        />
+                      ))}
+                    </Stack>
+                    <Button
+                      variant="outlined"
+                      onClick={handleAddCategory}
+                      startIcon={<AddRoundedIcon />}
+                      sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                    >
+                      Criar categoria
+                    </Button>
+                  </Stack>
+                </Box>
+              )}
+            </Stack>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button color="error" variant="outlined" onClick={handleDealRemove}>
                 Remover
@@ -712,6 +1128,35 @@ export default function Pipeline() {
           </Stack>
         </DialogContent>
       </Dialog>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={5000}
+        onClose={(_, reason) => {
+          if (reason === "clickaway") {
+            return;
+          }
+          setSnackbarOpen(false);
+          setLastRemoved(null);
+        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="info"
+          onClose={() => {
+            setSnackbarOpen(false);
+            setLastRemoved(null);
+          }}
+          action={
+            <Button color="inherit" size="small" onClick={handleUndoRemove}>
+              Desfazer
+            </Button>
+          }
+          sx={{ width: "100%" }}
+        >
+          Task removida.
+        </Alert>
+      </Snackbar>
 
       <Dialog
         open={Boolean(editingColumn)}
@@ -764,12 +1209,25 @@ function SortableColumn({
   onEdit,
   onEditColumn,
   onAddDeal,
+  categoryMap,
+  taskQuery,
 }: {
   column: Column;
   onEdit: (deal: Deal) => void;
   onEditColumn: (column: Column) => void;
   onAddDeal: (columnId: string) => void;
+  categoryMap: Map<string, Category>;
+  taskQuery: string;
 }) {
+  const filteredDeals = taskQuery
+    ? column.deals.filter((deal) => {
+        const haystack = `${deal.name} ${deal.owner} ${deal.value} ${
+          deal.comments || ""
+        }`.toLowerCase();
+        return haystack.includes(taskQuery);
+      })
+    : column.deals;
+  const displayCount = taskQuery ? filteredDeals.length : column.deals.length;
   const dragId = columnDragId(column.id);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
@@ -802,7 +1260,14 @@ function SortableColumn({
       data-draggable
     >
       <Stack spacing={2}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            justifyContent: "space-between",
+          }}
+        >
           <Box
             sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer" }}
             onClick={() => onEditColumn(column)}
@@ -810,35 +1275,36 @@ function SortableColumn({
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
               {column.title}
             </Typography>
-            <Chip
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+              {displayCount}
+            </Typography>
+            <IconButton
               size="small"
-              label={`${column.deals.length} tasks`}
+              onClick={() => onAddDeal(column.id)}
               sx={{
                 color: "text.secondary",
-                backgroundColor: "rgba(148, 163, 184, 0.16)",
+                border: "none",
               }}
-            />
+            >
+              <AddRoundedIcon fontSize="small" />
+            </IconButton>
           </Box>
-          <IconButton
-            size="small"
-            onClick={() => onAddDeal(column.id)}
-            sx={{
-              ml: "auto",
-              color: "text.secondary",
-              border: "none",
-            }}
-          >
-            <AddRoundedIcon fontSize="small" />
-          </IconButton>
         </Box>
         <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
         <SortableContext
-          items={column.deals.map((deal) => cardDragId(deal.id))}
+          items={filteredDeals.map((deal) => cardDragId(deal.id))}
           strategy={verticalListSortingStrategy}
         >
           <Stack spacing={1.5}>
-            {column.deals.map((deal) => (
-              <SortableDeal key={deal.id} deal={deal} onEdit={onEdit} />
+            {filteredDeals.map((deal) => (
+              <SortableDeal
+                key={deal.id}
+                deal={deal}
+                onEdit={onEdit}
+                category={categoryMap.get(deal.categoryId || "")}
+              />
             ))}
           </Stack>
         </SortableContext>
@@ -847,7 +1313,15 @@ function SortableColumn({
   );
 }
 
-function SortableDeal({ deal, onEdit }: { deal: Deal; onEdit: (deal: Deal) => void }) {
+function SortableDeal({
+  deal,
+  onEdit,
+  category,
+}: {
+  deal: Deal;
+  onEdit: (deal: Deal) => void;
+  category?: Category;
+}) {
   const dragId = cardDragId(deal.id);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
@@ -885,6 +1359,18 @@ function SortableDeal({ deal, onEdit }: { deal: Deal; onEdit: (deal: Deal) => vo
       <Typography variant="caption" sx={{ color: "text.secondary" }}>
         {deal.owner}
       </Typography>
+      {category ? (
+        <Chip
+          size="small"
+          label={category.name}
+          sx={{
+            mt: 1,
+            color: "#e6edf3",
+            backgroundColor: darkenColor(category.color, 0.5),
+            alignSelf: "flex-start",
+          }}
+        />
+      ) : null}
       <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 600 }}>
         {deal.value}
       </Typography>

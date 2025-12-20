@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import type { MouseEvent } from "react";
+import { useEffect, useState } from "react";
 import { ThemeProvider } from "@mui/material/styles";
 import {
   Avatar,
@@ -8,11 +7,6 @@ import {
   CssBaseline,
   Breadcrumbs,
   Link,
-  ClickAwayListener,
-  MenuItem,
-  MenuList,
-  Paper,
-  Popper,
   Stack,
   Typography,
 } from "@mui/material";
@@ -30,7 +24,6 @@ import Financas from "./pages/Financas";
 
 const navItems = [
   { label: "Home", href: "/login" },
-  { label: "Suporte", href: "/support" },
   { label: "Pipeline", href: "/pipeline" },
   { label: "Financas", href: "/financas" },
   { label: "Gestao", href: "/access" },
@@ -39,9 +32,7 @@ const navItems = [
 function App() {
   const [location, setLocation] = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [pipelineAnchor, setPipelineAnchor] = useState<null | HTMLElement>(null);
   const [userName, setUserName] = useState<string>("");
-  const closeTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const syncAuth = async () => {
@@ -91,11 +82,6 @@ function App() {
     }
   }, [isLoggedIn, location, setLocation]);
 
-  useEffect(() => {
-    if (pipelineAnchor) {
-      setPipelineAnchor(null);
-    }
-  }, [location]);
   const isActive = (href: string) => {
     if (href === "/login") {
       return location === "/" || location === "/login" || location === "/signup";
@@ -120,36 +106,7 @@ function App() {
   };
   const showBreadcrumbs = !["/", "/login", "/signup"].includes(location);
   const currentLabel = breadcrumbMap[location] ?? "Pagina";
-  const pipelineOpen = Boolean(pipelineAnchor);
   const avatarInitial = userName.trim().charAt(0).toUpperCase() || "U";
-
-  const handlePipelineOpen = (event: MouseEvent<HTMLElement>) => {
-    if (closeTimerRef.current) {
-      window.clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-    setPipelineAnchor(event.currentTarget);
-  };
-
-  const handlePipelineKeepOpen = () => {
-    if (closeTimerRef.current) {
-      window.clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-  };
-
-  const handlePipelineClose = () => {
-    setPipelineAnchor(null);
-  };
-
-  const scheduleCrmClose = () => {
-    if (closeTimerRef.current) {
-      window.clearTimeout(closeTimerRef.current);
-    }
-    closeTimerRef.current = window.setTimeout(() => {
-      setPipelineAnchor(null);
-    }, 150);
-  };
 
 
   return (
@@ -214,65 +171,30 @@ function App() {
                 spacing={1}
                 sx={{ display: { xs: "none", md: "flex" }, flexWrap: "wrap" }}
               >
-                {visibleNavItems.map((item) => {
-                  if (item.href === "/pipeline" && isLoggedIn) {
-                    return (
-                      <Box key={item.href} sx={{ display: "flex", alignItems: "center" }}>
-                        <Button
-                          component={RouterLink}
-                          href="/pipeline"
-                          variant="text"
-                          color="inherit"
-                          onMouseEnter={handlePipelineOpen}
-                          onFocus={handlePipelineOpen}
-                          sx={{
-                            textTransform: "none",
-                            fontWeight: 600,
-                            color:
-                              pipelineOpen || isActive(item.href)
-                                ? "primary.main"
-                                : "text.secondary",
-                            backgroundColor:
-                              pipelineOpen || isActive(item.href)
-                                ? "rgba(34, 201, 166, 0.12)"
-                                : "transparent",
-                            "&:hover": {
-                              color: "primary.main",
-                              backgroundColor: "rgba(34, 201, 166, 0.08)",
-                            },
-                          }}
-                        >
-                          {item.label}
-                        </Button>
-                      </Box>
-                    );
-                  }
-
-                  return (
-                    <Box key={item.href} sx={{ display: "flex", alignItems: "center" }}>
-                      <Button
-                        component={RouterLink}
-                        href={item.href}
-                        variant="text"
-                        color="inherit"
-                        sx={{
-                          textTransform: "none",
-                          fontWeight: 600,
-                          color: isActive(item.href) ? "primary.main" : "text.secondary",
-                          backgroundColor: isActive(item.href)
-                            ? "rgba(34, 201, 166, 0.12)"
-                            : "transparent",
-                          "&:hover": {
-                            color: "primary.main",
-                            backgroundColor: "rgba(34, 201, 166, 0.08)",
-                          },
-                        }}
-                      >
-                        {item.label}
-                      </Button>
-                    </Box>
-                  );
-                })}
+                {visibleNavItems.map((item) => (
+                  <Box key={item.href} sx={{ display: "flex", alignItems: "center" }}>
+                    <Button
+                      component={RouterLink}
+                      href={item.href}
+                      variant="text"
+                      color="inherit"
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: 600,
+                        color: isActive(item.href) ? "primary.main" : "text.secondary",
+                        backgroundColor: isActive(item.href)
+                          ? "rgba(34, 201, 166, 0.12)"
+                          : "transparent",
+                        "&:hover": {
+                          color: "primary.main",
+                          backgroundColor: "rgba(34, 201, 166, 0.08)",
+                        },
+                      }}
+                    >
+                      {item.label}
+                    </Button>
+                  </Box>
+                ))}
                 {isLoggedIn ? (
                   <Button
                     component={RouterLink}
@@ -340,49 +262,40 @@ function App() {
               </Route>
             </Switch>
           </Box>
-        </Box>
-      </Box>
 
-      <Popper
-        open={pipelineOpen}
-        anchorEl={pipelineAnchor}
-        placement="bottom-start"
-        sx={{ zIndex: 20 }}
-        disablePortal
-      >
-        <ClickAwayListener onClickAway={handlePipelineClose}>
-          <Paper
-            onMouseEnter={handlePipelineKeepOpen}
-            onMouseLeave={scheduleCrmClose}
+          <Box
+            component="footer"
             sx={{
-              mt: 1,
-              minWidth: 220,
-              borderRadius: 2,
-              border: "1px solid rgba(255,255,255,0.08)",
-              backgroundColor: "rgba(15, 23, 32, 0.98)",
+              px: { xs: 2, md: 6 },
+              py: 4,
+              borderTop: "1px solid rgba(255,255,255,0.08)",
+              backgroundColor: "rgba(7, 9, 13, 0.75)",
+              backdropFilter: "blur(16px)",
             }}
           >
-            <MenuList>
-              <MenuItem
-                component={RouterLink}
-                href="/pipeline"
-                onClick={handlePipelineClose}
-                sx={{ color: "text.secondary" }}
-              >
-                Pipeline
-              </MenuItem>
-              <MenuItem
-                component={RouterLink}
-                href="/pipeline/dados"
-                onClick={handlePipelineClose}
-                sx={{ color: "text.secondary" }}
-              >
-                Dados
-              </MenuItem>
-            </MenuList>
-          </Paper>
-        </ClickAwayListener>
-      </Popper>
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={2}
+              alignItems={{ xs: "flex-start", md: "center" }}
+              justifyContent="space-between"
+            >
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                Superclient © {new Date().getFullYear()}
+              </Typography>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Link
+                  component={RouterLink}
+                  href="/support"
+                  underline="hover"
+                  color="text.secondary"
+                >
+                  Suporte
+                </Link>
+              </Stack>
+            </Stack>
+          </Box>
+        </Box>
+      </Box>
 
     </ThemeProvider>
   );
