@@ -57,7 +57,10 @@ export default function Login() {
   const [recoveryError, setRecoveryError] = useState("");
   const [recoveryNotice, setRecoveryNotice] = useState("");
 
-  const persistUser = (user?: { name?: string | null; email?: string }) => {
+  const persistUser = (
+    user?: { name?: string | null; email?: string },
+    token?: string
+  ) => {
     if (!user?.email) {
       return;
     }
@@ -65,11 +68,15 @@ export default function Login() {
       "sc_user",
       JSON.stringify({ name: user.name || "", email: user.email })
     );
+    if (token) {
+      window.localStorage.setItem("sc_active_session", token);
+    }
     const stored = window.localStorage.getItem("sc_accounts");
     const nextAccount = {
       name: user.name || "",
       email: user.email,
       lastUsed: Date.now(),
+      token: token || "",
     };
     try {
       const parsed = stored ? (JSON.parse(stored) as typeof nextAccount[]) : [];
@@ -100,7 +107,7 @@ export default function Login() {
         email: loginEmail,
         password: loginPassword,
       });
-      persistUser(response?.data?.user);
+      persistUser(response?.data?.user, response?.data?.token);
       window.dispatchEvent(new Event("auth-change"));
       setLocation("/profile");
     } catch (error) {
@@ -131,7 +138,7 @@ export default function Login() {
         email: signupEmail,
         password: signupPassword,
       });
-      persistUser(response?.data?.user);
+      persistUser(response?.data?.user, response?.data?.token);
       window.dispatchEvent(new Event("auth-change"));
       setLocation("/profile");
     } catch (error) {
@@ -142,7 +149,7 @@ export default function Login() {
             email: signupEmail,
             password: signupPassword,
           });
-          persistUser(response?.data?.user);
+          persistUser(response?.data?.user, response?.data?.token);
           window.dispatchEvent(new Event("auth-change"));
           setLocation("/profile");
           return;

@@ -218,8 +218,16 @@ const clearSessionCookie = (res: Response) => {
   res.clearCookie("sc_session");
 };
 
+const getTokenFromRequest = (req: Request) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return authHeader.slice("Bearer ".length).trim();
+  }
+  return req.cookies.sc_session || null;
+};
+
 const getUserFromRequest = (req: Request): AuthUser | null => {
-  const token = req.cookies.sc_session;
+  const token = getTokenFromRequest(req);
   if (!token) {
     return null;
   }
@@ -291,7 +299,7 @@ app.post("/api/auth/signup", (req, res) => {
 
   const session = issueSession(userId);
   setSessionCookie(res, session.token, session.expires);
-  res.json({ user: { id: userId, email, name } });
+  res.json({ user: { id: userId, email, name }, token: session.token });
 });
 
 app.post("/api/auth/login", (req, res) => {
@@ -314,7 +322,11 @@ app.post("/api/auth/login", (req, res) => {
     return;
   }
 
-  if (hasActiveSession(user.id)) {
+  const prefs = db
+    .prepare("SELECT single_session FROM user_preferences WHERE user_id = ?")
+    .get(user.id) as { single_session?: number } | undefined;
+  const singleSessionEnabled = Boolean(prefs?.single_session);
+  if (singleSessionEnabled && hasActiveSession(user.id)) {
     clearUserSessions(user.id);
     res.status(409).json({ error: "session_conflict" });
     return;
@@ -322,11 +334,11 @@ app.post("/api/auth/login", (req, res) => {
 
   const session = issueSession(user.id);
   setSessionCookie(res, session.token, session.expires);
-  res.json({ user: { id: user.id, email: user.email, name: user.name } });
+  res.json({ user: { id: user.id, email: user.email, name: user.name }, token: session.token });
 });
 
 app.post("/api/auth/logout", (req, res) => {
-  const token = req.cookies.sc_session;
+  const token = getTokenFromRequest(req);
   if (token) {
     db.prepare("DELETE FROM sessions WHERE token_hash = ?").run(hashToken(token));
   }

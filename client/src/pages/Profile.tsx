@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Box,
   Button,
   Dialog,
   DialogContent,
   IconButton,
   Paper,
+  Snackbar,
   Stack,
   Switch,
   TextField,
@@ -19,6 +21,7 @@ type StoredAccount = {
   name: string;
   email: string;
   lastUsed: number;
+  token?: string;
 };
 
 const ACCOUNT_STORAGE_KEY = "sc_accounts";
@@ -44,6 +47,8 @@ export default function Profile() {
   const [switchPassword, setSwitchPassword] = useState("");
   const [switchError, setSwitchError] = useState("");
   const [switchLoading, setSwitchLoading] = useState(false);
+  const [switchNotice, setSwitchNotice] = useState("");
+  const [switchSnackbarOpen, setSwitchSnackbarOpen] = useState(false);
   const isLoadedRef = useRef(false);
   const saveTimeoutRef = useRef<number | null>(null);
 
@@ -61,16 +66,22 @@ export default function Profile() {
     }
   };
 
-  const persistAccount = (user?: { name?: string | null; email?: string }) => {
+  const persistAccount = (
+    user?: { name?: string | null; email?: string },
+    token?: string
+  ) => {
     if (!user?.email) {
       return;
     }
+    const existingAccounts = loadAccounts();
+    const existing = existingAccounts.find((account) => account.email === user.email);
     const nextAccount = {
       name: user.name || "",
       email: user.email,
       lastUsed: Date.now(),
+      token: token || existing?.token,
     };
-    const deduped = loadAccounts().filter((account) => account.email !== user.email);
+    const deduped = existingAccounts.filter((account) => account.email !== user.email);
     const nextAccounts = [nextAccount, ...deduped].slice(0, 3);
     window.localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(nextAccounts));
     setSwitchAccounts(nextAccounts);
@@ -133,6 +144,7 @@ export default function Profile() {
   const handleLogout = () => {
     void api.post("/api/auth/logout").finally(() => {
       window.localStorage.removeItem("sc_user");
+      window.localStorage.removeItem("sc_active_session");
       window.dispatchEvent(new Event("auth-change"));
       setLocation("/login");
     });
@@ -160,14 +172,20 @@ export default function Profile() {
         password: switchPassword,
       });
       const user = response?.data?.user;
+      const token = response?.data?.token;
       if (user?.email) {
         window.localStorage.setItem(
           "sc_user",
           JSON.stringify({ name: user.name || "", email: user.email })
         );
       }
-      persistAccount(user);
+      if (token) {
+        window.localStorage.setItem("sc_active_session", token);
+      }
+      persistAccount(user, token);
       window.dispatchEvent(new Event("auth-change"));
+      setSwitchNotice(`Conta alterada: ${user?.email || targetEmail}`);
+      setSwitchSnackbarOpen(true);
       setSwitchDialogOpen(false);
       setSwitchPassword("");
       setSwitchEmail("");
@@ -631,11 +649,24 @@ export default function Profile() {
                           setSwitchDialogOpen(false);
                           return;
                         }
+                        if (account.token) {
+                          window.localStorage.setItem("sc_active_session", account.token);
+                          window.localStorage.setItem(
+                            "sc_user",
+                            JSON.stringify({
+                              name: account.name || "",
+                              email: account.email,
+                            })
+                          );
+                          window.dispatchEvent(new Event("auth-change"));
+                          setSwitchNotice(`Conta alterada: ${account.email}`);
+                          setSwitchSnackbarOpen(true);
+                          setSwitchDialogOpen(false);
+                          setLocation("/home");
+                          return;
+                        }
                         setSwitchEmail(account.email);
                         setSwitchError("");
-                        if (switchPassword) {
-                          void handleSwitchLogin(account.email);
-                        }
                       }}
                       sx={{
                         p: 1.5,
@@ -657,6 +688,11 @@ export default function Profile() {
                         <Typography variant="caption" sx={{ color: "text.secondary" }}>
                           {account.email}
                         </Typography>
+                        {account.email === email ? (
+                          <Typography variant="caption" sx={{ color: "primary.main" }}>
+                            Conta ativa
+                          </Typography>
+                        ) : null}
                       </Stack>
                     </Paper>
                   ))}
@@ -698,13 +734,33 @@ export default function Profile() {
               <Button variant="outlined" onClick={() => setSwitchDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button variant="contained" onClick={handleSwitchLogin} disabled={switchLoading}>
+              <Button
+                type="button"
+                variant="contained"
+                onClick={() => void handleSwitchLogin()}
+                disabled={switchLoading}
+              >
                 Entrar
               </Button>
             </Stack>
           </Stack>
         </DialogContent>
       </Dialog>
+
+      <Snackbar
+        open={switchSnackbarOpen}
+        autoHideDuration={2500}
+        onClose={() => setSwitchSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="success"
+          onClose={() => setSwitchSnackbarOpen(false)}
+          sx={{ width: "100%" }}
+        >
+          {switchNotice}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

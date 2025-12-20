@@ -599,7 +599,18 @@ function App() {
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
                 Superclient © {new Date().getFullYear()}
               </Typography>
-              <Stack direction="row" spacing={2} alignItems="center">
+              <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
+                {visibleNavItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    component={RouterLink}
+                    href={item.href}
+                    underline="hover"
+                    color="text.secondary"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
                 <Link
                   component={RouterLink}
                   href="/support"
