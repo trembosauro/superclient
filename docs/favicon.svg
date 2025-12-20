@@ -6,7 +6,17 @@
     </linearGradient>
   </defs>
   <rect width="128" height="128" rx="28" fill="url(#bg)"/>
-  <rect x="28" y="64" width="16" height="36" rx="6" fill="#22c9a6"/>
-  <rect x="56" y="44" width="16" height="56" rx="6" fill="#2ee7c0"/>
-  <rect x="84" y="30" width="16" height="70" rx="6" fill="#1aa58a"/>
+  <polyline
+    points="24,84 46,62 64,70 90,40 104,50"
+    fill="none"
+    stroke="#22c9a6"
+    stroke-width="10"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="24" cy="84" r="7" fill="#2ee7c0"/>
+  <circle cx="46" cy="62" r="7" fill="#2ee7c0"/>
+  <circle cx="64" cy="70" r="7" fill="#2ee7c0"/>
+  <circle cx="90" cy="40" r="7" fill="#2ee7c0"/>
+  <circle cx="104" cy="50" r="7" fill="#2ee7c0"/>
 </svg>
