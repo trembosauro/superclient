@@ -38,6 +38,7 @@ import LooksOneRoundedIcon from "@mui/icons-material/LooksOneRounded";
 import LooksTwoRoundedIcon from "@mui/icons-material/LooksTwoRounded";
 import Looks3RoundedIcon from "@mui/icons-material/Looks3Rounded";
 import BackspaceRoundedIcon from "@mui/icons-material/BackspaceRounded";
+import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import api from "../api";
 import {
   DndContext,
@@ -248,6 +249,7 @@ const normalizeColumns = (incoming: Column[]) => incoming;
 export default function Pipeline() {
   const [columns, setColumns] = useState<Column[]>(() => defaultColumns);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [viewingDeal, setViewingDeal] = useState<Deal | null>(null);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [lastRemoved, setLastRemoved] = useState<{
     deal: Deal;
@@ -287,6 +289,7 @@ export default function Pipeline() {
   const scrollLeftRef = useRef(0);
   const isLoadedRef = useRef(false);
   const saveTimeoutRef = useRef<number | null>(null);
+  const openedFromLinkRef = useRef(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 3 } }));
 
   useEffect(() => {
@@ -417,6 +420,39 @@ export default function Pipeline() {
     return null;
   };
 
+  const handleCopyLink = async (dealId: string) => {
+    const url = `${window.location.origin}/pipeline?task=${encodeURIComponent(dealId)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const fallback = document.createElement("textarea");
+      fallback.value = url;
+      document.body.appendChild(fallback);
+      fallback.select();
+      document.execCommand("copy");
+      document.body.removeChild(fallback);
+    }
+  };
+
+  useEffect(() => {
+    if (openedFromLinkRef.current) {
+      return;
+    }
+    if (!columns.length) {
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    const taskId = params.get("task");
+    if (!taskId) {
+      openedFromLinkRef.current = true;
+      return;
+    }
+    const deal = findDeal(taskId);
+    if (deal) {
+      setViewingDeal(deal);
+    }
+    openedFromLinkRef.current = true;
+  }, [columns]);
   const getDealOwnerLabel = (deal: Deal) => {
     const labels = getUserLabels(deal.responsibleIds);
     if (labels.length) {
@@ -446,6 +482,14 @@ export default function Pipeline() {
 
   const handleEditClose = () => {
     setEditingDeal(null);
+  };
+
+  const handleViewOpen = (deal: Deal) => {
+    setViewingDeal(deal);
+  };
+
+  const handleViewClose = () => {
+    setViewingDeal(null);
   };
 
   const handleEditSave = () => {
@@ -1055,7 +1099,7 @@ export default function Pipeline() {
                   <SortableColumn
                     key={column.id}
                     column={column}
-                    onEdit={handleEditOpen}
+                    onEdit={handleViewOpen}
                     onEditColumn={handleColumnEditOpen}
                     onAddDeal={handleAddDeal}
                     categoryMap={categoryMap}
@@ -1157,6 +1201,132 @@ export default function Pipeline() {
           </DragOverlay>
         </DndContext>
       </Stack>
+
+      <Dialog open={Boolean(viewingDeal)} onClose={handleViewClose} maxWidth="sm" fullWidth>
+        <DialogContent>
+          <Stack spacing={2.5}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography variant="h6">{viewingDeal?.name || "-"}</Typography>
+                {viewingDeal ? (
+                  <Tooltip title="Copiar link" placement="top">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleCopyLink(viewingDeal.id)}
+                      sx={{
+                        color: "text.secondary",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                      }}
+                    >
+                      <LinkRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                ) : null}
+              </Box>
+              <IconButton onClick={handleViewClose} sx={{ color: "text.secondary" }}>
+                <CloseRoundedIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            {taskFieldSettings.value ? (
+              <Stack spacing={0.5}>
+                <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+                  Valor
+                </Typography>
+                <Typography variant="body1">{viewingDeal?.value || "-"}</Typography>
+              </Stack>
+            ) : null}
+            <Stack spacing={0.5}>
+              <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+                Responsaveis
+              </Typography>
+              <Typography variant="body1">
+                {viewingDeal
+                  ? getUserLabels(viewingDeal.responsibleIds).join(", ") || viewingDeal.owner
+                  : "-"}
+              </Typography>
+            </Stack>
+            <Stack spacing={0.5}>
+              <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+                Pessoas na tarefa
+              </Typography>
+              <Typography variant="body1">
+                {viewingDeal ? getUserLabels(viewingDeal.workerIds).join(", ") || "-" : "-"}
+              </Typography>
+            </Stack>
+            {taskFieldSettings.link ? (
+              <Stack spacing={0.5}>
+                <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+                  Link
+                </Typography>
+                <Typography variant="body1">{viewingDeal?.link || "-"}</Typography>
+              </Stack>
+            ) : null}
+            <Stack spacing={0.5}>
+              <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+                Categorias
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {viewingDeal?.categoryIds?.length
+                  ? viewingDeal.categoryIds.map((id) => {
+                      const cat = categoryMap.get(id);
+                      if (!cat) {
+                        return null;
+                      }
+                      return (
+                        <Chip
+                          key={id}
+                          label={cat.name}
+                          sx={{
+                            color: "#e6edf3",
+                            backgroundColor: darkenColor(cat.color, 0.5),
+                          }}
+                        />
+                      );
+                    })
+                  : (
+                    <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                      Sem categoria
+                    </Typography>
+                  )}
+              </Stack>
+            </Stack>
+            <Stack spacing={0.5}>
+              <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+                Descricao
+              </Typography>
+              <Box
+                sx={{
+                  borderRadius: "var(--radius-card)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  backgroundColor: "rgba(10, 16, 23, 0.75)",
+                  p: 2,
+                  minHeight: 120,
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: viewingDeal?.descriptionHtml || viewingDeal?.comments || "",
+                }}
+              />
+            </Stack>
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  if (!viewingDeal) {
+                    return;
+                  }
+                  handleEditOpen(viewingDeal);
+                  setViewingDeal(null);
+                }}
+              >
+                Editar
+              </Button>
+              <Button variant="contained" onClick={handleViewClose}>
+                Fechar
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={Boolean(editingDeal)} onClose={handleEditClose} maxWidth="sm" fullWidth>
         <DialogContent>
@@ -1789,9 +1959,12 @@ function SortableDeal({
       onClick={() => onEdit(deal)}
       data-draggable
     >
-      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-        {deal.name}
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          {deal.name}
+        </Typography>
+        
+      </Box>
       <Typography variant="caption" sx={{ color: "text.secondary" }}>
         {ownerLabel}
       </Typography>
