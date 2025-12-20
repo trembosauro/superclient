@@ -13,8 +13,13 @@ import {
   Alert,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
+import Placeholder from "@tiptap/extension-placeholder";
 import { Link as RouterLink } from "wouter";
 import { nanoid } from "nanoid";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
@@ -22,6 +27,15 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import DragIndicatorRoundedIcon from "@mui/icons-material/DragIndicatorRounded";
+import FormatBoldRoundedIcon from "@mui/icons-material/FormatBoldRounded";
+import FormatItalicRoundedIcon from "@mui/icons-material/FormatItalicRounded";
+import FormatListBulletedRoundedIcon from "@mui/icons-material/FormatListBulletedRounded";
+import FormatListNumberedRoundedIcon from "@mui/icons-material/FormatListNumberedRounded";
+import FormatQuoteRoundedIcon from "@mui/icons-material/FormatQuoteRounded";
+import LooksOneRoundedIcon from "@mui/icons-material/LooksOneRounded";
+import LooksTwoRoundedIcon from "@mui/icons-material/LooksTwoRounded";
+import Looks3RoundedIcon from "@mui/icons-material/Looks3Rounded";
+import BackspaceRoundedIcon from "@mui/icons-material/BackspaceRounded";
 import api from "../api";
 import {
   DndContext,
@@ -48,7 +62,7 @@ type Deal = {
   owner: string;
   link?: string;
   comments?: string;
-  description?: string;
+  descriptionHtml?: string;
   responsibleIds?: number[];
   workerIds?: number[];
   categoryId?: string;
@@ -359,7 +373,8 @@ export default function Pipeline() {
   const getUserLabels = (ids?: number[]) =>
     (ids || []).map((id) => formatUserLabel(userMap.get(id))).filter(Boolean);
 
-  const stripHtml = (value: string) => value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const stripHtml = (value: string) =>
+    value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
   const findColumnByCard = (cardId: string) =>
     columns.find((column) => column.deals.some((deal) => deal.id === cardId));
@@ -393,7 +408,7 @@ export default function Pipeline() {
     setEditName(deal.name);
     setEditValue(deal.value);
     setEditLink(deal.link || "");
-    setEditDescription(deal.description || deal.comments || "");
+    setEditDescription(deal.descriptionHtml || deal.comments || "");
     setEditResponsibleIds(deal.responsibleIds || []);
     setEditWorkerIds(deal.workerIds || []);
     setEditOwnerFallback(deal.owner);
@@ -423,7 +438,7 @@ export default function Pipeline() {
                 owner: ownerLabel.trim() || deal.owner,
                 link: editLink.trim(),
                 comments: stripHtml(editDescription),
-                description: editDescription,
+                descriptionHtml: editDescription,
                 responsibleIds: editResponsibleIds,
                 workerIds: editWorkerIds,
                 categoryId: editCategoryIds[0] || "",
@@ -817,7 +832,7 @@ export default function Pipeline() {
                     owner: "Responsavel",
                     responsibleIds: [],
                     workerIds: [],
-                    description: "",
+                    descriptionHtml: "",
                     categoryIds: [],
                     categoryId: "",
                   },
@@ -1199,7 +1214,7 @@ export default function Pipeline() {
               <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
                 Descricao
               </Typography>
-              <MarkdownEditor
+              <RichTextEditor
                 value={editDescription}
                 onChange={setEditDescription}
               />
@@ -1710,183 +1725,185 @@ function SortableColumnRow({
   );
 }
 
-function MarkdownEditor({
+function RichTextEditor({
   value,
   onChange,
 }: {
   value: string;
   onChange: (nextValue: string) => void;
 }) {
-  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+      }),
+      Image,
+      Placeholder.configure({
+        placeholder: "Escreva a descricao da tarefa...",
+      }),
+    ],
+    content: value,
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+    editorProps: {
+      handlePaste: (_view, event) => {
+        const items = Array.from(event.clipboardData?.items || []);
+        const imageItem = items.find((item) => item.type.startsWith("image/"));
+        if (!imageItem) {
+          return false;
+        }
+        const file = imageItem.getAsFile();
+        if (!file) {
+          return false;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          const src = String(reader.result || "");
+          editor?.chain().focus().setImage({ src }).run();
+        };
+        reader.readAsDataURL(file);
+        return true;
+      },
+    },
+  });
 
-  const updateValue = (nextValue: string) => {
-    onChange(nextValue);
-  };
-
-  const wrapSelection = (before: string, after = before) => {
-    const input = inputRef.current;
-    if (!input) {
+  useEffect(() => {
+    if (!editor) {
       return;
     }
-    const start = input.selectionStart || 0;
-    const end = input.selectionEnd || 0;
-    const selected = value.slice(start, end) || "texto";
-    const nextValue = `${value.slice(0, start)}${before}${selected}${after}${value.slice(
-      end
-    )}`;
-    updateValue(nextValue);
-    const cursor = start + before.length + selected.length + after.length;
-    requestAnimationFrame(() => {
-      input.focus();
-      input.setSelectionRange(cursor, cursor);
-    });
-  };
+    if (editor.getHTML() !== value) {
+      editor.commands.setContent(value || "", false);
+    }
+  }, [editor, value]);
 
-  const prefixLines = (prefix: string) => {
-    const input = inputRef.current;
-    if (!input) {
-      return;
-    }
-    const start = input.selectionStart || 0;
-    const end = input.selectionEnd || 0;
-    const before = value.slice(0, start);
-    const selection = value.slice(start, end) || "texto";
-    const after = value.slice(end);
-    const nextSelection = selection
-      .split("\n")
-      .map((line) => `${prefix}${line}`)
-      .join("\n");
-    const nextValue = `${before}${nextSelection}${after}`;
-    updateValue(nextValue);
-    const cursor = start + nextSelection.length;
-    requestAnimationFrame(() => {
-      input.focus();
-      input.setSelectionRange(cursor, cursor);
-    });
-  };
-
-  const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
-    const items = Array.from(event.clipboardData.items);
-    const imageItem = items.find((item) => item.type.startsWith("image/"));
-    if (!imageItem) {
-      return;
-    }
-    event.preventDefault();
-    const file = imageItem.getAsFile();
-    if (!file) {
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const input = inputRef.current;
-      if (!input) {
-        return;
-      }
-      const start = input.selectionStart || 0;
-      const end = input.selectionEnd || 0;
-      const imageTag = `![imagem](${String(reader.result || "")})`;
-      const nextValue = `${value.slice(0, start)}${imageTag}${value.slice(end)}`;
-      updateValue(nextValue);
-      const cursor = start + imageTag.length;
-      requestAnimationFrame(() => {
-        input.focus();
-        input.setSelectionRange(cursor, cursor);
-      });
-    };
-    reader.readAsDataURL(file);
+  const iconButtonProps = {
+    size: "small" as const,
+    sx: {
+      border: "1px solid rgba(255,255,255,0.12)",
+      backgroundColor: "rgba(7, 9, 13, 0.6)",
+      "&:hover": { backgroundColor: "rgba(7, 9, 13, 0.8)" },
+    },
   };
 
   return (
     <Stack spacing={1}>
       <Stack direction="row" spacing={1} flexWrap="wrap">
-        <Button
-          variant="outlined"
-          size="small"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => wrapSelection("**")}
-        >
-          Bold
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => wrapSelection("*")}
-        >
-          Italic
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => wrapSelection("__")}
-        >
-          Underline
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => prefixLines("# ")}
-        >
-          H1
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => prefixLines("## ")}
-        >
-          H2
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => prefixLines("### ")}
-        >
-          H3
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => prefixLines("- ")}
-        >
-          Lista
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => prefixLines("1. ")}
-        >
-          Numeros
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => prefixLines("> ")}
-        >
-          Quote
-        </Button>
+        <Tooltip title="Negrito" placement="top">
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => editor?.chain().focus().toggleBold().run()}
+            color={editor?.isActive("bold") ? "primary" : "default"}
+            aria-label="Negrito"
+          >
+            <FormatBoldRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Italico" placement="top">
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => editor?.chain().focus().toggleItalic().run()}
+            color={editor?.isActive("italic") ? "primary" : "default"}
+            aria-label="Italico"
+          >
+            <FormatItalicRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Titulo 1" placement="top">
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
+            color={editor?.isActive("heading", { level: 1 }) ? "primary" : "default"}
+            aria-label="Titulo 1"
+          >
+            <LooksOneRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Titulo 2" placement="top">
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+            color={editor?.isActive("heading", { level: 2 }) ? "primary" : "default"}
+            aria-label="Titulo 2"
+          >
+            <LooksTwoRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Titulo 3" placement="top">
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
+            color={editor?.isActive("heading", { level: 3 }) ? "primary" : "default"}
+            aria-label="Titulo 3"
+          >
+            <Looks3RoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Lista" placement="top">
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => editor?.chain().focus().toggleBulletList().run()}
+            color={editor?.isActive("bulletList") ? "primary" : "default"}
+            aria-label="Lista"
+          >
+            <FormatListBulletedRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Lista numerada" placement="top">
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+            color={editor?.isActive("orderedList") ? "primary" : "default"}
+            aria-label="Lista numerada"
+          >
+            <FormatListNumberedRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Citação" placement="top">
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+            color={editor?.isActive("blockquote") ? "primary" : "default"}
+            aria-label="Citação"
+          >
+            <FormatQuoteRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Limpar formatacao" placement="top">
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()}
+            aria-label="Limpar formatacao"
+          >
+            <BackspaceRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </Stack>
-      <TextField
-        multiline
-        minRows={6}
-        fullWidth
-        value={value}
-        onChange={(event) => updateValue(event.target.value)}
-        onPaste={handlePaste}
-        inputRef={inputRef}
-        placeholder="Escreva a descricao da tarefa..."
+      <Box
         sx={{
-          "& .MuiOutlinedInput-root": {
-            backgroundColor: "rgba(10, 16, 23, 0.75)",
+          borderRadius: "var(--radius-card)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          backgroundColor: "rgba(10, 16, 23, 0.75)",
+          "& .tiptap": {
+            minHeight: 180,
+            outline: "none",
+            padding: "16px",
+          },
+          "& .tiptap h1": { fontSize: "1.25rem", fontWeight: 700 },
+          "& .tiptap h2": { fontSize: "1.1rem", fontWeight: 700 },
+          "& .tiptap h3": { fontSize: "1rem", fontWeight: 700 },
+          "& .tiptap img": { maxWidth: "100%", borderRadius: "12px" },
+          "& .tiptap p.is-editor-empty:first-of-type::before": {
+            content: "attr(data-placeholder)",
+            color: "rgba(230, 237, 243, 0.5)",
+            float: "left",
+            height: 0,
+            pointerEvents: "none",
           },
         }}
-      />
+      >
+        <EditorContent editor={editor} />
+      </Box>
     </Stack>
   );
 }
