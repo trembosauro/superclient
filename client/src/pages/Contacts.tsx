@@ -111,6 +111,109 @@ const emptyContact = (): Contact => ({
   categoryIds: [],
 });
 
+const sampleContacts: Contact[] = [
+  {
+    id: "contact-ana-mendes",
+    name: "Ana Mendes",
+    birthday: "1992-04-18",
+    phones: ["11988887777", "1133445566"],
+    emails: ["ana.mendes@exemplo.com", "ana@agenciaflux.com"],
+    addresses: ["Rua Augusta, 1200, Sao Paulo, SP", "Av. Paulista, 1578, Sao Paulo, SP"],
+    comments: ["Preferencia por contato via WhatsApp.", "Cliente ativa desde 2021."],
+    categoryIds: ["cat-cliente", "cat-vip"],
+  },
+  {
+    id: "contact-bruno-silva",
+    name: "Bruno Silva",
+    birthday: "1988-11-02",
+    phones: ["21999998888"],
+    emails: ["bruno.silva@techpark.io"],
+    addresses: ["Rua Visconde de Piraja, 330, Rio de Janeiro, RJ"],
+    comments: ["Responsavel por compras internas."],
+    categoryIds: ["cat-trabalho", "cat-equipe"],
+  },
+  {
+    id: "contact-carla-souza",
+    name: "Carla Souza",
+    birthday: "1995-07-09",
+    phones: ["31977776666"],
+    emails: ["carla.souza@exemplo.com", "carla@parceirosul.com"],
+    addresses: ["Av. Afonso Pena, 900, Belo Horizonte, MG"],
+    comments: ["Parceira de eventos regionais."],
+    categoryIds: ["cat-parceiro"],
+  },
+  {
+    id: "contact-diego-almeida",
+    name: "Diego Almeida",
+    birthday: "1985-01-27",
+    phones: ["61966665555", "6133221100"],
+    emails: ["diego.almeida@fornecedoresbr.com"],
+    addresses: ["SCS Quadra 08, Brasilia, DF"],
+    comments: ["Fornecedor de impressos e brindes."],
+    categoryIds: ["cat-fornecedor"],
+  },
+  {
+    id: "contact-elis-regis",
+    name: "Elis Regis",
+    birthday: "1990-09-14",
+    phones: ["71955554444"],
+    emails: ["elis.regis@exemplo.com"],
+    addresses: ["Av. Oceania, 210, Salvador, BA"],
+    comments: ["Amiga da equipe de marketing."],
+    categoryIds: ["cat-amigos"],
+  },
+  {
+    id: "contact-felipe-rocha",
+    name: "Felipe Rocha",
+    birthday: "1997-03-30",
+    phones: ["51944443333"],
+    emails: ["felipe@startupazul.com"],
+    addresses: ["Rua Padre Chagas, 75, Porto Alegre, RS"],
+    comments: ["Prospect em negociacao para Q3."],
+    categoryIds: ["cat-prospect"],
+  },
+  {
+    id: "contact-gabriela-lopes",
+    name: "Gabriela Lopes",
+    birthday: "1993-12-05",
+    phones: ["47933332222"],
+    emails: ["gabriela@clientesul.com"],
+    addresses: ["Rua XV de Novembro, 410, Blumenau, SC"],
+    comments: ["Cliente com foco em expansao."],
+    categoryIds: ["cat-cliente"],
+  },
+  {
+    id: "contact-henrique-santos",
+    name: "Henrique Santos",
+    birthday: "1989-06-21",
+    phones: ["11922221111"],
+    emails: ["henrique.santos@suporteprime.com"],
+    addresses: ["Rua Funchal, 411, Sao Paulo, SP"],
+    comments: ["Contato de suporte nivel 2."],
+    categoryIds: ["cat-suporte"],
+  },
+  {
+    id: "contact-iris-moura",
+    name: "Iris Moura",
+    birthday: "1998-10-10",
+    phones: ["61911112222"],
+    emails: ["iris.moura@exemplo.com"],
+    addresses: ["CLN 210, Brasilia, DF"],
+    comments: ["Familia - contato de emergencia."],
+    categoryIds: ["cat-familia"],
+  },
+  {
+    id: "contact-joao-pereira",
+    name: "Joao Pereira",
+    birthday: "1983-02-12",
+    phones: ["21900001111"],
+    emails: ["joao.pereira@financeirot.com"],
+    addresses: ["Rua do Ouvidor, 50, Rio de Janeiro, RJ"],
+    comments: ["Financeiro externo."],
+    categoryIds: ["cat-financeiro"],
+  },
+];
+
 export default function Contacts() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -131,6 +234,7 @@ export default function Contacts() {
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (!stored) {
+      setContacts(sampleContacts);
       isLoadedRef.current = true;
       return;
     }

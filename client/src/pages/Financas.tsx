@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Box,
   Button,
   Chip,
@@ -30,7 +27,6 @@ import {
 } from "@mui/material";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from "recharts";
 import api from "../api";
 
@@ -245,7 +241,6 @@ export default function Financas() {
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState("");
   const [editingCategoryColor, setEditingCategoryColor] = useState(DEFAULT_COLORS[0]);
-  const [expanded, setExpanded] = useState<"expense" | false>("expense");
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const isLoadedRef = useRef(false);
@@ -816,61 +811,41 @@ export default function Financas() {
               </IconButton>
             </Box>
 
-            <Accordion
-              expanded={expanded === "expense"}
-              onChange={(_, isExpanded) => setExpanded(isExpanded ? "expense" : false)}
-              disableGutters
-              elevation={0}
-              sx={{
-                backgroundColor: "transparent",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: 2,
-                "&:before": { display: "none" },
-              }}
-            >
-              <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  Adicionar gasto
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Stack spacing={2}>
-                  <TextField
-                    label="Titulo do gasto"
-                    fullWidth
-                    value={title}
-                    onChange={(event) => setTitle(event.target.value)}
-                  />
-                  <TextField
-                    label="Valor"
-                    fullWidth
-                    value={amount}
-                    onChange={(event) => setAmount(event.target.value)}
-                  />
-                  <TextField
-                    select
-                    label="Categoria"
-                    fullWidth
-                    value={categoryId}
-                    onChange={(event) => setCategoryId(event.target.value)}
-                  >
-                    {categories.map((cat) => (
-                      <MenuItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                  <TextField
-                    label="Comentario"
-                    fullWidth
-                    multiline
-                    minRows={3}
-                    value={comment}
-                    onChange={(event) => setComment(event.target.value)}
-                  />
-                </Stack>
-              </AccordionDetails>
-            </Accordion>
+            <Stack spacing={2}>
+              <TextField
+                label="Titulo do gasto"
+                fullWidth
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+              />
+              <TextField
+                label="Valor"
+                fullWidth
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+              />
+              <TextField
+                select
+                label="Categoria"
+                fullWidth
+                value={categoryId}
+                onChange={(event) => setCategoryId(event.target.value)}
+              >
+                {categories.map((cat) => (
+                  <MenuItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Comentario"
+                fullWidth
+                multiline
+                minRows={3}
+                value={comment}
+                onChange={(event) => setComment(event.target.value)}
+              />
+            </Stack>
 
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button variant="outlined" onClick={() => setOpen(false)}>
