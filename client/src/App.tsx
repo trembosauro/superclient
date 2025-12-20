@@ -35,8 +35,8 @@ const navItems = [
   { label: "Home", href: "/home" },
   { label: "Pipeline", href: "/pipeline" },
   { label: "Financas", href: "/financas" },
-  { label: "Gestao", href: "/access" },
   { label: "Contatos", href: "/contatos" },
+  { label: "Gestao", href: "/access" },
 ];
 
 function App() {
@@ -327,9 +327,22 @@ function App() {
                 gap: 2,
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              <Button
+                component={RouterLink}
+                href="/home"
+                variant="text"
+                color="inherit"
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  px: 0,
+                  minWidth: "auto",
+                  color: "text.primary",
+                  "&:hover": { backgroundColor: "transparent", color: "primary.main" },
+                }}
+              >
                 Superclient
-              </Typography>
+              </Button>
               <Box sx={{ flex: 1, display: { xs: "none", md: "flex" }, justifyContent: "center" }}>
                 <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
                   {visibleNavItems.map((item) => (
@@ -369,12 +382,20 @@ function App() {
                     component={RouterLink}
                     href="/notifications"
                     sx={{
-                      color: "primary.main",
+                      color: "rgba(34, 201, 166, 0.7)",
+                      border: isActive("/notifications")
+                        ? "1px solid rgba(34, 201, 166, 0.6)"
+                        : "1px solid transparent",
+                      backgroundColor: isActive("/notifications")
+                        ? "rgba(34, 201, 166, 0.12)"
+                        : "transparent",
+                      p: 0.5,
                       "&:hover": {
                         backgroundColor: "rgba(34, 201, 166, 0.12)",
                       },
                       "&:active": {
-                        backgroundColor: "rgba(34, 201, 166, 0.2)",
+                        backgroundColor: "rgba(34, 201, 166, 0.28)",
+                        color: "rgba(34, 201, 166, 0.9)",
                       },
                     }}
                   >
@@ -421,13 +442,21 @@ function App() {
                     component={RouterLink}
                     href="/notifications"
                     sx={{
-                      color: "primary.main",
+                      color: "rgba(34, 201, 166, 0.7)",
                       mr: 1,
+                      border: isActive("/notifications")
+                        ? "1px solid rgba(34, 201, 166, 0.6)"
+                        : "1px solid transparent",
+                      backgroundColor: isActive("/notifications")
+                        ? "rgba(34, 201, 166, 0.12)"
+                        : "transparent",
+                      p: 0.5,
                       "&:hover": {
                         backgroundColor: "rgba(34, 201, 166, 0.12)",
                       },
                       "&:active": {
-                        backgroundColor: "rgba(34, 201, 166, 0.2)",
+                        backgroundColor: "rgba(34, 201, 166, 0.28)",
+                        color: "rgba(34, 201, 166, 0.9)",
                       },
                     }}
                   >
