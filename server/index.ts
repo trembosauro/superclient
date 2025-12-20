@@ -611,6 +611,13 @@ app.patch("/api/access/modules/:id", requireAuth, (req, res) => {
   res.json({ module: { ...updated, enabled: Boolean(updated.enabled) } });
 });
 
+app.get("/api/access/users", requireAuth, (_req, res) => {
+  const rows = db
+    .prepare("SELECT id, name, email FROM users ORDER BY id")
+    .all() as { id: number; name: string | null; email: string }[];
+  res.json({ users: rows });
+});
+
 app.get("/api/pipeline/board", requireAuth, (req, res) => {
   const row = db
     .prepare("SELECT data_json FROM pipeline_state WHERE id = 1")

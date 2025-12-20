@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Autocomplete,
   Box,
   Button,
   Chip,
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Divider,
   Dialog,
   DialogContent,
@@ -21,7 +19,6 @@ import { Link as RouterLink } from "wouter";
 import { nanoid } from "nanoid";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import DragIndicatorRoundedIcon from "@mui/icons-material/DragIndicatorRounded";
@@ -51,7 +48,11 @@ type Deal = {
   owner: string;
   link?: string;
   comments?: string;
+  description?: string;
+  responsibleIds?: number[];
+  workerIds?: number[];
   categoryId?: string;
+  categoryIds?: string[];
 };
 
 type Column = {
@@ -65,6 +66,12 @@ type Category = {
   id: string;
   name: string;
   color: string;
+};
+
+type PipelineUser = {
+  id: number;
+  name: string | null;
+  email: string;
 };
 
 const DEFAULT_COLORS = [
@@ -234,21 +241,23 @@ export default function Pipeline() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [editName, setEditName] = useState("");
   const [editValue, setEditValue] = useState("");
-  const [editOwner, setEditOwner] = useState("");
   const [editLink, setEditLink] = useState("");
-  const [editComments, setEditComments] = useState("");
-  const [editCategoryId, setEditCategoryId] = useState(defaultCategories[0]?.id || "");
+  const [editDescription, setEditDescription] = useState("");
+  const [editResponsibleIds, setEditResponsibleIds] = useState<number[]>([]);
+  const [editWorkerIds, setEditWorkerIds] = useState<number[]>([]);
+  const [editOwnerFallback, setEditOwnerFallback] = useState("");
+  const [editCategoryIds, setEditCategoryIds] = useState<string[]>([]);
   const [editingColumn, setEditingColumn] = useState<Column | null>(null);
   const [editColumnTitle, setEditColumnTitle] = useState("");
   const [editColumnDescription, setEditColumnDescription] = useState("");
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
+  const [users, setUsers] = useState<PipelineUser[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_COLORS[0]);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState("");
   const [editingCategoryColor, setEditingCategoryColor] = useState(DEFAULT_COLORS[0]);
   const [taskQuery, setTaskQuery] = useState("");
-  const [expanded, setExpanded] = useState<"category" | false>("category");
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [columnManagerOpen, setColumnManagerOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -291,6 +300,21 @@ export default function Pipeline() {
   }, []);
 
   useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const response = await api.get("/api/access/users");
+        const nextUsers = response?.data?.users;
+        if (Array.isArray(nextUsers)) {
+          setUsers(nextUsers);
+        }
+      } catch {
+        // Keep empty if the request fails.
+      }
+    };
+    void loadUsers();
+  }, []);
+
+  useEffect(() => {
     if (!isLoadedRef.current) {
       return;
     }
@@ -319,15 +343,23 @@ export default function Pipeline() {
     return map;
   }, [categories]);
 
-  useEffect(() => {
-    if (!editCategoryId) {
-      return;
+  const userMap = useMemo(() => {
+    const map = new Map<number, PipelineUser>();
+    users.forEach((user) => map.set(user.id, user));
+    return map;
+  }, [users]);
+
+  const formatUserLabel = (user?: PipelineUser) => {
+    if (!user) {
+      return "";
     }
-    if (categories.some((cat) => cat.id === editCategoryId)) {
-      return;
-    }
-    setEditCategoryId("");
-  }, [categories, editCategoryId]);
+    return user.name?.trim() ? user.name : user.email;
+  };
+
+  const getUserLabels = (ids?: number[]) =>
+    (ids || []).map((id) => formatUserLabel(userMap.get(id))).filter(Boolean);
+
+  const stripHtml = (value: string) => value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
   const findColumnByCard = (cardId: string) =>
     columns.find((column) => column.deals.some((deal) => deal.id === cardId));
@@ -342,6 +374,17 @@ export default function Pipeline() {
     return null;
   };
 
+  const getDealOwnerLabel = (deal: Deal) => {
+    const labels = getUserLabels(deal.responsibleIds);
+    if (labels.length) {
+      return labels.join(", ");
+    }
+    return deal.owner;
+  };
+
+  const selectUsersByIds = (ids: number[]) =>
+    users.filter((user) => ids.includes(user.id));
+
   const findColumn = (columnId: string) =>
     columns.find((column) => column.id === columnId) || null;
 
@@ -349,23 +392,25 @@ export default function Pipeline() {
     setEditingDeal(deal);
     setEditName(deal.name);
     setEditValue(deal.value);
-    setEditOwner(deal.owner);
     setEditLink(deal.link || "");
-    setEditComments(deal.comments || "");
-    setEditCategoryId(deal.categoryId || "");
+    setEditDescription(deal.description || deal.comments || "");
+    setEditResponsibleIds(deal.responsibleIds || []);
+    setEditWorkerIds(deal.workerIds || []);
+    setEditOwnerFallback(deal.owner);
+    setEditCategoryIds(deal.categoryIds || (deal.categoryId ? [deal.categoryId] : []));
     setEditingCategoryId(null);
-    setExpanded("category");
   };
 
   const handleEditClose = () => {
     setEditingDeal(null);
-    setExpanded("category");
   };
 
   const handleEditSave = () => {
     if (!editingDeal) {
       return;
     }
+    const ownerLabels = getUserLabels(editResponsibleIds);
+    const ownerLabel = ownerLabels.length ? ownerLabels.join(", ") : editOwnerFallback;
     setColumns((prev) =>
       prev.map((column) => ({
         ...column,
@@ -375,10 +420,14 @@ export default function Pipeline() {
                 ...deal,
                 name: editName.trim() || deal.name,
                 value: editValue.trim() || deal.value,
-                owner: editOwner.trim() || deal.owner,
+                owner: ownerLabel.trim() || deal.owner,
                 link: editLink.trim(),
-                comments: editComments.trim(),
-                categoryId: editCategoryId,
+                comments: stripHtml(editDescription),
+                description: editDescription,
+                responsibleIds: editResponsibleIds,
+                workerIds: editWorkerIds,
+                categoryId: editCategoryIds[0] || "",
+                categoryIds: editCategoryIds,
               }
             : deal
         ),
@@ -760,14 +809,18 @@ export default function Pipeline() {
           ? {
               ...column,
               deals: [
-                ...column.deals,
-                {
-                  id: `deal-${nextId}`,
-                  name: "Nova oportunidade",
-                  value: "R$ 0",
-                  owner: "Responsavel",
-                  categoryId: "",
-                },
+                  ...column.deals,
+                  {
+                    id: `deal-${nextId}`,
+                    name: "Nova tarefa",
+                    value: "R$ 0",
+                    owner: "Responsavel",
+                    responsibleIds: [],
+                    workerIds: [],
+                    description: "",
+                    categoryIds: [],
+                    categoryId: "",
+                  },
               ],
             }
           : column
@@ -957,6 +1010,8 @@ export default function Pipeline() {
                     onAddDeal={handleAddDeal}
                     categoryMap={categoryMap}
                     taskQuery={normalizedQuery}
+                    getDealOwnerLabel={getDealOwnerLabel}
+                    stripHtml={stripHtml}
                   />
                 ))}
                 <Paper
@@ -1036,7 +1091,7 @@ export default function Pipeline() {
                         {deal.name}
                       </Typography>
                       <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                        {deal.owner}
+                        {getDealOwnerLabel(deal)}
                       </Typography>
                       <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 600 }}>
                         {deal.value}
@@ -1054,10 +1109,7 @@ export default function Pipeline() {
         <DialogContent>
           <Stack spacing={2.5}>
             <Box>
-              <Typography variant="h6">Editar oportunidade</Typography>
-              <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                Ajuste o titulo, valor, responsavel, link e comentarios.
-              </Typography>
+              <Typography variant="h6">Editar tarefa</Typography>
             </Box>
             <TextField
               label="Titulo"
@@ -1071,11 +1123,47 @@ export default function Pipeline() {
               value={editValue}
               onChange={(event) => setEditValue(event.target.value)}
             />
-            <TextField
-              label="Responsavel"
-              fullWidth
-              value={editOwner}
-              onChange={(event) => setEditOwner(event.target.value)}
+            <Autocomplete
+              multiple
+              options={users}
+              value={selectUsersByIds(editResponsibleIds)}
+              onChange={(_, value) => setEditResponsibleIds(value.map((user) => user.id))}
+              getOptionLabel={(option) => formatUserLabel(option)}
+              noOptionsText="Nenhum usuario"
+              renderInput={(params) => (
+                <TextField {...params} label="Responsaveis" fullWidth />
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    {...getTagProps({ index })}
+                    key={option.id}
+                    label={formatUserLabel(option)}
+                    size="small"
+                  />
+                ))
+              }
+            />
+            <Autocomplete
+              multiple
+              options={users}
+              value={selectUsersByIds(editWorkerIds)}
+              onChange={(_, value) => setEditWorkerIds(value.map((user) => user.id))}
+              getOptionLabel={(option) => formatUserLabel(option)}
+              noOptionsText="Nenhum usuario"
+              renderInput={(params) => (
+                <TextField {...params} label="Pessoas na tarefa" fullWidth />
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    {...getTagProps({ index })}
+                    key={option.id}
+                    label={formatUserLabel(option)}
+                    size="small"
+                  />
+                ))
+              }
             />
             <TextField
               label="Link"
@@ -1083,64 +1171,39 @@ export default function Pipeline() {
               value={editLink}
               onChange={(event) => setEditLink(event.target.value)}
             />
-            <TextField
-              label="Comentarios"
-              fullWidth
-              multiline
-              minRows={3}
-              value={editComments}
-              onChange={(event) => setEditComments(event.target.value)}
-            />
-            <Accordion
-              expanded={expanded === "category"}
-              onChange={(_, isExpanded) => setExpanded(isExpanded ? "category" : false)}
-              disableGutters
-              elevation={0}
-              sx={{
-                backgroundColor: "transparent",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: 2,
-                "&:before": { display: "none" },
-              }}
-            >
-              <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  Categoria do card
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Autocomplete
+              multiple
+              options={categories}
+              value={categories.filter((cat) => editCategoryIds.includes(cat.id))}
+              onChange={(_, value) => setEditCategoryIds(value.map((cat) => cat.id))}
+              getOptionLabel={(option) => option.name}
+              renderInput={(params) => (
+                <TextField {...params} label="Categorias" fullWidth />
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
                   <Chip
-                    label="Sem categoria"
-                    onClick={() => setEditCategoryId("")}
+                    {...getTagProps({ index })}
+                    key={option.id}
+                    label={option.name}
+                    size="small"
                     sx={{
                       color: "#e6edf3",
-                      backgroundColor: "rgba(148, 163, 184, 0.18)",
-                      border:
-                        editCategoryId === ""
-                          ? "1px solid rgba(255,255,255,0.7)"
-                          : "1px solid transparent",
+                      backgroundColor: darkenColor(option.color, 0.5),
                     }}
                   />
-                  {categories.map((cat) => (
-                    <Chip
-                      key={cat.id}
-                      label={cat.name}
-                      onClick={() => setEditCategoryId(cat.id)}
-                      sx={{
-                        color: "#e6edf3",
-                        backgroundColor: darkenColor(cat.color, 0.5),
-                        border:
-                          editCategoryId === cat.id
-                            ? "1px solid rgba(255,255,255,0.7)"
-                            : "1px solid transparent",
-                      }}
-                    />
-                  ))}
-                </Stack>
-              </AccordionDetails>
-            </Accordion>
-
+                ))
+              }
+            />
+            <Stack spacing={1}>
+              <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+                Descricao
+              </Typography>
+              <MarkdownEditor
+                value={editDescription}
+                onChange={setEditDescription}
+              />
+            </Stack>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button color="error" variant="outlined" onClick={handleDealRemove}>
                 Remover
@@ -1431,6 +1494,8 @@ function SortableColumn({
   onAddDeal,
   categoryMap,
   taskQuery,
+  getDealOwnerLabel,
+  stripHtml,
 }: {
   column: Column;
   onEdit: (deal: Deal) => void;
@@ -1438,12 +1503,13 @@ function SortableColumn({
   onAddDeal: (columnId: string) => void;
   categoryMap: Map<string, Category>;
   taskQuery: string;
+  getDealOwnerLabel: (deal: Deal) => string;
+  stripHtml: (value: string) => string;
 }) {
   const filteredDeals = taskQuery
     ? column.deals.filter((deal) => {
-        const haystack = `${deal.name} ${deal.owner} ${deal.value} ${
-          deal.comments || ""
-        }`.toLowerCase();
+        const description = stripHtml(deal.descriptionHtml || deal.comments || "");
+        const haystack = `${deal.name} ${getDealOwnerLabel(deal)} ${deal.value} ${description}`.toLowerCase();
         return haystack.includes(taskQuery);
       })
     : column.deals;
@@ -1524,6 +1590,7 @@ function SortableColumn({
                 key={deal.id}
                 deal={deal}
                 onEdit={onEdit}
+                ownerLabel={getDealOwnerLabel(deal)}
                 category={categoryMap.get(deal.categoryId || "")}
               />
             ))}
@@ -1537,10 +1604,12 @@ function SortableColumn({
 function SortableDeal({
   deal,
   onEdit,
+  ownerLabel,
   category,
 }: {
   deal: Deal;
   onEdit: (deal: Deal) => void;
+  ownerLabel: string;
   category?: Category;
 }) {
   const dragId = cardDragId(deal.id);
@@ -1578,7 +1647,7 @@ function SortableDeal({
         {deal.name}
       </Typography>
       <Typography variant="caption" sx={{ color: "text.secondary" }}>
-        {deal.owner}
+        {ownerLabel}
       </Typography>
       <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 600 }}>
         {deal.value}
@@ -1638,5 +1707,186 @@ function SortableColumnRow({
         </IconButton>
       </Stack>
     </Paper>
+  );
+}
+
+function MarkdownEditor({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (nextValue: string) => void;
+}) {
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const updateValue = (nextValue: string) => {
+    onChange(nextValue);
+  };
+
+  const wrapSelection = (before: string, after = before) => {
+    const input = inputRef.current;
+    if (!input) {
+      return;
+    }
+    const start = input.selectionStart || 0;
+    const end = input.selectionEnd || 0;
+    const selected = value.slice(start, end) || "texto";
+    const nextValue = `${value.slice(0, start)}${before}${selected}${after}${value.slice(
+      end
+    )}`;
+    updateValue(nextValue);
+    const cursor = start + before.length + selected.length + after.length;
+    requestAnimationFrame(() => {
+      input.focus();
+      input.setSelectionRange(cursor, cursor);
+    });
+  };
+
+  const prefixLines = (prefix: string) => {
+    const input = inputRef.current;
+    if (!input) {
+      return;
+    }
+    const start = input.selectionStart || 0;
+    const end = input.selectionEnd || 0;
+    const before = value.slice(0, start);
+    const selection = value.slice(start, end) || "texto";
+    const after = value.slice(end);
+    const nextSelection = selection
+      .split("\n")
+      .map((line) => `${prefix}${line}`)
+      .join("\n");
+    const nextValue = `${before}${nextSelection}${after}`;
+    updateValue(nextValue);
+    const cursor = start + nextSelection.length;
+    requestAnimationFrame(() => {
+      input.focus();
+      input.setSelectionRange(cursor, cursor);
+    });
+  };
+
+  const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = Array.from(event.clipboardData.items);
+    const imageItem = items.find((item) => item.type.startsWith("image/"));
+    if (!imageItem) {
+      return;
+    }
+    event.preventDefault();
+    const file = imageItem.getAsFile();
+    if (!file) {
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const input = inputRef.current;
+      if (!input) {
+        return;
+      }
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const imageTag = `![imagem](${String(reader.result || "")})`;
+      const nextValue = `${value.slice(0, start)}${imageTag}${value.slice(end)}`;
+      updateValue(nextValue);
+      const cursor = start + imageTag.length;
+      requestAnimationFrame(() => {
+        input.focus();
+        input.setSelectionRange(cursor, cursor);
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <Stack spacing={1}>
+      <Stack direction="row" spacing={1} flexWrap="wrap">
+        <Button
+          variant="outlined"
+          size="small"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => wrapSelection("**")}
+        >
+          Bold
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => wrapSelection("*")}
+        >
+          Italic
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => wrapSelection("__")}
+        >
+          Underline
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => prefixLines("# ")}
+        >
+          H1
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => prefixLines("## ")}
+        >
+          H2
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => prefixLines("### ")}
+        >
+          H3
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => prefixLines("- ")}
+        >
+          Lista
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => prefixLines("1. ")}
+        >
+          Numeros
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => prefixLines("> ")}
+        >
+          Quote
+        </Button>
+      </Stack>
+      <TextField
+        multiline
+        minRows={6}
+        fullWidth
+        value={value}
+        onChange={(event) => updateValue(event.target.value)}
+        onPaste={handlePaste}
+        inputRef={inputRef}
+        placeholder="Escreva a descricao da tarefa..."
+        sx={{
+          "& .MuiOutlinedInput-root": {
+            backgroundColor: "rgba(10, 16, 23, 0.75)",
+          },
+        }}
+      />
+    </Stack>
   );
 }
