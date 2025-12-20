@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Box,
   Button,
   Dialog,
   DialogContent,
   IconButton,
   Paper,
-  Snackbar,
   Stack,
   Switch,
   TextField,
@@ -47,8 +45,6 @@ export default function Profile() {
   const [switchPassword, setSwitchPassword] = useState("");
   const [switchError, setSwitchError] = useState("");
   const [switchLoading, setSwitchLoading] = useState(false);
-  const [switchNotice, setSwitchNotice] = useState("");
-  const [switchSnackbarOpen, setSwitchSnackbarOpen] = useState(false);
   const isLoadedRef = useRef(false);
   const saveTimeoutRef = useRef<number | null>(null);
 
@@ -184,8 +180,11 @@ export default function Profile() {
       }
       persistAccount(user, token);
       window.dispatchEvent(new Event("auth-change"));
-      setSwitchNotice(`Conta alterada: ${user?.email || targetEmail}`);
-      setSwitchSnackbarOpen(true);
+      window.localStorage.setItem(
+        "sc_switch_notice",
+        `Conta alterada: ${user?.email || targetEmail}`
+      );
+      window.dispatchEvent(new Event("switch-account"));
       setSwitchDialogOpen(false);
       setSwitchPassword("");
       setSwitchEmail("");
@@ -659,8 +658,11 @@ export default function Profile() {
                             })
                           );
                           window.dispatchEvent(new Event("auth-change"));
-                          setSwitchNotice(`Conta alterada: ${account.email}`);
-                          setSwitchSnackbarOpen(true);
+                          window.localStorage.setItem(
+                            "sc_switch_notice",
+                            `Conta alterada: ${account.email}`
+                          );
+                          window.dispatchEvent(new Event("switch-account"));
                           setSwitchDialogOpen(false);
                           setLocation("/home");
                           return;
@@ -747,20 +749,6 @@ export default function Profile() {
         </DialogContent>
       </Dialog>
 
-      <Snackbar
-        open={switchSnackbarOpen}
-        autoHideDuration={2500}
-        onClose={() => setSwitchSnackbarOpen(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          severity="success"
-          onClose={() => setSwitchSnackbarOpen(false)}
-          sx={{ width: "100%" }}
-        >
-          {switchNotice}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 }

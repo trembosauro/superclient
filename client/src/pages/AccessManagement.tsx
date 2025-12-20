@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -13,12 +13,63 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import api from "../api";
+
+type RolePermissionKey =
+  | "pipeline_view"
+  | "pipeline_edit_tasks"
+  | "pipeline_edit_columns"
+  | "finance_view"
+  | "finance_edit";
+
+type RolePermissionMap = Record<RolePermissionKey, boolean>;
+
+type AccessUser = {
+  id: number;
+  name: string | null;
+  email: string;
+};
+
+const ROLE_PERMISSION_STORAGE_KEY = "sc_role_permissions";
+const USER_ROLE_STORAGE_KEY = "sc_user_roles";
 
 const roles = [
   { name: "Administrador", members: 4, color: "default" },
   { name: "Gestor", members: 12, color: "default" },
   { name: "Analista", members: 18, color: "default" },
   { name: "Leitor", members: 36, color: "default" },
+];
+
+const rolePermissionItems: Array<{
+  key: RolePermissionKey;
+  title: string;
+  description: string;
+}> = [
+  {
+    key: "pipeline_view",
+    title: "Ver pipeline",
+    description: "Permite visualizar colunas e tarefas.",
+  },
+  {
+    key: "pipeline_edit_tasks",
+    title: "Criar e editar tarefas",
+    description: "Permite criar, editar e mover tarefas.",
+  },
+  {
+    key: "pipeline_edit_columns",
+    title: "Editar colunas",
+    description: "Permite criar, renomear e reorganizar colunas.",
+  },
+  {
+    key: "finance_view",
+    title: "Ver financas",
+    description: "Permite visualizar gastos e categorias.",
+  },
+  {
+    key: "finance_edit",
+    title: "Criar e editar gastos",
+    description: "Permite adicionar, editar e remover gastos.",
+  },
 ];
 
 const modules = [
@@ -42,13 +93,9 @@ export default function AccessManagement() {
     index: number;
     nextValue: boolean;
   } | null>(null);
-  const [rolePermissions, setRolePermissions] = useState<Record<string, boolean[]>>(() => {
-    const initial: Record<string, boolean[]> = {};
-    roles.forEach((role) => {
-      initial[role.name] = modules.map(() => true);
-    });
-    return initial;
-  });
+  const [rolePermissions, setRolePermissions] = useState<Record<string, RolePermissionMap>>({});
+  const [users, setUsers] = useState<AccessUser[]>([]);
+  const [userRoles, setUserRoles] = useState<Record<string, string>>({});
   const toggleModule = (index: number) => {
     setModuleStates((prev) => {
       const next = [...prev];
@@ -56,6 +103,73 @@ export default function AccessManagement() {
       return next;
     });
   };
+
+  const defaultRolePermissions = useMemo(() => {
+    const defaultMap: Record<string, RolePermissionMap> = {};
+    roles.forEach((role) => {
+      const permissions = rolePermissionItems.reduce((acc, item) => {
+        acc[item.key] = true;
+        return acc;
+      }, {} as RolePermissionMap);
+      defaultMap[role.name] = permissions;
+    });
+    return defaultMap;
+  }, []);
+
+  useEffect(() => {
+    const storedRoles = window.localStorage.getItem(ROLE_PERMISSION_STORAGE_KEY);
+    if (storedRoles) {
+      try {
+        const parsed = JSON.parse(storedRoles) as Record<string, RolePermissionMap>;
+        if (parsed) {
+          setRolePermissions({ ...defaultRolePermissions, ...parsed });
+        }
+      } catch {
+        window.localStorage.removeItem(ROLE_PERMISSION_STORAGE_KEY);
+        setRolePermissions(defaultRolePermissions);
+      }
+    } else {
+      setRolePermissions(defaultRolePermissions);
+    }
+
+    const storedUserRoles = window.localStorage.getItem(USER_ROLE_STORAGE_KEY);
+    if (storedUserRoles) {
+      try {
+        const parsed = JSON.parse(storedUserRoles) as Record<string, string>;
+        if (parsed) {
+          setUserRoles(parsed);
+        }
+      } catch {
+        window.localStorage.removeItem(USER_ROLE_STORAGE_KEY);
+      }
+    }
+  }, [defaultRolePermissions]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      ROLE_PERMISSION_STORAGE_KEY,
+      JSON.stringify(rolePermissions)
+    );
+  }, [rolePermissions]);
+
+  useEffect(() => {
+    window.localStorage.setItem(USER_ROLE_STORAGE_KEY, JSON.stringify(userRoles));
+  }, [userRoles]);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const response = await api.get("/api/access/users");
+        const nextUsers = response?.data?.users;
+        if (Array.isArray(nextUsers)) {
+          setUsers(nextUsers);
+        }
+      } catch {
+        setUsers([]);
+      }
+    };
+    void loadUsers();
+  }, []);
 
   const requestModuleToggle = (index: number) => {
     setModuleConfirm({ index, nextValue: !moduleStates[index] });
@@ -79,10 +193,21 @@ export default function AccessManagement() {
       return;
     }
     setRolePermissions((prev) => {
-      const current = prev[activeRole] || modules.map(() => true);
-      const next = [...current];
-      next[index] = !next[index];
-      return { ...prev, [activeRole]: next };
+      const current = prev[activeRole] || defaultRolePermissions[activeRole];
+      if (!current) {
+        return prev;
+      }
+      const key = rolePermissionItems[index]?.key;
+      if (!key) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [activeRole]: {
+          ...current,
+          [key]: !current[key],
+        },
+      };
     });
   };
 
@@ -140,6 +265,72 @@ export default function AccessManagement() {
                 </Paper>
               ))}
             </Stack>
+          </Stack>
+        </Paper>
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 3, md: 4 },
+            border: "1px solid rgba(255,255,255,0.1)",
+            backgroundColor: "rgba(15, 23, 32, 0.9)",
+          }}
+        >
+          <Stack spacing={2.5}>
+            <Typography variant="h6">Usuarios e papeis</Typography>
+            {users.length === 0 ? (
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                Nenhum usuario encontrado.
+              </Typography>
+            ) : (
+              <Stack spacing={1.5}>
+                {users.map((user) => (
+                  <Paper
+                    key={user.id}
+                    elevation={0}
+                    sx={{
+                      p: 2,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      backgroundColor: "rgba(10, 16, 23, 0.7)",
+                    }}
+                  >
+                    <Stack
+                      direction={{ xs: "column", md: "row" }}
+                      spacing={2}
+                      alignItems={{ xs: "flex-start", md: "center" }}
+                      justifyContent="space-between"
+                    >
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          {user.name || "Usuario"}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                          {user.email}
+                        </Typography>
+                      </Box>
+                      <TextField
+                        select
+                        label="Papel"
+                        value={userRoles[user.email] || "Administrador"}
+                        onChange={(event) =>
+                          setUserRoles((prev) => ({
+                            ...prev,
+                            [user.email]: event.target.value,
+                          }))
+                        }
+                        sx={{ minWidth: 200 }}
+                      >
+                        {roles.map((role) => (
+                          <MenuItem key={role.name} value={role.name}>
+                            {role.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
+            )}
           </Stack>
         </Paper>
 
@@ -224,9 +415,9 @@ export default function AccessManagement() {
                 </Typography>
               </Box>
               <Stack spacing={1.5}>
-                {modules.map((module, index) => (
+                {rolePermissionItems.map((permission, index) => (
                   <Paper
-                    key={module.name}
+                    key={permission.key}
                     elevation={0}
                     onClick={() => toggleRolePermission(index)}
                     sx={{
@@ -246,12 +437,12 @@ export default function AccessManagement() {
                         }}
                       >
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {module.name}
+                          {permission.title}
                         </Typography>
                         <Switch
                           checked={
                             activeRole
-                              ? rolePermissions[activeRole]?.[index] ?? true
+                              ? rolePermissions[activeRole]?.[permission.key] ?? true
                               : true
                           }
                           onChange={() => toggleRolePermission(index)}
@@ -260,7 +451,7 @@ export default function AccessManagement() {
                         />
                       </Box>
                       <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                        {module.description}
+                        {permission.description}
                       </Typography>
                     </Stack>
                   </Paper>

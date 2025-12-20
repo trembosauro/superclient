@@ -13,6 +13,8 @@ import {
   Stack,
   Typography,
   Badge,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
@@ -50,6 +52,8 @@ function App() {
     finance: true,
   });
   const [hasNotifications, setHasNotifications] = useState(false);
+  const [switchNotice, setSwitchNotice] = useState("");
+  const [switchSnackbarOpen, setSwitchSnackbarOpen] = useState(false);
 
   useEffect(() => {
     const syncAuth = async () => {
@@ -129,10 +133,21 @@ function App() {
     window.addEventListener("contacts-change", handleContactsChange);
     computeNotifications();
 
+    const handleSwitchAccount = () => {
+      const notice = window.localStorage.getItem("sc_switch_notice");
+      if (notice) {
+        setSwitchNotice(notice);
+        setSwitchSnackbarOpen(true);
+        window.localStorage.removeItem("sc_switch_notice");
+      }
+    };
+    window.addEventListener("switch-account", handleSwitchAccount);
+
     return () => {
       window.removeEventListener("auth-change", handleAuthChange);
       window.removeEventListener("prefs-change", handlePrefsChange);
       window.removeEventListener("contacts-change", handleContactsChange);
+      window.removeEventListener("switch-account", handleSwitchAccount);
     };
   }, []);
 
@@ -624,6 +639,21 @@ function App() {
           </Box>
         </Box>
       </Box>
+
+      <Snackbar
+        open={switchSnackbarOpen}
+        autoHideDuration={2500}
+        onClose={() => setSwitchSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="success"
+          onClose={() => setSwitchSnackbarOpen(false)}
+          sx={{ width: "100%" }}
+        >
+          {switchNotice}
+        </Alert>
+      </Snackbar>
 
     </ThemeProvider>
   );

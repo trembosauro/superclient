@@ -22,7 +22,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
-import { Link as RouterLink } from "wouter";
+import { Link as RouterLink, useLocation } from "wouter";
 import { nanoid } from "nanoid";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
@@ -66,8 +66,8 @@ type Deal = {
   link?: string;
   comments?: string;
   descriptionHtml?: string;
-  responsibleIds?: number[];
-  workerIds?: number[];
+  responsibleIds?: string[];
+  workerIds?: string[];
   categoryId?: string;
   categoryIds?: string[];
 };
@@ -89,6 +89,19 @@ type PipelineUser = {
   id: number;
   name: string | null;
   email: string;
+};
+
+type Contact = {
+  id: string;
+  name: string;
+  emails: string[];
+};
+
+type PersonOption = {
+  id: string;
+  name: string;
+  email?: string;
+  type: "user" | "contact";
 };
 
 const DEFAULT_COLORS = [
@@ -390,9 +403,33 @@ const darkenColor = (value: string, factor: number) => {
   return `rgb(${next(r)}, ${next(g)}, ${next(b)})`;
 };
 
-const normalizeColumns = (incoming: Column[]) => incoming;
+const normalizePersonIds = (ids?: Array<number | string>) => {
+  if (!ids) {
+    return [];
+  }
+  return ids.map((id) => {
+    if (typeof id === "number") {
+      return `user:${id}`;
+    }
+    if (id.startsWith("user:") || id.startsWith("contact:")) {
+      return id;
+    }
+    return `user:${id}`;
+  });
+};
+
+const normalizeColumns = (incoming: Column[]) =>
+  incoming.map((column) => ({
+    ...column,
+    deals: column.deals.map((deal) => ({
+      ...deal,
+      responsibleIds: normalizePersonIds(deal.responsibleIds as Array<number | string>),
+      workerIds: normalizePersonIds(deal.workerIds as Array<number | string>),
+    })),
+  }));
 
 export default function Pipeline() {
+  const [, setLocation] = useLocation();
   const [columns, setColumns] = useState<Column[]>(() => defaultColumns);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [viewingDeal, setViewingDeal] = useState<Deal | null>(null);
@@ -407,8 +444,8 @@ export default function Pipeline() {
   const [editValue, setEditValue] = useState("");
   const [editLink, setEditLink] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [editResponsibleIds, setEditResponsibleIds] = useState<number[]>([]);
-  const [editWorkerIds, setEditWorkerIds] = useState<number[]>([]);
+  const [editResponsibleIds, setEditResponsibleIds] = useState<string[]>([]);
+  const [editWorkerIds, setEditWorkerIds] = useState<string[]>([]);
   const [editOwnerFallback, setEditOwnerFallback] = useState("");
   const [editCategoryIds, setEditCategoryIds] = useState<string[]>([]);
   const [editingColumn, setEditingColumn] = useState<Column | null>(null);
@@ -416,6 +453,7 @@ export default function Pipeline() {
   const [editColumnDescription, setEditColumnDescription] = useState("");
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [users, setUsers] = useState<PipelineUser[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [taskFieldSettingsOpen, setTaskFieldSettingsOpen] = useState(false);
   const [taskFieldSettings, setTaskFieldSettings] = useState({
     value: false,
@@ -430,6 +468,14 @@ export default function Pipeline() {
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [columnManagerOpen, setColumnManagerOpen] = useState(false);
   const [newDealId, setNewDealId] = useState<string | null>(null);
+  const [removeDealOpen, setRemoveDealOpen] = useState(false);
+  const [permissions, setPermissions] = useState(() => ({
+    pipeline_view: true,
+    pipeline_edit_tasks: true,
+    pipeline_edit_columns: true,
+    finance_view: true,
+    finance_edit: true,
+  }));
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef(0);
@@ -494,6 +540,31 @@ export default function Pipeline() {
   }, []);
 
   useEffect(() => {
+    const loadContacts = () => {
+      const stored = window.localStorage.getItem("contacts_v1");
+      if (!stored) {
+        setContacts([]);
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stored) as Contact[];
+        if (Array.isArray(parsed)) {
+          setContacts(parsed);
+        }
+      } catch {
+        window.localStorage.removeItem("contacts_v1");
+        setContacts([]);
+      }
+    };
+    loadContacts();
+    const handleContactsChange = () => loadContacts();
+    window.addEventListener("contacts-change", handleContactsChange);
+    return () => {
+      window.removeEventListener("contacts-change", handleContactsChange);
+    };
+  }, []);
+
+  useEffect(() => {
     const stored = window.localStorage.getItem("sc_task_fields");
     if (!stored) {
       return;
@@ -507,6 +578,29 @@ export default function Pipeline() {
     } catch {
       window.localStorage.removeItem("sc_task_fields");
     }
+  }, []);
+
+  useEffect(() => {
+    const syncPermissions = () => {
+      try {
+        setPermissions(getStoredPermissions());
+      } catch {
+        setPermissions({
+          pipeline_view: true,
+          pipeline_edit_tasks: true,
+          pipeline_edit_columns: true,
+          finance_view: true,
+          finance_edit: true,
+        });
+      }
+    };
+    syncPermissions();
+    window.addEventListener("roles-change", syncPermissions);
+    window.addEventListener("auth-change", syncPermissions);
+    return () => {
+      window.removeEventListener("roles-change", syncPermissions);
+      window.removeEventListener("auth-change", syncPermissions);
+    };
   }, []);
 
   useEffect(() => {
@@ -531,7 +625,34 @@ export default function Pipeline() {
     };
   }, [columns, categories]);
 
+  useEffect(() => {
+    if (!permissions.pipeline_view) {
+      setLocation("/home");
+    }
+  }, [permissions.pipeline_view, setLocation]);
+
   const normalizedQuery = taskQuery.trim().toLowerCase();
+
+  const getStoredPermissions = () => {
+    const storedUser = window.localStorage.getItem("sc_user");
+    const email = storedUser ? (JSON.parse(storedUser) as { email?: string }).email : "";
+    const storedRoles = window.localStorage.getItem("sc_user_roles");
+    const userRoles = storedRoles ? (JSON.parse(storedRoles) as Record<string, string>) : {};
+    const roleName = (email && userRoles[email]) || "Administrador";
+    const storedPermissions = window.localStorage.getItem("sc_role_permissions");
+    const rolePermissions = storedPermissions
+      ? (JSON.parse(storedPermissions) as Record<string, Record<string, boolean>>)
+      : {};
+    return (
+      rolePermissions[roleName] || {
+        pipeline_view: true,
+        pipeline_edit_tasks: true,
+        pipeline_edit_columns: true,
+        finance_view: true,
+        finance_edit: true,
+      }
+    );
+  };
 
   const categoryMap = useMemo(() => {
     const map = new Map<string, Category>();
@@ -539,21 +660,37 @@ export default function Pipeline() {
     return map;
   }, [categories]);
 
-  const userMap = useMemo(() => {
-    const map = new Map<number, PipelineUser>();
-    users.forEach((user) => map.set(user.id, user));
-    return map;
-  }, [users]);
+  const personOptions = useMemo<PersonOption[]>(() => {
+    const userOptions = users.map((user) => ({
+      id: `user:${user.id}`,
+      name: user.name?.trim() ? user.name : user.email,
+      email: user.email,
+      type: "user" as const,
+    }));
+    const contactOptions = contacts.map((contact) => ({
+      id: `contact:${contact.id}`,
+      name: contact.name || contact.emails?.[0] || "Contato",
+      email: contact.emails?.[0],
+      type: "contact" as const,
+    }));
+    return [...userOptions, ...contactOptions];
+  }, [users, contacts]);
 
-  const formatUserLabel = (user?: PipelineUser) => {
-    if (!user) {
+  const personMap = useMemo(() => {
+    const map = new Map<string, PersonOption>();
+    personOptions.forEach((person) => map.set(person.id, person));
+    return map;
+  }, [personOptions]);
+
+  const formatPersonLabel = (person?: PersonOption) => {
+    if (!person) {
       return "";
     }
-    return user.name?.trim() ? user.name : user.email;
+    return person.name || person.email || "";
   };
 
-  const getUserLabels = (ids?: number[]) =>
-    (ids || []).map((id) => formatUserLabel(userMap.get(id))).filter(Boolean);
+  const getPersonLabels = (ids?: string[]) =>
+    (ids || []).map((id) => formatPersonLabel(personMap.get(id))).filter(Boolean);
 
   const stripHtml = (value: string) =>
     value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -605,7 +742,7 @@ export default function Pipeline() {
     openedFromLinkRef.current = true;
   }, [columns]);
   const getDealOwnerLabel = (deal: Deal) => {
-    const labels = getUserLabels(deal.responsibleIds);
+    const labels = getPersonLabels(deal.responsibleIds);
     if (labels.length) {
       return labels.join(", ");
     }
@@ -635,8 +772,8 @@ export default function Pipeline() {
     [visibleColumns]
   );
 
-  const selectUsersByIds = (ids: number[]) =>
-    users.filter((user) => ids.includes(user.id));
+  const selectPersonsByIds = (ids: string[]) =>
+    personOptions.filter((person) => ids.includes(person.id));
 
   const findColumn = (columnId: string) =>
     columns.find((column) => column.id === columnId) || null;
@@ -647,8 +784,8 @@ export default function Pipeline() {
     setEditValue(deal.value);
     setEditLink(deal.link || "");
     setEditDescription(deal.descriptionHtml || deal.comments || "");
-    setEditResponsibleIds(deal.responsibleIds || []);
-    setEditWorkerIds(deal.workerIds || []);
+    setEditResponsibleIds(normalizePersonIds(deal.responsibleIds as Array<number | string>));
+    setEditWorkerIds(normalizePersonIds(deal.workerIds as Array<number | string>));
     setEditOwnerFallback(deal.owner);
     setEditCategoryIds(deal.categoryIds || (deal.categoryId ? [deal.categoryId] : []));
     setEditingCategoryId(null);
@@ -688,13 +825,14 @@ export default function Pipeline() {
 
   const handleViewClose = () => {
     setViewingDeal(null);
+    setRemoveDealOpen(false);
   };
 
   const handleEditSave = () => {
     if (!editingDeal) {
       return;
     }
-    const ownerLabels = getUserLabels(editResponsibleIds);
+    const ownerLabels = getPersonLabels(editResponsibleIds);
     const ownerLabel = ownerLabels.length ? ownerLabels.join(", ") : editOwnerFallback;
     setColumns((prev) =>
       prev.map((column) => ({
@@ -1204,6 +1342,7 @@ export default function Pipeline() {
                 setCategoryDialogOpen(true);
               }}
               sx={{ textTransform: "none", fontWeight: 600 }}
+              disabled={!permissions.pipeline_edit_tasks}
             >
               Categorias
             </Button>
@@ -1211,6 +1350,7 @@ export default function Pipeline() {
               variant="outlined"
               onClick={() => setTaskFieldSettingsOpen(true)}
               sx={{ textTransform: "none", fontWeight: 600 }}
+              disabled={!permissions.pipeline_edit_tasks}
             >
               Personalizar tarefas
             </Button>
@@ -1218,6 +1358,7 @@ export default function Pipeline() {
               variant="outlined"
               onClick={() => setColumnManagerOpen(true)}
               sx={{ textTransform: "none", fontWeight: 600 }}
+              disabled={!permissions.pipeline_edit_columns}
             >
               Gerir colunas
             </Button>
@@ -1306,30 +1447,34 @@ export default function Pipeline() {
                     categoryMap={categoryMap}
                     getDealOwnerLabel={getDealOwnerLabel}
                     showValue={taskFieldSettings.value}
+                    canEditTasks={permissions.pipeline_edit_tasks}
+                    canEditColumns={permissions.pipeline_edit_columns}
                   />
                 ))}
-                <Paper
-                  elevation={0}
-                  onClick={handleAddColumn}
-                  data-draggable
-                  sx={{
-                    p: 2.5,
-                    minWidth: 280,
-                    border: "1px dashed rgba(255,255,255,0.2)",
-                    backgroundColor: "rgba(15, 23, 32, 0.6)",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Stack spacing={1} alignItems="center">
-                    <AddRoundedIcon />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      Adicionar coluna
-                    </Typography>
-                  </Stack>
-                </Paper>
+                {permissions.pipeline_edit_columns ? (
+                  <Paper
+                    elevation={0}
+                    onClick={handleAddColumn}
+                    data-draggable
+                    sx={{
+                      p: 2.5,
+                      minWidth: 280,
+                      border: "1px dashed rgba(255,255,255,0.2)",
+                      backgroundColor: "rgba(15, 23, 32, 0.6)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Stack spacing={1} alignItems="center">
+                      <AddRoundedIcon />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        Adicionar coluna
+                      </Typography>
+                    </Stack>
+                  </Paper>
+                ) : null}
               </Stack>
             </Box>
             </Box>
@@ -1468,7 +1613,7 @@ export default function Pipeline() {
               </Typography>
               <Typography variant="body1">
                 {viewingDeal
-                  ? getUserLabels(viewingDeal.responsibleIds).join(", ") || viewingDeal.owner
+                  ? getPersonLabels(viewingDeal.responsibleIds).join(", ") || viewingDeal.owner
                   : "-"}
               </Typography>
             </Stack>
@@ -1477,7 +1622,7 @@ export default function Pipeline() {
                 Pessoas na tarefa
               </Typography>
               <Typography variant="body1">
-                {viewingDeal ? getUserLabels(viewingDeal.workerIds).join(", ") || "-" : "-"}
+                {viewingDeal ? getPersonLabels(viewingDeal.workerIds).join(", ") || "-" : "-"}
               </Typography>
             </Stack>
             {taskFieldSettings.link ? (
@@ -1536,6 +1681,13 @@ export default function Pipeline() {
             </Stack>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button
+                color="error"
+                variant="outlined"
+                onClick={() => setRemoveDealOpen(true)}
+              >
+                Remover
+              </Button>
+              <Button
                 variant="outlined"
                 onClick={() => {
                   if (!viewingDeal) {
@@ -1549,6 +1701,46 @@ export default function Pipeline() {
               </Button>
               <Button variant="contained" onClick={handleViewClose}>
                 Fechar
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={removeDealOpen} onClose={() => setRemoveDealOpen(false)} maxWidth="xs" fullWidth>
+        <DialogContent>
+          <Stack spacing={2}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography variant="h6">Remover tarefa</Typography>
+              <IconButton onClick={() => setRemoveDealOpen(false)} sx={{ color: "text.secondary" }}>
+                <CloseRoundedIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Voce confirma a exclusao desta tarefa? Essa acao nao pode ser desfeita.
+            </Typography>
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button variant="outlined" onClick={() => setRemoveDealOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                color="error"
+                variant="contained"
+                onClick={() => {
+                  if (!viewingDeal) {
+                    return;
+                  }
+                  setColumns((prev) =>
+                    prev.map((column) => ({
+                      ...column,
+                      deals: column.deals.filter((deal) => deal.id !== viewingDeal.id),
+                    }))
+                  );
+                  setViewingDeal(null);
+                  setRemoveDealOpen(false);
+                }}
+              >
+                Remover
               </Button>
             </Stack>
           </Stack>
@@ -1577,10 +1769,10 @@ export default function Pipeline() {
             ) : null}
             <Autocomplete
               multiple
-              options={users}
-              value={selectUsersByIds(editResponsibleIds)}
-              onChange={(_, value) => setEditResponsibleIds(value.map((user) => user.id))}
-              getOptionLabel={(option) => formatUserLabel(option)}
+              options={personOptions}
+              value={selectPersonsByIds(editResponsibleIds)}
+              onChange={(_, value) => setEditResponsibleIds(value.map((person) => person.id))}
+              getOptionLabel={(option) => formatPersonLabel(option)}
               noOptionsText="Nenhum usuario"
               renderInput={(params) => (
                 <TextField {...params} label="Responsaveis" fullWidth />
@@ -1590,7 +1782,7 @@ export default function Pipeline() {
                   <Chip
                     {...getTagProps({ index })}
                     key={option.id}
-                    label={formatUserLabel(option)}
+                    label={formatPersonLabel(option)}
                     size="small"
                   />
                 ))
@@ -1598,10 +1790,10 @@ export default function Pipeline() {
             />
             <Autocomplete
               multiple
-              options={users}
-              value={selectUsersByIds(editWorkerIds)}
-              onChange={(_, value) => setEditWorkerIds(value.map((user) => user.id))}
-              getOptionLabel={(option) => formatUserLabel(option)}
+              options={personOptions}
+              value={selectPersonsByIds(editWorkerIds)}
+              onChange={(_, value) => setEditWorkerIds(value.map((person) => person.id))}
+              getOptionLabel={(option) => formatPersonLabel(option)}
               noOptionsText="Nenhum usuario"
               renderInput={(params) => (
                 <TextField {...params} label="Pessoas na tarefa" fullWidth />
@@ -1611,7 +1803,7 @@ export default function Pipeline() {
                   <Chip
                     {...getTagProps({ index })}
                     key={option.id}
-                    label={formatUserLabel(option)}
+                    label={formatPersonLabel(option)}
                     size="small"
                   />
                 ))
@@ -2034,6 +2226,8 @@ function SortableColumn({
   categoryMap,
   getDealOwnerLabel,
   showValue,
+  canEditTasks,
+  canEditColumns,
 }: {
   column: Column;
   onEdit: (deal: Deal) => void;
@@ -2043,6 +2237,8 @@ function SortableColumn({
   categoryMap: Map<string, Category>;
   getDealOwnerLabel: (deal: Deal) => string;
   showValue: boolean;
+  canEditTasks: boolean;
+  canEditColumns: boolean;
 }) {
   const displayCount = filteredDeals.length;
   const dragId = columnDragId(column.id);
@@ -2050,6 +2246,7 @@ function SortableColumn({
     useSortable({
       id: dragId,
       data: { type: "column" },
+      disabled: !canEditColumns,
     });
 
   const style = {
@@ -2079,16 +2276,18 @@ function SortableColumn({
             alignItems: "center",
             gap: 1,
             justifyContent: "space-between",
-            cursor: "grab",
-            touchAction: "none",
+            cursor: canEditColumns ? "grab" : "default",
+            touchAction: canEditColumns ? "none" : "auto",
           }}
-          {...attributes}
-          {...listeners}
-          data-draggable
+          {...(canEditColumns ? { ...attributes, ...listeners, "data-draggable": true } : {})}
         >
           <Box
             sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer" }}
-            onClick={() => onEditColumn(column)}
+            onClick={() => {
+              if (canEditColumns) {
+                onEditColumn(column);
+              }
+            }}
           >
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
               {column.title}
@@ -2100,7 +2299,12 @@ function SortableColumn({
             </Typography>
             <IconButton
               size="small"
-              onClick={() => onAddDeal(column.id)}
+              onClick={() => {
+                if (canEditTasks) {
+                  onAddDeal(column.id);
+                }
+              }}
+              disabled={!canEditTasks}
               sx={{
                 color: "text.secondary",
                 border: "none",
@@ -2124,6 +2328,7 @@ function SortableColumn({
                 ownerLabel={getDealOwnerLabel(deal)}
                 category={categoryMap.get(deal.categoryId || "")}
                 showValue={showValue}
+                canEditTasks={canEditTasks}
               />
             ))}
           </Stack>
@@ -2139,18 +2344,21 @@ function SortableDeal({
   ownerLabel,
   showValue,
   category,
+  canEditTasks,
 }: {
   deal: Deal;
   onEdit: (deal: Deal) => void;
   ownerLabel: string;
   showValue: boolean;
   category?: Category;
+  canEditTasks: boolean;
 }) {
   const dragId = cardDragId(deal.id);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: dragId,
       data: { type: "card" },
+      disabled: !canEditTasks,
     });
 
   const style = {
@@ -2168,12 +2376,11 @@ function SortableDeal({
         borderRadius: "var(--radius-card)",
         border: "1px solid rgba(255,255,255,0.08)",
         backgroundColor: "rgba(10, 16, 23, 0.85)",
-        cursor: "grab",
-        touchAction: "none",
+        cursor: canEditTasks ? "grab" : "pointer",
+        touchAction: canEditTasks ? "none" : "auto",
       }}
       style={style}
-      {...attributes}
-      {...listeners}
+      {...(canEditTasks ? { ...attributes, ...listeners } : {})}
       onClick={() => onEdit(deal)}
       data-draggable
     >

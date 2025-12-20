@@ -9,7 +9,9 @@ import {
   Dialog,
   DialogContent,
   IconButton,
+  InputAdornment,
   Paper,
+  Popover,
   Snackbar,
   Stack,
   TextField,
@@ -20,6 +22,9 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
+import CalendarTodayRoundedIcon from "@mui/icons-material/CalendarTodayRounded";
+import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 
 type Contact = {
   id: string;
@@ -228,6 +233,15 @@ export default function Contacts() {
   const [editingCategoryColor, setEditingCategoryColor] = useState(DEFAULT_COLORS[0]);
   const [copyMessage, setCopyMessage] = useState("");
   const [copySnackbarOpen, setCopySnackbarOpen] = useState(false);
+  const [birthdayInput, setBirthdayInput] = useState("");
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
+  const [removeContactOpen, setRemoveContactOpen] = useState(false);
+  const birthdayFieldRef = useRef<HTMLInputElement | null>(null);
+  const calendarAnchorRef = useRef<HTMLButtonElement | null>(null);
   const isLoadedRef = useRef(false);
   const saveTimeoutRef = useRef<number | null>(null);
 
@@ -496,6 +510,110 @@ export default function Contacts() {
     });
   }, [contactForm]);
 
+  useEffect(() => {
+    if (!contactForm) {
+      setBirthdayInput("");
+      return;
+    }
+    if (!contactForm.birthday) {
+      setBirthdayInput("");
+      return;
+    }
+    const [year, month, day] = contactForm.birthday.split("-");
+    if (year && month && day) {
+      setBirthdayInput(`${day}/${month}/${year}`);
+    }
+  }, [contactForm]);
+
+  const normalizeBirthdayInput = (value: string) =>
+    value.replace(/[^\d/]/g, "").slice(0, 10);
+
+  const parseIsoDate = (value: string) => {
+    if (!value) {
+      return null;
+    }
+    const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+    return date;
+  };
+
+  const parseBirthdayToIso = (value: string) => {
+    const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!match) {
+      return "";
+    }
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+    if (month < 1 || month > 12 || day < 1 || day > 31) {
+      return "";
+    }
+    const date = new Date(year, month - 1, day);
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) {
+      return "";
+    }
+    const pad = (num: number) => String(num).padStart(2, "0");
+    return `${year}-${pad(month)}-${pad(day)}`;
+  };
+
+  const monthLabels = [
+    "Janeiro",
+    "Fevereiro",
+    "Marco",
+    "Abril",
+    "Maio",
+    "Junho",
+    "Julho",
+    "Agosto",
+    "Setembro",
+    "Outubro",
+    "Novembro",
+    "Dezembro",
+  ];
+
+  const weekLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"];
+
+  const getCalendarDays = (base: Date) => {
+    const year = base.getFullYear();
+    const month = base.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startOffset = (firstDay.getDay() + 6) % 7;
+    const start = new Date(year, month, 1 - startOffset);
+    const days = Array.from({ length: 42 }, (_, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      return {
+        date,
+        inMonth: date.getMonth() === month,
+      };
+    });
+    return days;
+  };
+
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  const openCalendar = () => {
+    const baseDate = parseIsoDate(contactForm?.birthday || "");
+    const today = new Date();
+    const target = baseDate || today;
+    setCalendarMonth(new Date(target.getFullYear(), target.getMonth(), 1));
+    setCalendarOpen(true);
+  };
+
+  const closeSelectedContact = () => {
+    setSelectedContact(null);
+    setRemoveContactOpen(false);
+  };
+
   return (
     <Box sx={{ maxWidth: 1100, mx: "auto" }}>
       <Stack spacing={3}>
@@ -590,7 +708,7 @@ export default function Contacts() {
               <Typography variant="h6">
                 {selectedContact?.name || "Contato"}
               </Typography>
-              <IconButton onClick={() => setSelectedContact(null)} sx={{ color: "text.secondary" }}>
+              <IconButton onClick={closeSelectedContact} sx={{ color: "text.secondary" }}>
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -752,6 +870,13 @@ export default function Contacts() {
             </Stack>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button
+                color="error"
+                variant="outlined"
+                onClick={() => setRemoveContactOpen(true)}
+              >
+                Remover
+              </Button>
+              <Button
                 variant="outlined"
                 onClick={() => {
                   if (!selectedContact) {
@@ -762,12 +887,12 @@ export default function Contacts() {
                     ...selectedContact,
                     categoryIds: selectedContact.categoryIds || [],
                   });
-                  setSelectedContact(null);
+                  closeSelectedContact();
                 }}
               >
                 Editar
               </Button>
-              <Button variant="contained" onClick={() => setSelectedContact(null)}>
+              <Button variant="contained" onClick={closeSelectedContact}>
                 Fechar
               </Button>
             </Stack>
@@ -796,16 +921,151 @@ export default function Contacts() {
             />
             <TextField
               label="Data de aniversario"
-              type="date"
               fullWidth
-              value={contactForm?.birthday || ""}
-              onChange={(event) =>
-                setContactForm((prev) =>
-                  prev ? { ...prev, birthday: event.target.value } : prev
-                )
-              }
-              InputLabelProps={{ shrink: true }}
+              placeholder="DD/MM/AAAA"
+              value={birthdayInput}
+              onChange={(event) => {
+                const nextValue = normalizeBirthdayInput(event.target.value);
+                setBirthdayInput(nextValue);
+                const iso = parseBirthdayToIso(nextValue);
+                setContactForm((prev) => (prev ? { ...prev, birthday: iso } : prev));
+              }}
+              onBlur={() => {
+                if (!birthdayInput.trim()) {
+                  setContactForm((prev) => (prev ? { ...prev, birthday: "" } : prev));
+                  return;
+                }
+                const iso = parseBirthdayToIso(birthdayInput);
+                setContactForm((prev) => (prev ? { ...prev, birthday: iso } : prev));
+                if (!iso) {
+                  return;
+                }
+                const [year, month, day] = iso.split("-");
+                setBirthdayInput(`${day}/${month}/${year}`);
+              }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      edge="end"
+                      onClick={openCalendar}
+                      aria-label="Abrir calendario"
+                      ref={calendarAnchorRef}
+                    >
+                      <CalendarTodayRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              inputProps={{ inputMode: "numeric" }}
+              inputRef={birthdayFieldRef}
             />
+            <Popover
+              open={calendarOpen}
+              anchorEl={calendarAnchorRef.current}
+              onClose={() => setCalendarOpen(false)}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+              PaperProps={{
+                sx: {
+                  mt: 1,
+                  p: 2,
+                  borderRadius: 2,
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  backgroundColor: "rgba(15, 23, 32, 0.95)",
+                  minWidth: 280,
+                },
+              }}
+            >
+              <Stack spacing={1.5}>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <IconButton
+                    size="small"
+                    onClick={() =>
+                      setCalendarMonth(
+                        new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1)
+                      )
+                    }
+                  >
+                    <ChevronLeftRoundedIcon fontSize="small" />
+                  </IconButton>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {monthLabels[calendarMonth.getMonth()]} {calendarMonth.getFullYear()}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={() =>
+                      setCalendarMonth(
+                        new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1)
+                      )
+                    }
+                  >
+                    <ChevronRightRoundedIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(7, 1fr)",
+                    gap: 0.5,
+                    textAlign: "center",
+                  }}
+                >
+                  {weekLabels.map((label) => (
+                    <Typography
+                      key={label}
+                      variant="caption"
+                      sx={{ color: "text.secondary", fontWeight: 600 }}
+                    >
+                      {label}
+                    </Typography>
+                  ))}
+                  {getCalendarDays(calendarMonth).map((day) => {
+                    const selectedDate = parseIsoDate(contactForm?.birthday || "");
+                    const isSelected = selectedDate ? isSameDay(day.date, selectedDate) : false;
+                    const isToday = isSameDay(day.date, new Date());
+                    return (
+                      <Box
+                        key={day.date.toISOString()}
+                        component="button"
+                        type="button"
+                        onClick={() => {
+                          const iso = `${day.date.getFullYear()}-${String(
+                            day.date.getMonth() + 1
+                          ).padStart(2, "0")}-${String(day.date.getDate()).padStart(2, "0")}`;
+                          setContactForm((prev) =>
+                            prev ? { ...prev, birthday: iso } : prev
+                          );
+                          setBirthdayInput(
+                            `${String(day.date.getDate()).padStart(2, "0")}/${String(
+                              day.date.getMonth() + 1
+                            ).padStart(2, "0")}/${day.date.getFullYear()}`
+                          );
+                          setCalendarOpen(false);
+                        }}
+                        sx={{
+                          appearance: "none",
+                          border: "none",
+                          borderRadius: 1.5,
+                          p: 0.75,
+                          cursor: "pointer",
+                          backgroundColor: isSelected
+                            ? "rgba(34, 201, 166, 0.25)"
+                            : "transparent",
+                          color: day.inMonth ? "text.primary" : "text.secondary",
+                          border: isToday ? "1px solid rgba(34, 201, 166, 0.5)" : "1px solid transparent",
+                          "&:hover": {
+                            backgroundColor: "rgba(34, 201, 166, 0.15)",
+                          },
+                        }}
+                      >
+                        <Typography variant="caption">{day.date.getDate()}</Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Stack>
+            </Popover>
             <Autocomplete
               multiple
               options={categories}
@@ -979,6 +1239,45 @@ export default function Contacts() {
               </Button>
               <Button variant="contained" onClick={saveContact}>
                 Salvar
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={removeContactOpen}
+        onClose={() => setRemoveContactOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogContent>
+          <Stack spacing={2}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography variant="h6">Remover contato</Typography>
+              <IconButton onClick={() => setRemoveContactOpen(false)} sx={{ color: "text.secondary" }}>
+                <CloseRoundedIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Voce confirma a exclusao deste contato? Essa acao nao pode ser desfeita.
+            </Typography>
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button variant="outlined" onClick={() => setRemoveContactOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                color="error"
+                variant="contained"
+                onClick={() => {
+                  if (!selectedContact) {
+                    return;
+                  }
+                  setContacts((prev) => prev.filter((item) => item.id !== selectedContact.id));
+                  closeSelectedContact();
+                }}
+              >
+                Remover
               </Button>
             </Stack>
           </Stack>

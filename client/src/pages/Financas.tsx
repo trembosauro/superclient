@@ -243,6 +243,7 @@ export default function Financas() {
   const [editingCategoryColor, setEditingCategoryColor] = useState(DEFAULT_COLORS[0]);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
+  const [removeExpenseOpen, setRemoveExpenseOpen] = useState(false);
   const isLoadedRef = useRef(false);
   const saveTimeoutRef = useRef<number | null>(null);
 
@@ -453,6 +454,7 @@ export default function Financas() {
 
   const handleViewClose = () => {
     setViewingExpense(null);
+    setRemoveExpenseOpen(false);
   };
 
   const handleEditOpen = (expense: Expense) => {
@@ -1058,6 +1060,13 @@ export default function Financas() {
             </Stack>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button
+                color="error"
+                variant="outlined"
+                onClick={() => setRemoveExpenseOpen(true)}
+              >
+                Remover
+              </Button>
+              <Button
                 variant="outlined"
                 onClick={() => {
                   if (viewingExpense) {
@@ -1070,6 +1079,48 @@ export default function Financas() {
               </Button>
               <Button variant="contained" onClick={handleViewClose}>
                 Fechar
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={removeExpenseOpen}
+        onClose={() => setRemoveExpenseOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogContent>
+          <Stack spacing={2}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography variant="h6">Remover gasto</Typography>
+              <IconButton onClick={() => setRemoveExpenseOpen(false)} sx={{ color: "text.secondary" }}>
+                <CloseRoundedIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Voce confirma a exclusao deste gasto? Essa acao nao pode ser desfeita.
+            </Typography>
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button variant="outlined" onClick={() => setRemoveExpenseOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                color="error"
+                variant="contained"
+                onClick={() => {
+                  if (!viewingExpense) {
+                    return;
+                  }
+                  setExpenses((prev) =>
+                    prev.filter((expense) => expense.id !== viewingExpense.id)
+                  );
+                  setViewingExpense(null);
+                  setRemoveExpenseOpen(false);
+                }}
+              >
+                Remover
               </Button>
             </Stack>
           </Stack>
