@@ -183,6 +183,36 @@ function App() {
   };
   const showBreadcrumbs = !["/", "/login", "/signup"].includes(location);
   const currentLabel = breadcrumbMap[location] ?? "Pagina";
+  const breadcrumbItems =
+    location === "/pipeline/dados"
+      ? [
+          <Link
+            key="pipeline"
+            component={RouterLink}
+            href="/pipeline"
+            underline="hover"
+            color="inherit"
+          >
+            Pipeline
+          </Link>,
+          <Typography key="dados" color="text.primary">
+            Dados
+          </Typography>,
+        ]
+      : [
+          <Link
+            key="home"
+            component={RouterLink}
+            href="/home"
+            underline="hover"
+            color="inherit"
+          >
+            Home
+          </Link>,
+          <Typography key="current" color="text.primary">
+            {currentLabel}
+          </Typography>,
+        ];
   const avatarInitial = userName.trim().charAt(0).toUpperCase() || "U";
   const mobileMenuOpen = Boolean(mobileAnchorEl);
 
@@ -372,6 +402,7 @@ function App() {
             {showBreadcrumbs ? (
               <Breadcrumbs
                 aria-label="breadcrumb"
+                separator="›"
                 sx={{
                   mb: 3,
                   color: "text.secondary",
@@ -379,33 +410,20 @@ function App() {
                   alignItems: "center",
                   flexWrap: "nowrap",
                   whiteSpace: "nowrap",
+                  "& .MuiBreadcrumbs-ol": {
+                    flexWrap: "nowrap",
+                    alignItems: "center",
+                  },
+                  "& .MuiBreadcrumbs-li": {
+                    display: "inline-flex",
+                  },
+                  "& .MuiBreadcrumbs-separator": {
+                    mx: 1,
+                    color: "text.secondary",
+                  },
                 }}
               >
-                {location === "/pipeline/dados" ? (
-                  <>
-                    <Link
-                      component={RouterLink}
-                      href="/pipeline"
-                      underline="hover"
-                      color="inherit"
-                    >
-                      Pipeline
-                    </Link>
-                    <Typography color="text.primary">Dados</Typography>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      component={RouterLink}
-                      href="/home"
-                      underline="hover"
-                      color="inherit"
-                    >
-                      Home
-                    </Link>
-                    <Typography color="text.primary">{currentLabel}</Typography>
-                  </>
-                )}
+                {breadcrumbItems}
               </Breadcrumbs>
             ) : null}
             <Switch>
