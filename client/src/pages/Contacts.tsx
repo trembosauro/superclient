@@ -35,6 +35,7 @@ import ToggleCheckbox from "../components/ToggleCheckbox";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import PageContainer from "../components/layout/PageContainer";
 import AppCard from "../components/layout/AppCard";
+import { loadUserStorage, saveUserStorage } from "../userStorage";
 
 type Contact = {
   id: string;
@@ -312,58 +313,82 @@ export default function Contacts() {
     useState(false);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      setContacts(sampleContacts);
-      isLoadedRef.current = true;
-      return;
-    }
-    try {
-      const parsed = JSON.parse(stored) as Contact[];
-      if (Array.isArray(parsed)) {
-        const existingIds = new Set(parsed.map(contact => contact.id));
-        const merged = [...parsed];
-        sampleContacts.forEach(contact => {
-          if (!existingIds.has(contact.id)) {
-            merged.push(contact);
-          }
-        });
-        setContacts(merged);
-      }
-    } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } finally {
-      isLoadedRef.current = true;
-    }
+    const load = async () => {
+      const [dbContacts, dbCategories] = await Promise.all([
+        loadUserStorage<Contact[]>(STORAGE_KEY),
+        loadUserStorage<Category[]>(CATEGORY_STORAGE_KEY),
+      ]);
 
-    const storedCategories = window.localStorage.getItem(CATEGORY_STORAGE_KEY);
-    if (!storedCategories) {
-      return;
-    }
-    try {
-      const parsed = JSON.parse(storedCategories) as Category[];
-      if (Array.isArray(parsed) && parsed.length) {
-        const hasContactDefaults = parsed.some(cat =>
-          [
-            "Familia",
-            "Amigos",
-            "Cliente",
-            "Fornecedor",
-            "Prospect",
-            "Equipe",
-          ].includes(cat.name)
-        );
-        setCategories(hasContactDefaults ? parsed : defaultCategories);
-        if (!hasContactDefaults) {
-          window.localStorage.setItem(
-            CATEGORY_STORAGE_KEY,
-            JSON.stringify(defaultCategories)
-          );
+      if (Array.isArray(dbContacts) && dbContacts.length) {
+        setContacts(dbContacts);
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(dbContacts));
+        isLoadedRef.current = true;
+      } else {
+        const stored = window.localStorage.getItem(STORAGE_KEY);
+        if (!stored) {
+          setContacts(sampleContacts);
+          isLoadedRef.current = true;
+        } else {
+          try {
+            const parsed = JSON.parse(stored) as Contact[];
+            if (Array.isArray(parsed)) {
+              const existingIds = new Set(parsed.map(contact => contact.id));
+              const merged = [...parsed];
+              sampleContacts.forEach(contact => {
+                if (!existingIds.has(contact.id)) {
+                  merged.push(contact);
+                }
+              });
+              setContacts(merged);
+            }
+          } catch {
+            window.localStorage.removeItem(STORAGE_KEY);
+          } finally {
+            isLoadedRef.current = true;
+          }
         }
       }
-    } catch {
-      window.localStorage.removeItem(CATEGORY_STORAGE_KEY);
-    }
+
+      if (Array.isArray(dbCategories) && dbCategories.length) {
+        setCategories(dbCategories);
+        window.localStorage.setItem(
+          CATEGORY_STORAGE_KEY,
+          JSON.stringify(dbCategories)
+        );
+      } else {
+        const storedCategories =
+          window.localStorage.getItem(CATEGORY_STORAGE_KEY);
+        if (!storedCategories) {
+          return;
+        }
+        try {
+          const parsed = JSON.parse(storedCategories) as Category[];
+          if (Array.isArray(parsed) && parsed.length) {
+            const hasContactDefaults = parsed.some(cat =>
+              [
+                "Familia",
+                "Amigos",
+                "Cliente",
+                "Fornecedor",
+                "Prospect",
+                "Equipe",
+              ].includes(cat.name)
+            );
+            setCategories(hasContactDefaults ? parsed : defaultCategories);
+            if (!hasContactDefaults) {
+              window.localStorage.setItem(
+                CATEGORY_STORAGE_KEY,
+                JSON.stringify(defaultCategories)
+              );
+            }
+          }
+        } catch {
+          window.localStorage.removeItem(CATEGORY_STORAGE_KEY);
+        }
+      }
+    };
+
+    void load();
   }, []);
 
   useEffect(() => {
@@ -379,6 +404,8 @@ export default function Contacts() {
         CATEGORY_STORAGE_KEY,
         JSON.stringify(categories)
       );
+      void saveUserStorage(STORAGE_KEY, contacts);
+      void saveUserStorage(CATEGORY_STORAGE_KEY, categories);
       window.dispatchEvent(new Event("contacts-change"));
     }, 300);
     return () => {
@@ -389,33 +416,54 @@ export default function Contacts() {
   }, [contacts, categories]);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(CARD_FIELDS_KEY);
-    if (!stored) {
-      return;
-    }
-    try {
-      const parsed = JSON.parse(stored) as Partial<typeof cardFields>;
-      setCardFields(prev => ({ ...prev, ...parsed }));
-    } catch {
-      window.localStorage.removeItem(CARD_FIELDS_KEY);
-    }
+    const load = async () => {
+      const dbValue =
+        await loadUserStorage<Partial<typeof cardFields>>(CARD_FIELDS_KEY);
+      if (dbValue && typeof dbValue === "object") {
+        setCardFields(prev => ({ ...prev, ...dbValue }));
+        window.localStorage.setItem(CARD_FIELDS_KEY, JSON.stringify(dbValue));
+        return;
+      }
+      const stored = window.localStorage.getItem(CARD_FIELDS_KEY);
+      if (!stored) {
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stored) as Partial<typeof cardFields>;
+        setCardFields(prev => ({ ...prev, ...parsed }));
+      } catch {
+        window.localStorage.removeItem(CARD_FIELDS_KEY);
+      }
+    };
+    void load();
   }, []);
 
   useEffect(() => {
     window.localStorage.setItem(CARD_FIELDS_KEY, JSON.stringify(cardFields));
+    void saveUserStorage(CARD_FIELDS_KEY, cardFields);
   }, [cardFields]);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(DETAIL_FIELDS_KEY);
-    if (!stored) {
-      return;
-    }
-    try {
-      const parsed = JSON.parse(stored) as Partial<typeof detailFields>;
-      setDetailFields(prev => ({ ...prev, ...parsed }));
-    } catch {
-      window.localStorage.removeItem(DETAIL_FIELDS_KEY);
-    }
+    const load = async () => {
+      const dbValue =
+        await loadUserStorage<Partial<typeof detailFields>>(DETAIL_FIELDS_KEY);
+      if (dbValue && typeof dbValue === "object") {
+        setDetailFields(prev => ({ ...prev, ...dbValue }));
+        window.localStorage.setItem(DETAIL_FIELDS_KEY, JSON.stringify(dbValue));
+        return;
+      }
+      const stored = window.localStorage.getItem(DETAIL_FIELDS_KEY);
+      if (!stored) {
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stored) as Partial<typeof detailFields>;
+        setDetailFields(prev => ({ ...prev, ...parsed }));
+      } catch {
+        window.localStorage.removeItem(DETAIL_FIELDS_KEY);
+      }
+    };
+    void load();
   }, []);
 
   useEffect(() => {
@@ -423,6 +471,7 @@ export default function Contacts() {
       DETAIL_FIELDS_KEY,
       JSON.stringify(detailFields)
     );
+    void saveUserStorage(DETAIL_FIELDS_KEY, detailFields);
   }, [detailFields]);
 
   const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
@@ -902,7 +951,7 @@ export default function Contacts() {
                 label="Buscar contatos"
                 value={contactQuery}
                 onChange={event => setContactQuery(event.target.value)}
-                sx={{ maxWidth: 360 }}
+                sx={{ width: { xs: "100%", sm: 360 }, maxWidth: { sm: 360 } }}
                 InputProps={{
                   endAdornment: contactQuery ? (
                     <InputAdornment position="end">

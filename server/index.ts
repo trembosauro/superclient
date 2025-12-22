@@ -139,6 +139,14 @@ db.exec(`
     updated_at TEXT NOT NULL,
     FOREIGN KEY(user_id) REFERENCES users(id)
   );
+  CREATE TABLE IF NOT EXISTS user_storage (
+    user_id INTEGER NOT NULL,
+    storage_key TEXT NOT NULL,
+    data_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY(user_id, storage_key),
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
   CREATE TABLE IF NOT EXISTS invites (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT NOT NULL,
@@ -341,6 +349,437 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
+const isValidStorageKey = (value: unknown): value is string => {
+  if (typeof value !== "string") {
+    return false;
+  }
+  const key = value.trim();
+  if (!key) {
+    return false;
+  }
+  if (key.length > 128) {
+    return false;
+  }
+  return /^[a-z0-9_.-]+$/i.test(key);
+};
+
+const getUserStorage = (userId: number, key: string) => {
+  const row = db
+    .prepare(
+      "SELECT data_json FROM user_storage WHERE user_id = ? AND storage_key = ?"
+    )
+    .get(userId, key) as { data_json: string } | undefined;
+  if (!row) {
+    return null;
+  }
+  try {
+    return JSON.parse(row.data_json);
+  } catch {
+    return null;
+  }
+};
+
+const setUserStorage = (userId: number, key: string, data: unknown) => {
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO user_storage (user_id, storage_key, data_json, updated_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(user_id, storage_key) DO UPDATE SET
+       data_json = excluded.data_json,
+       updated_at = excluded.updated_at`
+  ).run(userId, key, JSON.stringify(data ?? null), now);
+};
+
+const ensureUserStorageSeed = (userId: number) => {
+  const exists = (key: string) =>
+    Boolean(
+      db
+        .prepare(
+          "SELECT 1 as ok FROM user_storage WHERE user_id = ? AND storage_key = ?"
+        )
+        .get(userId, key)
+    );
+
+  const setIfMissing = (key: string, value: unknown) => {
+    if (exists(key)) {
+      return;
+    }
+    setUserStorage(userId, key, value);
+  };
+
+  setIfMissing("contacts_v1", [
+    {
+      id: "contact-ana-mendes",
+      name: "Ana Mendes",
+      birthday: "1992-04-18",
+      phones: ["11988887777", "1133445566"],
+      emails: ["ana.mendes@exemplo.com", "ana@agenciaflux.com"],
+      addresses: ["Rua Augusta, 1200, Sao Paulo, SP"],
+      comments: ["Preferencia por contato via WhatsApp."],
+      categoryIds: ["cat-cliente", "cat-vip"],
+      role: "",
+    },
+    {
+      id: "contact-bruno-silva",
+      name: "Bruno Silva",
+      birthday: "1988-11-02",
+      phones: ["21999998888"],
+      emails: ["bruno.silva@techpark.io"],
+      addresses: ["Rio de Janeiro, RJ"],
+      comments: ["Responsavel por compras internas."],
+      categoryIds: ["cat-trabalho"],
+      role: "",
+    },
+    {
+      id: "contact-carla-souza",
+      name: "Carla Souza",
+      birthday: "1995-07-09",
+      phones: ["31977776666"],
+      emails: ["carla@exemplo.com"],
+      addresses: ["Belo Horizonte, MG"],
+      comments: ["Acompanhamento mensal."],
+      categoryIds: ["cat-prospect"],
+      role: "",
+    },
+    {
+      id: "contact-diego-alves",
+      name: "Diego Alves",
+      birthday: "1991-01-22",
+      phones: ["41966665555"],
+      emails: ["diego.alves@fornecedor.com"],
+      addresses: ["Curitiba, PR"],
+      comments: ["Fornecedor - prazo 30 dias."],
+      categoryIds: ["cat-fornecedor"],
+      role: "",
+    },
+    {
+      id: "contact-elis-regis",
+      name: "Elis Regis",
+      birthday: "1990-09-14",
+      phones: ["71955554444"],
+      emails: ["elis.regis@exemplo.com"],
+      addresses: ["Salvador, BA"],
+      comments: ["Amiga da equipe de marketing."],
+      categoryIds: ["cat-amigos"],
+      role: "",
+    },
+    {
+      id: "contact-felipe-rocha",
+      name: "Felipe Rocha",
+      birthday: "1997-03-30",
+      phones: ["51944443333"],
+      emails: ["felipe@startupazul.com"],
+      addresses: ["Porto Alegre, RS"],
+      comments: ["Prospect em negociacao para Q3."],
+      categoryIds: ["cat-prospect"],
+      role: "",
+    },
+    {
+      id: "contact-gabriela-lopes",
+      name: "Gabriela Lopes",
+      birthday: "1993-12-05",
+      phones: ["47933332222"],
+      emails: ["gabriela@clientesul.com"],
+      addresses: ["Blumenau, SC"],
+      comments: ["Cliente - renovacao anual."],
+      categoryIds: ["cat-cliente"],
+      role: "",
+    },
+    {
+      id: "contact-henrique-santos",
+      name: "Henrique Santos",
+      birthday: "1989-06-21",
+      phones: ["11922221111"],
+      emails: ["henrique.santos@suporteprime.com"],
+      addresses: ["Sao Paulo, SP"],
+      comments: ["Contato de suporte nivel 2."],
+      categoryIds: ["cat-equipe"],
+      role: "",
+    },
+    {
+      id: "contact-iris-moura",
+      name: "Iris Moura",
+      birthday: "1998-10-10",
+      phones: ["61911112222"],
+      emails: ["iris.moura@exemplo.com"],
+      addresses: ["Brasilia, DF"],
+      comments: ["Familia - contato de emergencia."],
+      categoryIds: ["cat-familia"],
+      role: "",
+    },
+    {
+      id: "contact-joao-pereira",
+      name: "Joao Pereira",
+      birthday: "1983-02-12",
+      phones: ["21900001111"],
+      emails: ["joao.pereira@financeirot.com"],
+      addresses: ["Rio de Janeiro, RJ"],
+      comments: ["Financeiro externo."],
+      categoryIds: ["cat-trabalho"],
+      role: "",
+    },
+  ]);
+
+  setIfMissing("contact_categories_v1", [
+    { id: "cat-familia", name: "Familia", color: "#0f766e" },
+    { id: "cat-amigos", name: "Amigos", color: "#1d4ed8" },
+    { id: "cat-cliente", name: "Cliente", color: "#6d28d9" },
+    { id: "cat-fornecedor", name: "Fornecedor", color: "#7c2d12" },
+    { id: "cat-prospect", name: "Prospect", color: "#7c4a03" },
+    { id: "cat-equipe", name: "Equipe", color: "#0f172a" },
+    { id: "cat-vip", name: "VIP", color: "#9d174d" },
+  ]);
+
+  setIfMissing("calendar_categories_v1", [
+    { id: "cat-reunioes", name: "Reuniões", color: "#0f766e" },
+    { id: "cat-trabalho", name: "Trabalho", color: "#1d4ed8" },
+    { id: "cat-pessoal", name: "Pessoal", color: "#6d28d9" },
+    { id: "cat-aniversario", name: "Aniversários", color: "#7c2d12" },
+    { id: "cat-viagem", name: "Viagem", color: "#7c4a03" },
+    { id: "cat-saude", name: "Saude", color: "#0f172a" },
+    { id: "cat-estudos", name: "Estudos", color: "#334155" },
+    { id: "cat-financas", name: "Pagamentos", color: "#166534" },
+    { id: "cat-feriados", name: "Feriados", color: "#9d174d" },
+    { id: "cat-lembretes", name: "Lembretes", color: "#312e81" },
+  ]);
+
+  setIfMissing("calendar_sources_v1", [
+    { id: "cal-trabalho", name: "Trabalho", color: "#1d4ed8", enabled: true },
+    { id: "cal-pessoal", name: "Pessoal", color: "#16a34a", enabled: true },
+    { id: "cal-equipe", name: "Equipe", color: "#0f766e", enabled: true },
+    { id: "cal-financas", name: "Financas", color: "#7c2d12", enabled: true },
+  ]);
+
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const makeDate = (dayOffset: number) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + dayOffset);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
+  setIfMissing("calendar_tasks_v1", [
+    {
+      id: "cal-seed-1",
+      name: "Reuniao de kickoff",
+      calendarId: "cal-equipe",
+      categoryIds: ["cat-reunioes"],
+      date: makeDate(1),
+      startTime: "09:00",
+      endTime: "10:00",
+      location: "Sala Orion",
+      reminder: "10m",
+      repeat: "none",
+      visibility: "public",
+      notification: "app",
+      allDay: false,
+      descriptionHtml: "<p>Alinhar metas e entregas da semana.</p>",
+      done: false,
+    },
+    {
+      id: "cal-seed-2",
+      name: "Entrega do relatorio financeiro",
+      calendarId: "cal-financas",
+      categoryIds: ["cat-financas"],
+      date: makeDate(2),
+      startTime: "14:00",
+      endTime: "15:30",
+      location: "Financeiro",
+      reminder: "1h",
+      repeat: "monthly",
+      visibility: "private",
+      notification: "email",
+      allDay: false,
+      descriptionHtml: "<p>Enviar relatorio mensal para diretoria.</p>",
+      done: false,
+    },
+    {
+      id: "cal-seed-3",
+      name: "Consulta medica",
+      calendarId: "cal-pessoal",
+      categoryIds: ["cat-saude"],
+      date: makeDate(3),
+      startTime: "11:00",
+      endTime: "12:00",
+      location: "Clinica Central",
+      reminder: "30m",
+      repeat: "none",
+      visibility: "private",
+      notification: "push",
+      allDay: false,
+      descriptionHtml: "<p>Levar exames anteriores.</p>",
+      done: false,
+    },
+    {
+      id: "cal-seed-4",
+      name: "Feriado municipal",
+      calendarId: "cal-trabalho",
+      categoryIds: ["cat-feriados"],
+      date: makeDate(4),
+      reminder: "1d",
+      repeat: "none",
+      visibility: "public",
+      notification: "app",
+      allDay: true,
+      descriptionHtml: "<p>Sem expediente.</p>",
+      done: false,
+    },
+    {
+      id: "cal-seed-5",
+      name: "Planejamento de sprint",
+      calendarId: "cal-equipe",
+      categoryIds: ["cat-trabalho", "cat-reunioes"],
+      date: makeDate(5),
+      startTime: "10:00",
+      endTime: "11:30",
+      location: "Online",
+      reminder: "30m",
+      repeat: "weekly",
+      visibility: "public",
+      notification: "app",
+      allDay: false,
+      descriptionHtml: "<p>Definir backlog e prioridades.</p>",
+      done: false,
+    },
+    {
+      id: "cal-seed-6",
+      name: "Aniversario da Ana",
+      calendarId: "cal-pessoal",
+      categoryIds: ["cat-aniversario"],
+      date: makeDate(6),
+      reminder: "1d",
+      repeat: "yearly",
+      visibility: "private",
+      notification: "push",
+      allDay: true,
+      descriptionHtml: "<p>Comprar presente.</p>",
+      done: false,
+    },
+    {
+      id: "cal-seed-7",
+      name: "Pagamento do aluguel",
+      calendarId: "cal-financas",
+      categoryIds: ["cat-financas"],
+      date: makeDate(7),
+      reminder: "1d",
+      repeat: "monthly",
+      visibility: "private",
+      notification: "email",
+      allDay: true,
+      descriptionHtml: "<p>Agendar transferencia.</p>",
+      done: false,
+    },
+    {
+      id: "cal-seed-8",
+      name: "Estudo de UX",
+      calendarId: "cal-trabalho",
+      categoryIds: ["cat-estudos"],
+      date: makeDate(8),
+      startTime: "16:00",
+      endTime: "17:30",
+      location: "Sala 2",
+      reminder: "10m",
+      repeat: "none",
+      visibility: "public",
+      notification: "app",
+      allDay: false,
+      descriptionHtml: "<p>Revisar guidelines de acessibilidade.</p>",
+      done: false,
+    },
+    {
+      id: "cal-seed-9",
+      name: "Viagem para cliente",
+      calendarId: "cal-trabalho",
+      categoryIds: ["cat-viagem"],
+      date: makeDate(9),
+      startTime: "07:00",
+      endTime: "09:00",
+      location: "Aeroporto",
+      reminder: "1h",
+      repeat: "none",
+      visibility: "private",
+      notification: "push",
+      allDay: false,
+      descriptionHtml: "<p>Check-in e documentos.</p>",
+      done: false,
+    },
+    {
+      id: "cal-seed-10",
+      name: "Lembrete pessoal",
+      calendarId: "cal-pessoal",
+      categoryIds: ["cat-lembretes"],
+      date: makeDate(10),
+      startTime: "08:30",
+      endTime: "09:00",
+      location: "Casa",
+      reminder: "10m",
+      repeat: "none",
+      visibility: "private",
+      notification: "app",
+      allDay: false,
+      descriptionHtml: "<p>Separar documentos do dia.</p>",
+      done: false,
+    },
+  ]);
+
+  setIfMissing(
+    "notes_v1",
+    Array.from({ length: 10 }, (_, idx) => {
+      const n = idx + 1;
+      return {
+        id: `note-seed-${n}`,
+        title: `Nota ${n}`,
+        categoryIds: [],
+        subcategoryIds: [],
+        contentHtml: `<p>Conteudo de exemplo da nota ${n}.</p>`,
+        links: [],
+        updatedAt: new Date(Date.now() - n * 3600_000).toISOString(),
+        archived: false,
+        isDraft: false,
+        parentId: null,
+        relatedNoteIds: [],
+      };
+    })
+  );
+
+  setIfMissing("note_categories_v1", [
+    { id: "note-cat-1", name: "Geral", color: "#0f766e" },
+    { id: "note-cat-2", name: "Projetos", color: "#1d4ed8" },
+    { id: "note-cat-3", name: "Pessoal", color: "#6d28d9" },
+  ]);
+
+  setIfMissing("note_subcategories_v1", [
+    {
+      id: "note-sub-1",
+      name: "Ideias",
+      categoryId: "note-cat-1",
+      color: "#0f766e",
+    },
+    {
+      id: "note-sub-2",
+      name: "Reunioes",
+      categoryId: "note-cat-2",
+      color: "#1d4ed8",
+    },
+    {
+      id: "note-sub-3",
+      name: "Checklists",
+      categoryId: "note-cat-3",
+      color: "#6d28d9",
+    },
+  ]);
+
+  setIfMissing("note_fields_v1", {
+    showLinks: true,
+    showRelated: true,
+    showUpdatedAt: true,
+  });
+};
+
 app.post("/api/auth/signup", (req, res) => {
   const name = typeof req.body.name === "string" ? req.body.name.trim() : null;
   const email =
@@ -383,6 +822,13 @@ app.post("/api/auth/signup", (req, res) => {
 
   const session = issueSession(userId);
   setSessionCookie(res, session.token, session.expires);
+
+  try {
+    ensureUserStorageSeed(userId);
+  } catch {
+    // Best-effort seeding.
+  }
+
   res.json({ user: { id: userId, email, name }, token: session.token });
 });
 
@@ -421,6 +867,13 @@ app.post("/api/auth/login", (req, res) => {
 
   const session = issueSession(user.id);
   setSessionCookie(res, session.token, session.expires);
+
+  try {
+    ensureUserStorageSeed(user.id);
+  } catch {
+    // Best-effort seeding.
+  }
+
   res.json({
     user: { id: user.id, email: user.email, name: user.name },
     token: session.token,
@@ -1004,6 +1457,27 @@ app.put("/api/finance/data", requireAuth, (req, res) => {
        data_json = excluded.data_json,
        updated_at = excluded.updated_at`
   ).run(req.user?.id, JSON.stringify(data ?? {}), now);
+  res.json({ ok: true });
+});
+
+app.get("/api/storage/:key", requireAuth, (req, res) => {
+  const key = req.params.key;
+  if (!isValidStorageKey(key)) {
+    res.status(400).json({ error: "invalid_key" });
+    return;
+  }
+  const data = getUserStorage(req.user!.id, key);
+  res.json({ data });
+});
+
+app.put("/api/storage/:key", requireAuth, (req, res) => {
+  const key = req.params.key;
+  if (!isValidStorageKey(key)) {
+    res.status(400).json({ error: "invalid_key" });
+    return;
+  }
+  const payload = req.body?.data ?? req.body;
+  setUserStorage(req.user!.id, key, payload);
   res.json({ ok: true });
 });
 
