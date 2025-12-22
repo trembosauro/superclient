@@ -43,7 +43,7 @@ export default function Signup() {
       >
         <Stack spacing={3}>
           <Stack spacing={1}>
-            <Typography variant="h5">Criacao de conta</Typography>
+            <Typography variant="h5">Criação de conta</Typography>
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
               Ative seu workspace e convide o time em minutos.
             </Typography>
@@ -118,7 +118,7 @@ export default function Signup() {
             Pronto para governanca
           </Typography>
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            Controle perfis, acesso por modulo e convites por papel com fluxos
+            Controle perfis, acesso por módulo e convites por papel com fluxos
             auditaveis.
           </Typography>
         </Paper>

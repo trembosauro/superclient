@@ -183,11 +183,11 @@ const defaultCategories: Category[] = [
 
 const LEGACY_PIPELINE_NAMES = new Set([
   "Moradia",
-  "Alimentacao",
+  "Alimentação",
   "Transporte",
   "Saude",
   "Lazer",
-  "Educacao",
+  "Educação",
   "Assinaturas",
   "Impostos",
   "Investimentos",
@@ -270,7 +270,7 @@ const defaultColumns: Column[] = [
         categoryIds: [defaultCategories[1]?.id || ""],
         link: "https://argohealth.example.com",
         comments: "Sprints semanais aprovados.",
-        descriptionHtml: "<p>Implementacao em andamento com time tecnico.</p>",
+        descriptionHtml: "<p>Implementação em andamento com time técnico.</p>",
       },
       {
         id: "nova",
@@ -280,8 +280,8 @@ const defaultColumns: Column[] = [
         categoryId: defaultCategories[1]?.id,
         categoryIds: [defaultCategories[1]?.id || ""],
         link: "https://novaterra.example.com",
-        comments: "Revisao de integracoes.",
-        descriptionHtml: "<p>Validar integracao com CRM.</p>",
+        comments: "Revisão de integrações.",
+        descriptionHtml: "<p>Validar integração com CRM.</p>",
       },
       {
         id: "delta",
@@ -330,8 +330,8 @@ const defaultColumns: Column[] = [
         categoryId: defaultCategories[2]?.id,
         categoryIds: [defaultCategories[2]?.id || ""],
         link: "https://atlaslabs.example.com",
-        comments: "Homologacao marcada.",
-        descriptionHtml: "<p>Checklist final de aprovacao.</p>",
+        comments: "Homologação marcada.",
+        descriptionHtml: "<p>Checklist final de aprovação.</p>",
       },
     ],
   },
@@ -348,7 +348,7 @@ const defaultColumns: Column[] = [
         categoryIds: [defaultCategories[3]?.id || ""],
         link: "https://caravelstudio.example.com",
         comments: "Entrega concluida com sucesso.",
-        descriptionHtml: "<p>Encerramento e documentacao final.</p>",
+        descriptionHtml: "<p>Encerramento e documentação final.</p>",
       },
       {
         id: "gema",
@@ -2504,7 +2504,7 @@ export default function Pipeline() {
                   </Box>
                   <TextField
                     select
-                    label="Duracao da sprint"
+                    label="Duração da sprint"
                     value={sprintState.duration}
                     onChange={(event) =>
                       setSprintState((prev) => ({
@@ -3254,7 +3254,7 @@ export default function Pipeline() {
               </IconButton>
             </Box>
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              Voce confirma a exclusao desta tarefa? Essa acao nao pode ser desfeita.
+              Você confirma a exclusão desta tarefa? Essa ação não pode ser desfeita.
             </Typography>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button variant="outlined" onClick={() => setRemoveDealOpen(false)}>
@@ -3307,7 +3307,7 @@ export default function Pipeline() {
               </IconButton>
             </Box>
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              Voce confirma a exclusao da coluna {removeColumnTarget?.title || ""}? Todas as
+              Você confirma a exclusão da coluna {removeColumnTarget?.title || ""}? Todas as
               tarefas nela serao removidas.
             </Typography>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
@@ -3958,11 +3958,11 @@ function RichTextEditor({
             <FormatQuoteRoundedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Limpar formatacao" placement="top">
+        <Tooltip title="Limpar formatação" placement="top">
           <IconButton
             {...iconButtonProps}
             onClick={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()}
-            aria-label="Limpar formatacao"
+            aria-label="Limpar formatação"
           >
             <BackspaceRoundedIcon fontSize="small" />
           </IconButton>

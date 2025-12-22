@@ -212,7 +212,7 @@ export default function Login() {
         setRecoveryNotice("Se o email existir, voce recebera um codigo.");
       }
     } catch {
-      setRecoveryError("Nao foi possivel iniciar a recuperacao.");
+      setRecoveryError("Não foi possível iniciar a recuperação.");
     }
   };
 
@@ -232,7 +232,7 @@ export default function Login() {
         token: recoveryToken,
         password: recoveryPassword,
       });
-      setRecoveryNotice("Senha atualizada. Voce ja pode entrar.");
+      setRecoveryNotice("Senha atualizada. Você já pode entrar.");
       setRecoveryStep("request");
       setRecoveryOpen(false);
     } catch {
@@ -455,7 +455,7 @@ export default function Login() {
           ) : (
             <>
               <Stack spacing={1}>
-                <Typography variant="h5">Criacao de conta</Typography>
+                <Typography variant="h5">Criação de conta</Typography>
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
                   Ative seu workspace e convide o time em minutos.
                 </Typography>
@@ -540,7 +540,7 @@ export default function Login() {
             {recoveryStep === "request" ? (
               <>
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Informe seu email para receber o codigo de recuperacao.
+                  Informe seu email para receber o código de recuperação.
                 </Typography>
                 <TextField
                   label="Email"

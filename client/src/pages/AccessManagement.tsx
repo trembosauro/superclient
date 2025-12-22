@@ -596,13 +596,13 @@ export default function AccessManagement() {
             <Stack spacing={2}>
               <Box>
                 <Typography variant="h6">
-                  {moduleConfirm?.nextValue ? "Ativar modulo" : "Desativar modulo"}
+                  {moduleConfirm?.nextValue ? "Ativar módulo" : "Desativar módulo"}
                 </Typography>
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
                   {moduleConfirm
-                    ? `Voce confirma a ${
-                        moduleConfirm.nextValue ? "ativacao" : "desativacao"
-                      } do modulo ${modules[moduleConfirm.index].name}?`
+                    ? `Você confirma a ${
+                        moduleConfirm.nextValue ? "ativação" : "desativação"
+                      } do módulo ${modules[moduleConfirm.index].name}?`
                     : ""}
                 </Typography>
               </Box>

@@ -358,7 +358,7 @@ const getSampleTasks = (base: Date): CalendarTask[] => {
       visibility: "public",
       notification: "app",
       allDay: true,
-      descriptionHtml: "<p>Levar material de apresentacao.</p>",
+      descriptionHtml: "<p>Levar material de apresentação.</p>",
       done: false,
     },
     {
@@ -2323,11 +2323,11 @@ function RichTextEditor({
             <FormatQuoteRoundedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Limpar formatacao" placement="top">
+        <Tooltip title="Limpar formatação" placement="top">
           <IconButton
             {...iconButtonProps}
             onClick={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()}
-            aria-label="Limpar formatacao"
+            aria-label="Limpar formatação"
           >
             <BackspaceRoundedIcon fontSize="small" />
           </IconButton>

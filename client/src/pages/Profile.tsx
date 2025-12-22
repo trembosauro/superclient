@@ -79,7 +79,7 @@ const coreModuleLabels = {
       "Lancamentos e categorias personalizadas",
       "Graficos por categoria e periodo",
       "Filtros avancados e busca rapida",
-      "Associacao de contatos aos gastos",
+      "Associação de contatos aos gastos",
     ],
   },
   moduleContacts: {
@@ -100,8 +100,8 @@ const coreModuleLabels = {
     features: [
       "Lista diaria de tarefas e lembretes",
       "Categorias compartilhadas com pipeline",
-      "Criacao rapida de tarefas",
-      "Configuracao de campos da tarefa",
+      "Criação rápida de tarefas",
+      "Configuração de campos da tarefa",
     ],
   },
   moduleNotes: {
@@ -112,7 +112,7 @@ const coreModuleLabels = {
       "Editor com rich text",
       "Categorias e subcategorias",
       "Links organizados por nota",
-      "Busca rapida por titulo",
+      "Busca rápida por título",
     ],
   },
 };
@@ -121,44 +121,44 @@ const accessModuleFeatures: Record<string, string[]> = {
   "Dashboard executivo": [
     "KPIs em tempo real",
     "Indicadores de performance",
-    "Visao consolidada por area",
+    "Visão consolidada por área",
   ],
-  "Gestao de usuarios": [
-    "Controle de papeis e permissoes",
-    "Distribuicao por time",
-    "Permissoes por modulo",
+  "Gestão de usuários": [
+    "Controle de papéis e permissões",
+    "Distribuição por time",
+    "Permissões por módulo",
   ],
   "Convites e onboarding": [
-    "Convites com papeis pre-definidos",
+    "Convites com papéis pré-definidos",
     "Fluxos de entrada por time",
     "Acompanhamento de status",
   ],
-  Relatorios: [
-    "Exportacao de dados",
-    "Auditoria de alteracoes",
-    "Relatorios por periodo",
+  Relatórios: [
+    "Exportação de dados",
+    "Auditoria de alterações",
+    "Relatórios por período",
   ],
 };
 
 const fallbackAccessModules: AccessModule[] = [
   { id: -1, name: "Dashboard executivo", description: "KPIs e indicadores de acesso.", enabled: true },
-  { id: -2, name: "Gestao de usuarios", description: "Perfis, roles e permissao.", enabled: true },
+  { id: -2, name: "Gestão de usuários", description: "Perfis, roles e permissão.", enabled: true },
   { id: -3, name: "Convites e onboarding", description: "Fluxos de entrada.", enabled: true },
-  { id: -4, name: "Relatorios", description: "Exportacao e auditoria.", enabled: true },
+  { id: -4, name: "Relatórios", description: "Exportação e auditoria.", enabled: true },
 ];
 
 const languageOptions = [
-  { value: "pt-BR", label: "Portugues do Brasil" },
-  { value: "pt-PT", label: "Portugues de Portugal" },
-  { value: "pt-AO", label: "Portugues de Angola" },
+  { value: "pt-BR", label: "Português do Brasil" },
+  { value: "pt-PT", label: "Português de Portugal" },
+  { value: "pt-AO", label: "Português de Angola" },
   { value: "es-419", label: "Espanhol latino-americano" },
   { value: "es-ES", label: "Espanhol europeu" },
-  { value: "en-US", label: "Ingles americano" },
-  { value: "en-CA", label: "Ingles canadense" },
-  { value: "en-GB", label: "Ingles britanico" },
-  { value: "en-AU", label: "Ingles australiano" },
-  { value: "de-DE", label: "Alemao" },
-  { value: "fr-FR", label: "Frances" },
+  { value: "en-US", label: "Inglês americano" },
+  { value: "en-CA", label: "Inglês canadense" },
+  { value: "en-GB", label: "Inglês britânico" },
+  { value: "en-AU", label: "Inglês australiano" },
+  { value: "de-DE", label: "Alemão" },
+  { value: "fr-FR", label: "Francês" },
 ];
 
 export default function Profile() {
@@ -774,7 +774,7 @@ export default function Profile() {
 
               <Stack spacing={1.5}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  Enderecos
+                  Endereços
                 </Typography>
                 {addresses.map((address, index) => (
                   <Stack
@@ -784,7 +784,7 @@ export default function Profile() {
                     alignItems="center"
                   >
                     <TextField
-                      label={`Endereco ${index + 1}`}
+                      label={`Endereço ${index + 1}`}
                       fullWidth
                       value={address}
                       onChange={(event) =>
@@ -863,7 +863,7 @@ export default function Profile() {
                 onClick={saveProfile}
                 sx={{ alignSelf: "flex-start" }}
               >
-                Salvar alteracoes
+                Salvar alterações
               </Button>
             </Stack>
           </AccordionDetails>
@@ -874,7 +874,7 @@ export default function Profile() {
           onChange={(_, isExpanded) => setExpanded(isExpanded ? "notifications" : false)}
         >
           <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-            <Typography variant="h6">Notificacoes</Typography>
+            <Typography variant="h6">Notificações</Typography>
           </AccordionSummary>
           <AccordionDetails>
             <Stack spacing={2.5}>
@@ -906,7 +906,7 @@ export default function Profile() {
                       }}
                     >
                       <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        Notificacoes por email
+                        Notificações por email
                       </Typography>
                       <ToggleCheckbox
                         checked={preferences.notifyEmail}
@@ -1088,7 +1088,7 @@ export default function Profile() {
                       />
                     </Box>
                     <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                      Relatorio semanal da conta.
+                      Relatório semanal da conta.
                     </Typography>
                   </Stack>
                 </Paper>
@@ -1259,7 +1259,7 @@ export default function Profile() {
                   </Box>
                 ) : (
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    Nenhum modulo adicional encontrado.
+                    Nenhum módulo adicional encontrado.
                   </Typography>
                 )}
               </Stack>
@@ -1381,8 +1381,8 @@ export default function Profile() {
               <Typography variant="h6">
                 {moduleDialog
                   ? moduleDialog.nextValue
-                    ? "Ativar modulo"
-                    : "Desativar modulo"
+                    ? "Ativar módulo"
+                    : "Desativar módulo"
                   : "Modulo"}
               </Typography>
               <IconButton onClick={() => setModuleDialog(null)} sx={{ color: "text.secondary" }}>
@@ -1394,15 +1394,15 @@ export default function Profile() {
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
                   {moduleDialog.kind === "core"
                     ? moduleDialog.nextValue
-                      ? `Voce confirma a ativacao do modulo ${coreModuleLabels[moduleDialog.key].title}?`
-                      : `Voce confirma a desativacao do modulo ${coreModuleLabels[moduleDialog.key].title}?`
+                      ? `Você confirma a ativação do módulo ${coreModuleLabels[moduleDialog.key].title}?`
+                      : `Você confirma a desativação do módulo ${coreModuleLabels[moduleDialog.key].title}?`
                     : moduleDialog.nextValue
-                      ? `Voce confirma a ativacao do modulo ${moduleDialog.name}?`
-                      : `Voce confirma a desativacao do modulo ${moduleDialog.name}?`}
+                      ? `Você confirma a ativação do módulo ${moduleDialog.name}?`
+                      : `Você confirma a desativação do módulo ${moduleDialog.name}?`}
                 </Typography>
                 {moduleDialog.kind === "core" ? (
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    {coreModuleLabels[moduleDialog.key].price} por modulo.
+                    {coreModuleLabels[moduleDialog.key].price} por módulo.
                   </Typography>
                 ) : null}
                 {showModuleFeatures ? (

@@ -18,12 +18,12 @@ import { useMemo, useState } from "react";
 
 const faqItems = [
   {
-    title: "Login e recuperacao de senha",
+    title: "Login e recuperação de senha",
     content:
       "Tela de login permite entrar com email e senha. Em recuperar senha, voce solicita o link por email e define uma nova senha.",
   },
   {
-    title: "Criacao de conta",
+    title: "Criação de conta",
     content:
       "Crie seu workspace com nome, email e senha. Depois de criar, voce entra automaticamente.",
   },
@@ -33,7 +33,7 @@ const faqItems = [
       "Mostra uma visao geral do pipeline, financas, agenda e gestao com indicadores principais e atalhos.",
   },
   {
-    title: "Calendario",
+    title: "Calendário",
     content:
       "Organize lembretes por dia, selecione calendarios ativos e edite detalhes como horario, local, repeticao e lembretes.",
   },
@@ -48,14 +48,14 @@ const faqItems = [
       "Painel com metricas de tarefas por etapa e graficos. As metricas de valor aparecem apenas quando o campo de valor esta ativo.",
   },
   {
-    title: "Financas",
+    title: "Finanças",
     content:
-      "Registre gastos, filtre por categorias e visualize graficos. Ao clicar em um gasto, voce abre a visualizacao e pode editar.",
+      "Registre gastos, filtre por categorias e visualize gráficos. Ao clicar em um gasto, você abre a visualização e pode editar.",
   },
   {
     title: "Categorias (pipeline, financas e contatos)",
     content:
-      "Cada area tem suas proprias categorias, incluindo o calendario. Voce pode criar, editar cor/nome e remover categorias.",
+      "Cada área tem suas próprias categorias, incluindo o calendário. Você pode criar, editar cor/nome e remover categorias.",
   },
   {
     title: "Contatos",
@@ -63,19 +63,19 @@ const faqItems = [
       "Cadastre pessoas com multiplos telefones, emails, enderecos e comentarios. Copie dados com um clique e organize por categorias.",
   },
   {
-    title: "Notificacoes",
+    title: "Notificações",
     content:
       "Mostra alertas como aniversarios proximos e permite marcar como visto. O sino indica quando ha novidades.",
   },
   {
     title: "Idiomas",
     content:
-      "Altere o idioma em Perfil. O app confirma a troca e permite desfazer a alteracao.",
+      "Altere o idioma em Perfil. O app confirma a troca e permite desfazer a alteração.",
   },
   {
-    title: "Gestao de acessos",
+    title: "Gestão de acessos",
     content:
-      "Controle papeis, permissoes e modulos pagos. Edite permissoes por papel e ative/desative modulos.",
+      "Controle papéis, permissões e módulos pagos. Edite permissões por papel e ative/desative módulos.",
   },
   {
     title: "Perfil",

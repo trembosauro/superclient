@@ -190,7 +190,7 @@ const sampleContacts: Contact[] = [
     phones: ["51944443333"],
     emails: ["felipe@startupazul.com"],
     addresses: ["Rua Padre Chagas, 75, Porto Alegre, RS"],
-    comments: ["Prospect em negociacao para Q3."],
+    comments: ["Prospect em negociação para Q3."],
     categoryIds: ["cat-prospect"],
   },
   {
@@ -1553,7 +1553,7 @@ export default function Contacts() {
               </IconButton>
             </Box>
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              Voce confirma a exclusao deste contato? Essa acao nao pode ser desfeita.
+              Você confirma a exclusão deste contato? Essa ação não pode ser desfeita.
             </Typography>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button variant="outlined" onClick={() => setRemoveContactOpen(false)}>

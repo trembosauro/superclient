@@ -101,11 +101,11 @@ const defaultCategories: Category[] = [
 
 const LEGACY_FINANCE_NAMES = new Set([
   "Moradia",
-  "Alimentacao",
+  "Alimentação",
   "Transporte",
   "Saude",
   "Lazer",
-  "Educacao",
+  "Educação",
   "Assinaturas",
   "Impostos",
   "Investimentos",
@@ -1086,7 +1086,7 @@ export default function Financas() {
                 onClick={handleSaveExpense}
                 disabled={!permissions.finance_edit}
               >
-                {editingExpenseId ? "Salvar alteracoes" : "Salvar gasto"}
+                {editingExpenseId ? "Salvar alterações" : "Salvar gasto"}
               </Button>
             </Stack>
           </Stack>
@@ -1542,7 +1542,7 @@ export default function Financas() {
               </IconButton>
             </Box>
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              Voce confirma a exclusao deste gasto? Essa acao nao pode ser desfeita.
+              Você confirma a exclusão deste gasto? Essa ação não pode ser desfeita.
             </Typography>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button variant="outlined" onClick={() => setRemoveExpenseOpen(false)}>

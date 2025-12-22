@@ -96,7 +96,7 @@ const defaultCategories: NoteCategory[] = [
 ];
 
 const defaultSubcategories: NoteSubcategory[] = [
-  { id: "note-sub-plano", name: "Plano de acao", categoryId: "note-cat-estrategia" },
+  { id: "note-sub-plano", name: "Plano de ação", categoryId: "note-cat-estrategia" },
   { id: "note-sub-kpis", name: "KPIs", categoryId: "note-cat-estrategia" },
   { id: "note-sub-ata", name: "Ata", categoryId: "note-cat-reunioes" },
   { id: "note-sub-followup", name: "Follow-up", categoryId: "note-cat-reunioes" },
@@ -125,7 +125,7 @@ const defaultNotes: Note[] = [
     subcategoryIds: ["note-sub-ata"],
     contentHtml:
       "<p>Principais alinhamentos:</p><ol><li>Priorizar backlog A</li><li>Revisar riscos da entrega</li></ol>",
-    links: [{ id: "note-link-2", label: "Gravacao", url: "https://meet.google.com" }],
+    links: [{ id: "note-link-2", label: "Gravação", url: "https://meet.google.com" }],
     updatedAt: new Date().toISOString(),
     relatedNoteIds: [],
   },
@@ -1245,7 +1245,7 @@ export default function Notes() {
                     { key: "showCategories", label: "Mostrar categorias" },
                     { key: "showSubcategories", label: "Mostrar subcategorias" },
                     { key: "showLinks", label: "Mostrar links" },
-                    { key: "showUpdatedAt", label: "Mostrar ultima atualizacao" },
+                  { key: "showUpdatedAt", label: "Mostrar última atualização" },
                   ].map((item) => (
                     <Box
                       key={item.key}
@@ -1301,8 +1301,8 @@ export default function Notes() {
         }
         description={
           confirmRemove?.type === "category"
-            ? "Voce confirma a remocao desta categoria? As notas serao movidas."
-            : "Voce confirma a remocao desta subcategoria? Ela sera removida das notas."
+            ? "Você confirma a remoção desta categoria? As notas serão movidas."
+            : "Você confirma a remoção desta subcategoria? Ela será removida das notas."
         }
         onCancel={() => setConfirmRemove(null)}
         onConfirm={() => {
@@ -1481,11 +1481,11 @@ function RichTextEditor({
             <FormatQuoteRoundedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Limpar formatacao" placement="top">
+        <Tooltip title="Limpar formatação" placement="top">
           <IconButton
             {...iconButtonProps}
             onClick={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()}
-            aria-label="Limpar formatacao"
+            aria-label="Limpar formatação"
           >
             <BackspaceRoundedIcon fontSize="small" />
           </IconButton>
