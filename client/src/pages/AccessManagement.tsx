@@ -6,6 +6,7 @@ import {
   Divider,
   Dialog,
   DialogContent,
+  InputAdornment,
   MenuItem,
   Paper,
   Stack,
@@ -15,6 +16,7 @@ import {
 import api from "../api";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import { interactiveCardSx } from "../styles/interactiveCard";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 
 type RolePermissionKey =
   | "pipeline_view"
@@ -301,6 +303,19 @@ export default function AccessManagement() {
               fullWidth
               value={userFilter}
               onChange={(event) => setUserFilter(event.target.value)}
+              InputProps={{
+                endAdornment: userFilter ? (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setUserFilter("")}
+                      aria-label="Limpar busca"
+                    >
+                      <CloseRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
+              }}
             />
             {filteredUsers.length === 0 ? (
               <Typography variant="body2" sx={{ color: "text.secondary" }}>

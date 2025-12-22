@@ -631,6 +631,13 @@ export default function Profile() {
           </TextField>
         </Stack>
 
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+            gap: 2.5,
+          }}
+        >
         <Accordion
           expanded={expanded === "main"}
           onChange={(_, isExpanded) => setExpanded(isExpanded ? "main" : false)}
@@ -1321,6 +1328,7 @@ export default function Profile() {
             </Stack>
           </AccordionDetails>
         </Accordion>
+        </Box>
       </Stack>
 
       <Dialog

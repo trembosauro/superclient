@@ -13,6 +13,7 @@ import {
   DialogContent,
   Snackbar,
   IconButton,
+  InputAdornment,
   Paper,
   Alert,
   MenuItem,
@@ -32,6 +33,7 @@ import ArchiveRoundedIcon from "@mui/icons-material/ArchiveRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import DragIndicatorRoundedIcon from "@mui/icons-material/DragIndicatorRounded";
+import FileCopyRoundedIcon from "@mui/icons-material/FileCopyRounded";
 import FormatBoldRoundedIcon from "@mui/icons-material/FormatBoldRounded";
 import FormatItalicRoundedIcon from "@mui/icons-material/FormatItalicRounded";
 import FormatListBulletedRoundedIcon from "@mui/icons-material/FormatListBulletedRounded";
@@ -858,6 +860,32 @@ export default function Pipeline() {
       document.execCommand("copy");
       document.body.removeChild(fallback);
     }
+  };
+
+  const handleDuplicateDeal = (deal: Deal) => {
+    const nextDeal: Deal = {
+      ...deal,
+      id: `deal-${Date.now()}`,
+      name: deal.name ? `${deal.name} (copia)` : "Copia da tarefa",
+    };
+    if (sprintState.enabled && findDealInBacklog(deal.id)) {
+      setSprintState((prev) => ({
+        ...prev,
+        backlog: [nextDeal, ...prev.backlog],
+      }));
+      setViewingDeal(nextDeal);
+      return;
+    }
+    const column = findColumnByCard(deal.id) || columns[0];
+    if (!column) {
+      return;
+    }
+    setColumns((prev) =>
+      prev.map((item) =>
+        item.id === column.id ? { ...item, deals: [nextDeal, ...item.deals] } : item
+      )
+    );
+    setViewingDeal(nextDeal);
   };
 
   useEffect(() => {
@@ -1825,6 +1853,19 @@ export default function Pipeline() {
               value={taskQuery}
               onChange={(event) => setTaskQuery(event.target.value)}
               sx={{ minWidth: { xs: "100%", sm: 280 } }}
+              InputProps={{
+                endAdornment: taskQuery ? (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setTaskQuery("")}
+                      aria-label="Limpar busca"
+                    >
+                      <CloseRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
+              }}
             />
             <Autocomplete
               multiple
@@ -2369,6 +2410,20 @@ export default function Pipeline() {
                   onClick={() => setRemoveDealOpen(true)}
                 >
                   Remover
+                </Button>
+              ) : null}
+              {permissions.pipeline_edit_tasks ? (
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    if (!viewingDeal) {
+                      return;
+                    }
+                    handleDuplicateDeal(viewingDeal);
+                  }}
+                  startIcon={<FileCopyRoundedIcon fontSize="small" />}
+                >
+                  Duplicar
                 </Button>
               ) : null}
               {permissions.pipeline_edit_tasks ? (
@@ -3774,35 +3829,40 @@ function RichTextEditor({
         if (moved) {
           return false;
         }
-        const files = Array.from(event.dataTransfer?.files || []);
-        const imageFile = files.find((file) => file.type.startsWith("image/"));
-        if (!imageFile) {
+        const files = Array.from(event.dataTransfer?.files || []).filter((file) =>
+          file.type.startsWith("image/")
+        );
+        if (!files.length) {
           return false;
         }
-        const reader = new FileReader();
-        reader.onload = () => {
-          const src = String(reader.result || "");
-          editor?.chain().focus().setImage({ src }).run();
-        };
-        reader.readAsDataURL(imageFile);
+        files.forEach((file) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const src = String(reader.result || "");
+            editor?.chain().focus().setImage({ src }).run();
+          };
+          reader.readAsDataURL(file);
+        });
         return true;
       },
       handlePaste: (_view, event) => {
         const items = Array.from(event.clipboardData?.items || []);
-        const imageItem = items.find((item) => item.type.startsWith("image/"));
-        if (!imageItem) {
+        const imageItems = items.filter((item) => item.type.startsWith("image/"));
+        if (!imageItems.length) {
           return false;
         }
-        const file = imageItem.getAsFile();
-        if (!file) {
-          return false;
-        }
-        const reader = new FileReader();
-        reader.onload = () => {
-          const src = String(reader.result || "");
-          editor?.chain().focus().setImage({ src }).run();
-        };
-        reader.readAsDataURL(file);
+        imageItems.forEach((item) => {
+          const file = item.getAsFile();
+          if (!file) {
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = () => {
+            const src = String(reader.result || "");
+            editor?.chain().focus().setImage({ src }).run();
+          };
+          reader.readAsDataURL(file);
+        });
         return true;
       },
     },

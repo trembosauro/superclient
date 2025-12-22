@@ -4,6 +4,8 @@ import {
   AccordionSummary,
   Box,
   Button,
+  IconButton,
+  InputAdornment,
   MenuItem,
   Paper,
   Stack,
@@ -11,6 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { useMemo, useState } from "react";
 
 const faqItems = [
@@ -120,6 +123,19 @@ export default function Support() {
               placeholder="Digite palavra-chave"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              InputProps={{
+                endAdornment: query ? (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setQuery("")}
+                      aria-label="Limpar busca"
+                    >
+                      <CloseRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
+              }}
             />
 
             <Stack spacing={1.5}>

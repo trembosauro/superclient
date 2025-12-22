@@ -11,6 +11,7 @@ import {
   DialogContent,
   Autocomplete,
   IconButton,
+  InputAdornment,
   MenuItem,
   Paper,
   Table,
@@ -833,6 +834,19 @@ export default function Financas() {
                 value={expenseQuery}
                 onChange={(event) => setExpenseQuery(event.target.value)}
                 sx={{ minWidth: { xs: "100%", sm: 240 } }}
+                InputProps={{
+                  endAdornment: expenseQuery ? (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={() => setExpenseQuery("")}
+                        aria-label="Limpar busca"
+                      >
+                        <CloseRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                }}
               />
               <Autocomplete
                 multiple

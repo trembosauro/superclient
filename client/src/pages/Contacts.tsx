@@ -755,6 +755,19 @@ export default function Contacts() {
                 value={contactQuery}
                 onChange={(event) => setContactQuery(event.target.value)}
                 sx={{ maxWidth: 360 }}
+                InputProps={{
+                  endAdornment: contactQuery ? (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={() => setContactQuery("")}
+                        aria-label="Limpar busca"
+                      >
+                        <CloseRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                }}
               />
               <Autocomplete
                 multiple
