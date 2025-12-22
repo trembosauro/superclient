@@ -51,7 +51,9 @@ function App() {
   const [location, setLocation] = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>("");
-  const [mobileAnchorEl, setMobileAnchorEl] = useState<null | HTMLElement>(null);
+  const [mobileAnchorEl, setMobileAnchorEl] = useState<null | HTMLElement>(
+    null
+  );
   const [moduleAccess, setModuleAccess] = useState({
     pipeline: true,
     finance: true,
@@ -94,7 +96,8 @@ function App() {
               moduleContacts: Boolean(prefs.moduleContacts ?? true),
               moduleCalendar: Boolean(prefs.moduleCalendar ?? true),
               moduleNotes: Boolean(prefs.moduleNotes ?? true),
-              language: typeof prefs.language === "string" ? prefs.language : "pt-BR",
+              language:
+                typeof prefs.language === "string" ? prefs.language : "pt-BR",
             };
             window.localStorage.setItem("sc_prefs", JSON.stringify(nextPrefs));
             setModuleAccess({
@@ -124,7 +127,13 @@ function App() {
         }
         setIsLoggedIn(false);
         setUserName("");
-        setModuleAccess({ pipeline: true, finance: true, contacts: true, calendar: true, notes: true });
+        setModuleAccess({
+          pipeline: true,
+          finance: true,
+          contacts: true,
+          calendar: true,
+          notes: true,
+        });
       }
     };
 
@@ -152,7 +161,8 @@ function App() {
           calendar: Boolean(parsed.moduleCalendar ?? true),
           notes: Boolean(parsed.moduleNotes ?? true),
         });
-        const nextLanguage = typeof parsed.language === "string" ? parsed.language : "pt-BR";
+        const nextLanguage =
+          typeof parsed.language === "string" ? parsed.language : "pt-BR";
         setLanguage(nextLanguage);
         document.documentElement.lang = nextLanguage;
       } catch {
@@ -215,7 +225,10 @@ function App() {
     if (!moduleAccess.contacts && location === "/contatos") {
       setLocation("/profile");
     }
-    if (!moduleAccess.calendar && (location === "/calendario" || location === "/calendario/concluidas")) {
+    if (
+      !moduleAccess.calendar &&
+      (location === "/calendario" || location === "/calendario/concluidas")
+    ) {
       setLocation("/profile");
     }
     if (!moduleAccess.notes && location.startsWith("/notas")) {
@@ -225,7 +238,9 @@ function App() {
 
   const isActive = (href: string) => {
     if (href === "/login") {
-      return location === "/" || location === "/login" || location === "/signup";
+      return (
+        location === "/" || location === "/login" || location === "/signup"
+      );
     }
     if (href === "/home") {
       return location === "/home";
@@ -240,7 +255,7 @@ function App() {
   };
 
   const visibleNavItems = isLoggedIn
-    ? navItems.filter((item) => {
+    ? navItems.filter(item => {
         if (item.href === "/pipeline") {
           return moduleAccess.pipeline;
         }
@@ -291,13 +306,17 @@ function App() {
       if (!stored) {
         return null;
       }
-      const parsed = JSON.parse(stored) as Array<{ id: string; title: string; parentId?: string }>;
-      const current = parsed.find((note) => note.id === noteId);
+      const parsed = JSON.parse(stored) as Array<{
+        id: string;
+        title: string;
+        parentId?: string;
+      }>;
+      const current = parsed.find(note => note.id === noteId);
       if (!current) {
         return null;
       }
       const parent = current.parentId
-        ? parsed.find((note) => note.id === current.parentId)
+        ? parsed.find(note => note.id === current.parentId)
         : null;
       const crumbs = [
         <Link
@@ -378,37 +397,37 @@ function App() {
               Tarefas feitas
             </Typography>,
           ]
-      : location === "/notas/arquivo"
-        ? [
-            <Link
-              key="notas"
-              component={RouterLink}
-              href="/notas"
-              underline="hover"
-              color="inherit"
-            >
-              Notas
-            </Link>,
-            <Typography key="arquivo" color="text.primary">
-              Arquivo
-            </Typography>,
-          ]
-      : notesBreadcrumb
-        ? notesBreadcrumb
-      : [
-          <Link
-            key="home"
-            component={RouterLink}
-            href="/home"
-            underline="hover"
-            color="inherit"
-          >
-            Home
-          </Link>,
-          <Typography key="current" color="text.primary">
-            {currentLabel}
-          </Typography>,
-        ];
+        : location === "/notas/arquivo"
+          ? [
+              <Link
+                key="notas"
+                component={RouterLink}
+                href="/notas"
+                underline="hover"
+                color="inherit"
+              >
+                Notas
+              </Link>,
+              <Typography key="arquivo" color="text.primary">
+                Arquivo
+              </Typography>,
+            ]
+          : notesBreadcrumb
+            ? notesBreadcrumb
+            : [
+                <Link
+                  key="home"
+                  component={RouterLink}
+                  href="/home"
+                  underline="hover"
+                  color="inherit"
+                >
+                  Home
+                </Link>,
+                <Typography key="current" color="text.primary">
+                  {currentLabel}
+                </Typography>,
+              ];
   const avatarInitial = userName.trim().charAt(0).toUpperCase() || "U";
   const mobileMenuOpen = Boolean(mobileAnchorEl);
 
@@ -430,7 +449,7 @@ function App() {
       const contacts = JSON.parse(stored) as Array<{ birthday?: string }>;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const upcoming = contacts.filter((contact) => {
+      const upcoming = contacts.filter(contact => {
         if (!contact.birthday) {
           return false;
         }
@@ -446,7 +465,8 @@ function App() {
         if (target < today) {
           target.setFullYear(today.getFullYear() + 1);
         }
-        const diffDays = (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+        const diffDays =
+          (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
         return diffDays >= 0 && diffDays <= 7;
       });
       const seenAtRaw = window.localStorage.getItem("notifications_seen_at");
@@ -522,7 +542,10 @@ function App() {
                   px: 0,
                   minWidth: "auto",
                   color: "text.primary",
-                  "&:hover": { backgroundColor: "transparent", color: "primary.main" },
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                    color: "primary.main",
+                  },
                 }}
               >
                 <Stack direction="row" spacing={1} alignItems="center">
@@ -530,10 +553,19 @@ function App() {
                   <Box component="span">Superclient</Box>
                 </Stack>
               </Button>
-              <Box sx={{ flex: 1, display: { xs: "none", md: "flex" }, justifyContent: "center" }}>
+              <Box
+                sx={{
+                  flex: 1,
+                  display: { xs: "none", md: "flex" },
+                  justifyContent: "center",
+                }}
+              >
                 <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-                  {visibleNavItems.map((item) => (
-                    <Box key={item.href} sx={{ display: "flex", alignItems: "center" }}>
+                  {visibleNavItems.map(item => (
+                    <Box
+                      key={item.href}
+                      sx={{ display: "flex", alignItems: "center" }}
+                    >
                       <Button
                         component={RouterLink}
                         href={item.href}
@@ -542,7 +574,9 @@ function App() {
                         sx={{
                           textTransform: "none",
                           fontWeight: 600,
-                          color: isActive(item.href) ? "primary.main" : "text.secondary",
+                          color: isActive(item.href)
+                            ? "primary.main"
+                            : "text.secondary",
                           backgroundColor: isActive(item.href)
                             ? "rgba(34, 201, 166, 0.12)"
                             : "transparent",
@@ -586,7 +620,11 @@ function App() {
                       },
                     }}
                   >
-                    <Badge variant="dot" color="error" invisible={!hasNotifications}>
+                    <Badge
+                      variant="dot"
+                      color="error"
+                      invisible={!hasNotifications}
+                    >
                       <NotificationsNoneRoundedIcon />
                     </Badge>
                   </IconButton>
@@ -647,7 +685,11 @@ function App() {
                       },
                     }}
                   >
-                    <Badge variant="dot" color="error" invisible={!hasNotifications}>
+                    <Badge
+                      variant="dot"
+                      color="error"
+                      invisible={!hasNotifications}
+                    >
                       <NotificationsNoneRoundedIcon />
                     </Badge>
                   </IconButton>
@@ -679,7 +721,7 @@ function App() {
                     },
                   }}
                 >
-                  {visibleNavItems.map((item) => (
+                  {visibleNavItems.map(item => (
                     <MenuItem
                       key={item.href}
                       component={RouterLink}
@@ -709,31 +751,33 @@ function App() {
 
           <Box component="main" sx={{ flex: 1, px: { xs: 2, md: 6 }, py: 6 }}>
             {showBreadcrumbs ? (
-              <Breadcrumbs
-                aria-label="breadcrumb"
-                separator="›"
-                sx={{
-                  mb: 3,
-                  color: "text.secondary",
-                  display: "flex",
-                  alignItems: "center",
-                  flexWrap: "nowrap",
-                  whiteSpace: "nowrap",
-                  "& .MuiBreadcrumbs-ol": {
-                    flexWrap: "nowrap",
-                    alignItems: "center",
-                  },
-                  "& .MuiBreadcrumbs-li": {
-                    display: "inline-flex",
-                  },
-                  "& .MuiBreadcrumbs-separator": {
-                    mx: 1,
+              <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 3 } }}>
+                <Breadcrumbs
+                  aria-label="breadcrumb"
+                  separator="›"
+                  sx={{
+                    mb: 1,
                     color: "text.secondary",
-                  },
-                }}
-              >
-                {breadcrumbItems}
-              </Breadcrumbs>
+                    display: "flex",
+                    alignItems: "center",
+                    flexWrap: "nowrap",
+                    whiteSpace: "nowrap",
+                    "& .MuiBreadcrumbs-ol": {
+                      flexWrap: "nowrap",
+                      alignItems: "center",
+                    },
+                    "& .MuiBreadcrumbs-li": {
+                      display: "inline-flex",
+                    },
+                    "& .MuiBreadcrumbs-separator": {
+                      mx: 1,
+                      color: "text.secondary",
+                    },
+                  }}
+                >
+                  {breadcrumbItems}
+                </Breadcrumbs>
+              </Box>
             ) : null}
             <Switch>
               <Route path="/" component={Login} />
@@ -747,7 +791,10 @@ function App() {
               <Route path="/pipeline" component={Pipeline} />
               <Route path="/financas" component={Financas} />
               <Route path="/contatos" component={Contacts} />
-              <Route path="/calendario/concluidas" component={CalendarCompleted} />
+              <Route
+                path="/calendario/concluidas"
+                component={CalendarCompleted}
+              />
               <Route path="/calendario" component={Calendar} />
               <Route path="/notas/arquivo/:noteId" component={Notes} />
               <Route path="/notas/arquivo" component={Notes} />
@@ -779,8 +826,14 @@ function App() {
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
                 Superclient © {new Date().getFullYear()}
               </Typography>
-              <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
-                {visibleNavItems.map((item) => (
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+                flexWrap="wrap"
+                useFlexGap
+              >
+                {visibleNavItems.map(item => (
                   <Link
                     key={item.href}
                     component={RouterLink}
@@ -819,7 +872,6 @@ function App() {
           {switchNotice}
         </Alert>
       </Snackbar>
-
     </ThemeProvider>
   );
 }

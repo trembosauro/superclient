@@ -141,10 +141,30 @@ const accessModuleFeatures: Record<string, string[]> = {
 };
 
 const fallbackAccessModules: AccessModule[] = [
-  { id: -1, name: "Dashboard executivo", description: "KPIs e indicadores de acesso.", enabled: true },
-  { id: -2, name: "Gestão de usuários", description: "Perfis, roles e permissão.", enabled: true },
-  { id: -3, name: "Convites e onboarding", description: "Fluxos de entrada.", enabled: true },
-  { id: -4, name: "Relatórios", description: "Exportação e auditoria.", enabled: true },
+  {
+    id: -1,
+    name: "Dashboard executivo",
+    description: "KPIs e indicadores de acesso.",
+    enabled: true,
+  },
+  {
+    id: -2,
+    name: "Gestão de usuários",
+    description: "Perfis, roles e permissão.",
+    enabled: true,
+  },
+  {
+    id: -3,
+    name: "Convites e onboarding",
+    description: "Fluxos de entrada.",
+    enabled: true,
+  },
+  {
+    id: -4,
+    name: "Relatórios",
+    description: "Exportação e auditoria.",
+    enabled: true,
+  },
 ];
 
 const languageOptions = [
@@ -205,7 +225,9 @@ export default function Profile() {
   const [switchLoading, setSwitchLoading] = useState(false);
   const isLoadedRef = useRef(false);
   const saveTimeoutRef = useRef<number | null>(null);
-  const accessModulesToShow = accessModules.length ? accessModules : fallbackAccessModules;
+  const accessModulesToShow = accessModules.length
+    ? accessModules
+    : fallbackAccessModules;
   const canToggleAccessModules = accessModules.length > 0;
 
   const loadAccounts = () => {
@@ -230,16 +252,23 @@ export default function Profile() {
       return;
     }
     const existingAccounts = loadAccounts();
-    const existing = existingAccounts.find((account) => account.email === user.email);
+    const existing = existingAccounts.find(
+      account => account.email === user.email
+    );
     const nextAccount = {
       name: user.name || "",
       email: user.email,
       lastUsed: Date.now(),
       token: token || existing?.token,
     };
-    const deduped = existingAccounts.filter((account) => account.email !== user.email);
+    const deduped = existingAccounts.filter(
+      account => account.email !== user.email
+    );
     const nextAccounts = [nextAccount, ...deduped].slice(0, 3);
-    window.localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(nextAccounts));
+    window.localStorage.setItem(
+      ACCOUNT_STORAGE_KEY,
+      JSON.stringify(nextAccounts)
+    );
     setSwitchAccounts(nextAccounts);
   };
 
@@ -283,9 +312,19 @@ export default function Profile() {
           ? [profile.phone]
           : [];
     setPhones(ensureList(initialPhones));
-    setEmails(ensureList(Array.isArray(profile?.emails) ? profile?.emails || [] : []));
-    setAddresses(ensureList(Array.isArray(profile?.addresses) ? profile?.addresses || [] : []));
-    setComments(ensureList(Array.isArray(profile?.comments) ? profile?.comments || [] : []));
+    setEmails(
+      ensureList(Array.isArray(profile?.emails) ? profile?.emails || [] : [])
+    );
+    setAddresses(
+      ensureList(
+        Array.isArray(profile?.addresses) ? profile?.addresses || [] : []
+      )
+    );
+    setComments(
+      ensureList(
+        Array.isArray(profile?.comments) ? profile?.comments || [] : []
+      )
+    );
     setPreferences({
       notifyEmail: Boolean(prefs?.emailNotifications ?? true),
       notifyMentions: Boolean(prefs?.notifyMentions ?? true),
@@ -416,8 +455,9 @@ export default function Profile() {
       setSwitchEmail("");
       setLocation("/home");
     } catch (error) {
-      const response = (error as { response?: { status?: number; data?: { error?: string } } })
-        ?.response;
+      const response = (
+        error as { response?: { status?: number; data?: { error?: string } } }
+      )?.response;
       const code = response?.data?.error;
       if (code === "session_conflict") {
         setSwitchError(
@@ -434,7 +474,7 @@ export default function Profile() {
   const sanitizePhone = (value: string) => value.replace(/\D/g, "");
 
   const sanitizeList = (items: string[]) =>
-    items.map((item) => item.trim()).filter(Boolean);
+    items.map(item => item.trim()).filter(Boolean);
 
   const ensureList = (items: string[]) => (items.length ? items : [""]);
 
@@ -469,7 +509,7 @@ export default function Profile() {
           notifyProductUpdates: preferences.notifyProductUpdates,
         },
       })
-      .then((response) => {
+      .then(response => {
         const user = response?.data?.user;
         if (user?.email) {
           window.localStorage.setItem(
@@ -539,11 +579,19 @@ export default function Profile() {
     setModuleDialog({ kind: "core", key, nextValue });
   };
 
-  const requestAccessModuleToggle = (module: AccessModule, nextValue: boolean) => {
+  const requestAccessModuleToggle = (
+    module: AccessModule,
+    nextValue: boolean
+  ) => {
     if (!canToggleAccessModules) {
       return;
     }
-    setModuleDialog({ kind: "access", id: module.id, name: module.name, nextValue });
+    setModuleDialog({
+      kind: "access",
+      id: module.id,
+      name: module.name,
+      nextValue,
+    });
   };
 
   const confirmModuleToggle = async () => {
@@ -551,17 +599,23 @@ export default function Profile() {
       return;
     }
     if (moduleDialog.kind === "core") {
-      setPreferences((prev) => ({ ...prev, [moduleDialog.key]: moduleDialog.nextValue }));
+      setPreferences(prev => ({
+        ...prev,
+        [moduleDialog.key]: moduleDialog.nextValue,
+      }));
       setModuleDialog(null);
       return;
     }
     try {
-      const response = await api.patch(`/api/access/modules/${moduleDialog.id}`, {
-        enabled: moduleDialog.nextValue,
-      });
+      const response = await api.patch(
+        `/api/access/modules/${moduleDialog.id}`,
+        {
+          enabled: moduleDialog.nextValue,
+        }
+      );
       const updated = response?.data?.module as AccessModule | undefined;
-      setAccessModules((prev) =>
-        prev.map((item) =>
+      setAccessModules(prev =>
+        prev.map(item =>
           item.id === moduleDialog.id
             ? {
                 ...item,
@@ -584,25 +638,25 @@ export default function Profile() {
     transform?: (value: string) => string
   ) => {
     const nextValue = transform ? transform(value) : value;
-    setter((prev) => prev.map((item, idx) => (idx === index ? nextValue : item)));
+    setter(prev => prev.map((item, idx) => (idx === index ? nextValue : item)));
   };
 
   const removeListItem = (
     setter: Dispatch<SetStateAction<string[]>>,
     index: number
   ) => {
-    setter((prev) => {
+    setter(prev => {
       const next = prev.filter((_, idx) => idx !== index);
       return next.length ? next : [""];
     });
   };
 
   const addListItem = (setter: Dispatch<SetStateAction<string[]>>) => {
-    setter((prev) => [...prev, ""]);
+    setter(prev => [...prev, ""]);
   };
 
   const getLanguageLabel = (value: string) =>
-    languageOptions.find((option) => option.value === value)?.label || value;
+    languageOptions.find(option => option.value === value)?.label || value;
 
   const handleLanguageSelect = (nextLanguage: string) => {
     setLanguageDraft(nextLanguage);
@@ -622,20 +676,23 @@ export default function Profile() {
     }
     lastLanguageRef.current = preferences.language;
     const nextLanguage = pendingLanguage;
-    setPreferences((prev) => ({ ...prev, language: pendingLanguage }));
+    setPreferences(prev => {
+      const next = { ...prev, language: nextLanguage };
+      window.localStorage.setItem(
+        "sc_prefs",
+        JSON.stringify({
+          modulePipeline: next.modulePipeline,
+          moduleFinance: next.moduleFinance,
+          moduleContacts: next.moduleContacts,
+          moduleCalendar: next.moduleCalendar,
+          moduleNotes: next.moduleNotes,
+          language: next.language,
+        })
+      );
+      window.dispatchEvent(new Event("prefs-change"));
+      return next;
+    });
     setLanguageDraft(nextLanguage);
-    window.localStorage.setItem(
-      "sc_prefs",
-      JSON.stringify({
-        modulePipeline: preferences.modulePipeline,
-        moduleFinance: preferences.moduleFinance,
-        moduleContacts: preferences.moduleContacts,
-        moduleCalendar: preferences.moduleCalendar,
-        moduleNotes: preferences.moduleNotes,
-        language: nextLanguage,
-      })
-    );
-    window.dispatchEvent(new Event("prefs-change"));
     setLanguageDialogOpen(false);
     setPendingLanguage(null);
     setLanguageSnackbarOpen(true);
@@ -653,9 +710,25 @@ export default function Profile() {
       return;
     }
     const previous = lastLanguageRef.current;
-    setPreferences((prev) => ({ ...prev, language: previous }));
+    setPreferences(prev => {
+      const next = { ...prev, language: previous };
+      window.localStorage.setItem(
+        "sc_prefs",
+        JSON.stringify({
+          modulePipeline: next.modulePipeline,
+          moduleFinance: next.moduleFinance,
+          moduleContacts: next.moduleContacts,
+          moduleCalendar: next.moduleCalendar,
+          moduleNotes: next.moduleNotes,
+          language: next.language,
+        })
+      );
+      window.dispatchEvent(new Event("prefs-change"));
+      return next;
+    });
     setLanguageDraft(previous);
     setLanguageSnackbarOpen(false);
+    lastLanguageRef.current = null;
   };
 
   const moduleFeatures = moduleDialog
@@ -663,7 +736,9 @@ export default function Profile() {
       ? coreModuleLabels[moduleDialog.key].features
       : accessModuleFeatures[moduleDialog.name] || []
     : [];
-  const showModuleFeatures = Boolean(moduleDialog?.nextValue && moduleFeatures.length);
+  const showModuleFeatures = Boolean(
+    moduleDialog?.nextValue && moduleFeatures.length
+  );
 
   return (
     <Box sx={{ maxWidth: 980, mx: "auto" }}>
@@ -679,10 +754,10 @@ export default function Profile() {
             select
             label="Idioma"
             value={languageDraft}
-            onChange={(event) => handleLanguageSelect(event.target.value)}
+            onChange={event => handleLanguageSelect(event.target.value)}
             sx={{ minWidth: 260 }}
           >
-            {languageOptions.map((option) => (
+            {languageOptions.map(option => (
               <MenuItem key={option.value} value={option.value}>
                 {option.label}
               </MenuItem>
@@ -703,25 +778,25 @@ export default function Profile() {
                 label="Nome"
                 fullWidth
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={event => setName(event.target.value)}
               />
               <TextField
                 label="Time"
                 fullWidth
                 value={team}
-                onChange={(event) => setTeam(event.target.value)}
+                onChange={event => setTeam(event.target.value)}
               />
               <TextField
                 label="Cargo"
                 fullWidth
                 value={role}
-                onChange={(event) => setRole(event.target.value)}
+                onChange={event => setRole(event.target.value)}
               />
               <TextField
                 label="Fuso horario"
                 fullWidth
                 value={timezone}
-                onChange={(event) => setTimezone(event.target.value)}
+                onChange={event => setTimezone(event.target.value)}
               />
 
               <Stack spacing={1.5}>
@@ -729,17 +804,29 @@ export default function Profile() {
                   Telefones
                 </Typography>
                 {phones.map((phone, index) => (
-                  <Stack key={`phone-${index}`} direction="row" spacing={1} alignItems="center">
+                  <Stack
+                    key={`phone-${index}`}
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                  >
                     <TextField
                       label={`Telefone ${index + 1}`}
                       fullWidth
                       value={phone}
-                      onChange={(event) =>
-                        updateListItem(setPhones, index, event.target.value, sanitizePhone)
+                      onChange={event =>
+                        updateListItem(
+                          setPhones,
+                          index,
+                          event.target.value,
+                          sanitizePhone
+                        )
                       }
                       inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
                     />
-                    <IconButton onClick={() => removeListItem(setPhones, index)}>
+                    <IconButton
+                      onClick={() => removeListItem(setPhones, index)}
+                    >
                       <CloseRoundedIcon fontSize="small" />
                     </IconButton>
                   </Stack>
@@ -748,7 +835,11 @@ export default function Profile() {
                   variant="outlined"
                   startIcon={<AddRoundedIcon />}
                   onClick={() => addListItem(setPhones)}
-                  sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                  sx={{
+                    alignSelf: "flex-start",
+                    textTransform: "none",
+                    fontWeight: 600,
+                  }}
                 >
                   Adicionar telefone
                 </Button>
@@ -762,16 +853,23 @@ export default function Profile() {
                   Adicione emails secundarios para entrar na mesma conta.
                 </Typography>
                 {emails.map((item, index) => (
-                  <Stack key={`email-${index}`} direction="row" spacing={1} alignItems="center">
+                  <Stack
+                    key={`email-${index}`}
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                  >
                     <TextField
                       label={`Email de login ${index + 1}`}
                       fullWidth
                       value={item}
-                      onChange={(event) =>
+                      onChange={event =>
                         updateListItem(setEmails, index, event.target.value)
                       }
                     />
-                    <IconButton onClick={() => removeListItem(setEmails, index)}>
+                    <IconButton
+                      onClick={() => removeListItem(setEmails, index)}
+                    >
                       <CloseRoundedIcon fontSize="small" />
                     </IconButton>
                   </Stack>
@@ -780,7 +878,11 @@ export default function Profile() {
                   variant="outlined"
                   startIcon={<AddRoundedIcon />}
                   onClick={() => addListItem(setEmails)}
-                  sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                  sx={{
+                    alignSelf: "flex-start",
+                    textTransform: "none",
+                    fontWeight: 600,
+                  }}
                 >
                   Adicionar email de login
                 </Button>
@@ -801,7 +903,7 @@ export default function Profile() {
                       label={`Endereço ${index + 1}`}
                       fullWidth
                       value={address}
-                      onChange={(event) =>
+                      onChange={event =>
                         updateListItem(setAddresses, index, event.target.value)
                       }
                     />
@@ -820,7 +922,9 @@ export default function Profile() {
                     >
                       <LinkRoundedIcon fontSize="small" />
                     </IconButton>
-                    <IconButton onClick={() => removeListItem(setAddresses, index)}>
+                    <IconButton
+                      onClick={() => removeListItem(setAddresses, index)}
+                    >
                       <CloseRoundedIcon fontSize="small" />
                     </IconButton>
                   </Stack>
@@ -829,7 +933,11 @@ export default function Profile() {
                   variant="outlined"
                   startIcon={<AddRoundedIcon />}
                   onClick={() => addListItem(setAddresses)}
-                  sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                  sx={{
+                    alignSelf: "flex-start",
+                    textTransform: "none",
+                    fontWeight: 600,
+                  }}
                 >
                   Adicionar endereco
                 </Button>
@@ -852,11 +960,13 @@ export default function Profile() {
                       multiline
                       minRows={2}
                       value={comment}
-                      onChange={(event) =>
+                      onChange={event =>
                         updateListItem(setComments, index, event.target.value)
                       }
                     />
-                    <IconButton onClick={() => removeListItem(setComments, index)}>
+                    <IconButton
+                      onClick={() => removeListItem(setComments, index)}
+                    >
                       <CloseRoundedIcon fontSize="small" />
                     </IconButton>
                   </Stack>
@@ -865,7 +975,11 @@ export default function Profile() {
                   variant="outlined"
                   startIcon={<AddRoundedIcon />}
                   onClick={() => addListItem(setComments)}
-                  sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                  sx={{
+                    alignSelf: "flex-start",
+                    textTransform: "none",
+                    fontWeight: 600,
+                  }}
                 >
                   Adicionar comentario
                 </Button>
@@ -885,7 +999,9 @@ export default function Profile() {
 
         <Accordion
           expanded={expanded === "notifications"}
-          onChange={(_, isExpanded) => setExpanded(isExpanded ? "notifications" : false)}
+          onChange={(_, isExpanded) =>
+            setExpanded(isExpanded ? "notifications" : false)
+          }
         >
           <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
             <Typography variant="h6">Notificações</Typography>
@@ -902,9 +1018,12 @@ export default function Profile() {
                 <Paper
                   variant="outlined"
                   onClick={() =>
-                    setPreferences((prev) => ({ ...prev, notifyEmail: !prev.notifyEmail }))
+                    setPreferences(prev => ({
+                      ...prev,
+                      notifyEmail: !prev.notifyEmail,
+                    }))
                   }
-                  sx={(theme) => ({
+                  sx={theme => ({
                     p: 2.5,
                     cursor: "pointer",
                     ...interactiveCardSx(theme),
@@ -924,16 +1043,19 @@ export default function Profile() {
                       </Typography>
                       <ToggleCheckbox
                         checked={preferences.notifyEmail}
-                        onChange={(event) =>
-                          setPreferences((prev) => ({
+                        onChange={event =>
+                          setPreferences(prev => ({
                             ...prev,
                             notifyEmail: event.target.checked,
                           }))
                         }
-                        onClick={(event) => event.stopPropagation()}
+                        onClick={event => event.stopPropagation()}
                       />
                     </Box>
-                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary" }}
+                    >
                       Receba alertas relevantes no email.
                     </Typography>
                   </Stack>
@@ -941,12 +1063,12 @@ export default function Profile() {
                 <Paper
                   variant="outlined"
                   onClick={() =>
-                    setPreferences((prev) => ({
+                    setPreferences(prev => ({
                       ...prev,
                       notifyMentions: !prev.notifyMentions,
                     }))
                   }
-                  sx={(theme) => ({
+                  sx={theme => ({
                     p: 2.5,
                     cursor: "pointer",
                     ...interactiveCardSx(theme),
@@ -966,16 +1088,19 @@ export default function Profile() {
                       </Typography>
                       <ToggleCheckbox
                         checked={preferences.notifyMentions}
-                        onChange={(event) =>
-                          setPreferences((prev) => ({
+                        onChange={event =>
+                          setPreferences(prev => ({
                             ...prev,
                             notifyMentions: event.target.checked,
                           }))
                         }
-                        onClick={(event) => event.stopPropagation()}
+                        onClick={event => event.stopPropagation()}
                       />
                     </Box>
-                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary" }}
+                    >
                       Avise quando voce for mencionado em tarefas.
                     </Typography>
                   </Stack>
@@ -983,12 +1108,12 @@ export default function Profile() {
                 <Paper
                   variant="outlined"
                   onClick={() =>
-                    setPreferences((prev) => ({
+                    setPreferences(prev => ({
                       ...prev,
                       notifyPipelineUpdates: !prev.notifyPipelineUpdates,
                     }))
                   }
-                  sx={(theme) => ({
+                  sx={theme => ({
                     p: 2.5,
                     cursor: "pointer",
                     ...interactiveCardSx(theme),
@@ -1008,16 +1133,19 @@ export default function Profile() {
                       </Typography>
                       <ToggleCheckbox
                         checked={preferences.notifyPipelineUpdates}
-                        onChange={(event) =>
-                          setPreferences((prev) => ({
+                        onChange={event =>
+                          setPreferences(prev => ({
                             ...prev,
                             notifyPipelineUpdates: event.target.checked,
                           }))
                         }
-                        onClick={(event) => event.stopPropagation()}
+                        onClick={event => event.stopPropagation()}
                       />
                     </Box>
-                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary" }}
+                    >
                       Movimentacoes e mudancas de status.
                     </Typography>
                   </Stack>
@@ -1025,12 +1153,12 @@ export default function Profile() {
                 <Paper
                   variant="outlined"
                   onClick={() =>
-                    setPreferences((prev) => ({
+                    setPreferences(prev => ({
                       ...prev,
                       notifyFinanceAlerts: !prev.notifyFinanceAlerts,
                     }))
                   }
-                  sx={(theme) => ({
+                  sx={theme => ({
                     p: 2.5,
                     cursor: "pointer",
                     ...interactiveCardSx(theme),
@@ -1050,16 +1178,19 @@ export default function Profile() {
                       </Typography>
                       <ToggleCheckbox
                         checked={preferences.notifyFinanceAlerts}
-                        onChange={(event) =>
-                          setPreferences((prev) => ({
+                        onChange={event =>
+                          setPreferences(prev => ({
                             ...prev,
                             notifyFinanceAlerts: event.target.checked,
                           }))
                         }
-                        onClick={(event) => event.stopPropagation()}
+                        onClick={event => event.stopPropagation()}
                       />
                     </Box>
-                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary" }}
+                    >
                       Limites e variacoes relevantes.
                     </Typography>
                   </Stack>
@@ -1067,12 +1198,12 @@ export default function Profile() {
                 <Paper
                   variant="outlined"
                   onClick={() =>
-                    setPreferences((prev) => ({
+                    setPreferences(prev => ({
                       ...prev,
                       notifyWeeklySummary: !prev.notifyWeeklySummary,
                     }))
                   }
-                  sx={(theme) => ({
+                  sx={theme => ({
                     p: 2.5,
                     cursor: "pointer",
                     ...interactiveCardSx(theme),
@@ -1092,16 +1223,19 @@ export default function Profile() {
                       </Typography>
                       <ToggleCheckbox
                         checked={preferences.notifyWeeklySummary}
-                        onChange={(event) =>
-                          setPreferences((prev) => ({
+                        onChange={event =>
+                          setPreferences(prev => ({
                             ...prev,
                             notifyWeeklySummary: event.target.checked,
                           }))
                         }
-                        onClick={(event) => event.stopPropagation()}
+                        onClick={event => event.stopPropagation()}
                       />
                     </Box>
-                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary" }}
+                    >
                       Relatório semanal da conta.
                     </Typography>
                   </Stack>
@@ -1109,12 +1243,12 @@ export default function Profile() {
                 <Paper
                   variant="outlined"
                   onClick={() =>
-                    setPreferences((prev) => ({
+                    setPreferences(prev => ({
                       ...prev,
                       notifyProductUpdates: !prev.notifyProductUpdates,
                     }))
                   }
-                  sx={(theme) => ({
+                  sx={theme => ({
                     p: 2.5,
                     cursor: "pointer",
                     ...interactiveCardSx(theme),
@@ -1134,16 +1268,19 @@ export default function Profile() {
                       </Typography>
                       <ToggleCheckbox
                         checked={preferences.notifyProductUpdates}
-                        onChange={(event) =>
-                          setPreferences((prev) => ({
+                        onChange={event =>
+                          setPreferences(prev => ({
                             ...prev,
                             notifyProductUpdates: event.target.checked,
                           }))
                         }
-                        onClick={(event) => event.stopPropagation()}
+                        onClick={event => event.stopPropagation()}
                       />
                     </Box>
-                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary" }}
+                    >
                       Novos recursos e melhorias.
                     </Typography>
                   </Stack>
@@ -1155,7 +1292,9 @@ export default function Profile() {
 
         <Accordion
           expanded={expanded === "modules"}
-          onChange={(_, isExpanded) => setExpanded(isExpanded ? "modules" : false)}
+          onChange={(_, isExpanded) =>
+            setExpanded(isExpanded ? "modules" : false)
+          }
         >
           <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
             <Typography variant="h6">Modulos</Typography>
@@ -1169,55 +1308,64 @@ export default function Profile() {
                   gap: 2,
                 }}
               >
-                {(Object.keys(coreModuleLabels) as Array<
-                  | "modulePipeline"
-                  | "moduleFinance"
-                  | "moduleContacts"
-                  | "moduleCalendar"
-                  | "moduleNotes"
-                >).map(
-                  (key) => (
-                    <Paper
-                      key={key}
-                      variant="outlined"
-                      onClick={() => requestModuleToggle(key, !preferences[key])}
-                      sx={(theme) => ({
-                        p: 2.5,
-                        cursor: "pointer",
-                        ...interactiveCardSx(theme),
-                      })}
-                    >
-                      <Stack spacing={1.5}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 2,
-                          }}
+                {(
+                  Object.keys(coreModuleLabels) as Array<
+                    | "modulePipeline"
+                    | "moduleFinance"
+                    | "moduleContacts"
+                    | "moduleCalendar"
+                    | "moduleNotes"
+                  >
+                ).map(key => (
+                  <Paper
+                    key={key}
+                    variant="outlined"
+                    onClick={() => requestModuleToggle(key, !preferences[key])}
+                    sx={theme => ({
+                      p: 2.5,
+                      cursor: "pointer",
+                      ...interactiveCardSx(theme),
+                    })}
+                  >
+                    <Stack spacing={1.5}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 2,
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 600 }}
                         >
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                            {coreModuleLabels[key].title}
-                          </Typography>
-                          <ToggleCheckbox
-                            checked={preferences[key]}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              requestModuleToggle(key, !preferences[key]);
-                            }}
-                            onChange={() => {}}
-                          />
-                        </Box>
-                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                          {coreModuleLabels[key].description}
+                          {coreModuleLabels[key].title}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                          {coreModuleLabels[key].price}
-                        </Typography>
-                      </Stack>
-                    </Paper>
-                  )
-                )}
+                        <ToggleCheckbox
+                          checked={preferences[key]}
+                          onClick={event => {
+                            event.stopPropagation();
+                            requestModuleToggle(key, !preferences[key]);
+                          }}
+                          onChange={() => {}}
+                        />
+                      </Box>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "text.secondary" }}
+                      >
+                        {coreModuleLabels[key].description}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "text.secondary" }}
+                      >
+                        {coreModuleLabels[key].price}
+                      </Typography>
+                    </Stack>
+                  </Paper>
+                ))}
               </Box>
               <Stack spacing={1.5}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -1231,12 +1379,14 @@ export default function Profile() {
                       gap: 2,
                     }}
                   >
-                    {accessModulesToShow.map((module) => (
+                    {accessModulesToShow.map(module => (
                       <Paper
                         key={module.id}
                         variant="outlined"
-                        onClick={() => requestAccessModuleToggle(module, !module.enabled)}
-                        sx={(theme) => ({
+                        onClick={() =>
+                          requestAccessModuleToggle(module, !module.enabled)
+                        }
+                        sx={theme => ({
                           p: 2,
                           cursor: "pointer",
                           ...interactiveCardSx(theme),
@@ -1251,20 +1401,29 @@ export default function Profile() {
                               gap: 2,
                             }}
                           >
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                            <Typography
+                              variant="subtitle2"
+                              sx={{ fontWeight: 600 }}
+                            >
                               {module.name}
                             </Typography>
                             <ToggleCheckbox
                               checked={module.enabled}
                               disabled={!canToggleAccessModules}
-                              onClick={(event) => {
+                              onClick={event => {
                                 event.stopPropagation();
-                                requestAccessModuleToggle(module, !module.enabled);
+                                requestAccessModuleToggle(
+                                  module,
+                                  !module.enabled
+                                );
                               }}
                               onChange={() => {}}
                             />
                           </Box>
-                          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: "text.secondary" }}
+                          >
                             {module.description}
                           </Typography>
                         </Stack>
@@ -1283,7 +1442,9 @@ export default function Profile() {
 
         <Accordion
           expanded={expanded === "security"}
-          onChange={(_, isExpanded) => setExpanded(isExpanded ? "security" : false)}
+          onChange={(_, isExpanded) =>
+            setExpanded(isExpanded ? "security" : false)
+          }
         >
           <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
             <Typography variant="h6">Senha</Typography>
@@ -1300,7 +1461,11 @@ export default function Profile() {
                 <TextField label="Senha atual" type="password" fullWidth />
                 <TextField label="Nova senha" type="password" fullWidth />
               </Box>
-              <Button variant="outlined" size="large" sx={{ alignSelf: "flex-start" }}>
+              <Button
+                variant="outlined"
+                size="large"
+                sx={{ alignSelf: "flex-start" }}
+              >
                 Atualizar senha
               </Button>
             </Stack>
@@ -1309,7 +1474,9 @@ export default function Profile() {
 
         <Accordion
           expanded={expanded === "account"}
-          onChange={(_, isExpanded) => setExpanded(isExpanded ? "account" : false)}
+          onChange={(_, isExpanded) =>
+            setExpanded(isExpanded ? "account" : false)
+          }
         >
           <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
             <Typography variant="h6">Conta</Typography>
@@ -1319,12 +1486,12 @@ export default function Profile() {
               <Paper
                 variant="outlined"
                 onClick={() =>
-                  setPreferences((prev) => ({
+                  setPreferences(prev => ({
                     ...prev,
                     singleSession: !prev.singleSession,
                   }))
                 }
-                sx={(theme) => ({
+                sx={theme => ({
                   p: 2.5,
                   cursor: "pointer",
                   maxWidth: 420,
@@ -1345,16 +1512,19 @@ export default function Profile() {
                     </Typography>
                     <ToggleCheckbox
                       checked={preferences.singleSession}
-                      onChange={(event) =>
-                        setPreferences((prev) => ({
+                      onChange={event =>
+                        setPreferences(prev => ({
                           ...prev,
                           singleSession: event.target.checked,
                         }))
                       }
-                      onClick={(event) => event.stopPropagation()}
+                      onClick={event => event.stopPropagation()}
                     />
                   </Box>
-                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "text.secondary" }}
+                  >
                     Desconecte outras sessoes ao entrar novamente.
                   </Typography>
                 </Stack>
@@ -1391,7 +1561,13 @@ export default function Profile() {
       >
         <DialogContent>
           <Stack spacing={2}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <Typography variant="h6">
                 {moduleDialog
                   ? moduleDialog.nextValue
@@ -1399,7 +1575,10 @@ export default function Profile() {
                     : "Desativar módulo"
                   : "Modulo"}
               </Typography>
-              <IconButton onClick={() => setModuleDialog(null)} sx={{ color: "text.secondary" }}>
+              <IconButton
+                onClick={() => setModuleDialog(null)}
+                sx={{ color: "text.secondary" }}
+              >
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -1425,7 +1604,7 @@ export default function Profile() {
                       O que voce recebe
                     </Typography>
                     <Stack spacing={0.5}>
-                      {moduleFeatures.map((feature) => (
+                      {moduleFeatures.map(feature => (
                         <Typography
                           key={feature}
                           variant="body2"
@@ -1459,9 +1638,18 @@ export default function Profile() {
       >
         <DialogContent>
           <Stack spacing={2}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <Typography variant="h6">Alterar idioma</Typography>
-              <IconButton onClick={handleLanguageCancel} sx={{ color: "text.secondary" }}>
+              <IconButton
+                onClick={handleLanguageCancel}
+                sx={{ color: "text.secondary" }}
+              >
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -1489,19 +1677,31 @@ export default function Profile() {
       >
         <DialogContent>
           <Stack spacing={2.5}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <Typography variant="h6">Trocar de conta</Typography>
-              <IconButton onClick={() => setSwitchDialogOpen(false)} sx={{ color: "text.secondary" }}>
+              <IconButton
+                onClick={() => setSwitchDialogOpen(false)}
+                sx={{ color: "text.secondary" }}
+              >
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
             </Box>
             {switchAccounts.length ? (
               <Stack spacing={1}>
-                <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ color: "text.secondary" }}
+                >
                   Contas recentes
                 </Typography>
                 <Stack spacing={1}>
-                  {switchAccounts.map((account) => (
+                  {switchAccounts.map(account => (
                     <Paper
                       key={account.email}
                       variant="outlined"
@@ -1511,7 +1711,10 @@ export default function Profile() {
                           return;
                         }
                         if (account.token) {
-                          window.localStorage.setItem("sc_active_session", account.token);
+                          window.localStorage.setItem(
+                            "sc_active_session",
+                            account.token
+                          );
                           window.localStorage.setItem(
                             "sc_user",
                             JSON.stringify({
@@ -1532,21 +1735,30 @@ export default function Profile() {
                         setSwitchEmail(account.email);
                         setSwitchError("");
                       }}
-                      sx={(theme) => ({
+                      sx={theme => ({
                         p: 1.5,
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
                     >
                       <Stack spacing={0.5}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 600 }}
+                        >
                           {account.name || "Conta"}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "text.secondary" }}
+                        >
                           {account.email}
                         </Typography>
                         {account.email === email ? (
-                          <Typography variant="caption" sx={{ color: "primary.main" }}>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: "primary.main" }}
+                          >
                             Conta ativa
                           </Typography>
                         ) : null}
@@ -1562,8 +1774,8 @@ export default function Profile() {
                 label="Email"
                 fullWidth
                 value={switchEmail}
-                onChange={(event) => setSwitchEmail(event.target.value)}
-                onKeyDown={(event) => {
+                onChange={event => setSwitchEmail(event.target.value)}
+                onKeyDown={event => {
                   if (event.key === "Enter") {
                     void handleSwitchLogin();
                   }
@@ -1574,8 +1786,8 @@ export default function Profile() {
                 type="password"
                 fullWidth
                 value={switchPassword}
-                onChange={(event) => setSwitchPassword(event.target.value)}
-                onKeyDown={(event) => {
+                onChange={event => setSwitchPassword(event.target.value)}
+                onKeyDown={event => {
                   if (event.key === "Enter") {
                     void handleSwitchLogin();
                   }
@@ -1588,7 +1800,10 @@ export default function Profile() {
               ) : null}
             </Stack>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
-              <Button variant="outlined" onClick={() => setSwitchDialogOpen(false)}>
+              <Button
+                variant="outlined"
+                onClick={() => setSwitchDialogOpen(false)}
+              >
                 Cancelar
               </Button>
               <Button
@@ -1610,7 +1825,12 @@ export default function Profile() {
         onClose={() => setLanguageSnackbarOpen(false)}
         message={`Idioma alterado para ${getLanguageLabel(preferences.language)}.`}
         action={
-          <Button variant="text" color="inherit" size="small" onClick={handleLanguageUndo}>
+          <Button
+            variant="text"
+            color="inherit"
+            size="small"
+            onClick={handleLanguageUndo}
+          >
             Reverter
           </Button>
         }

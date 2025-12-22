@@ -4,6 +4,7 @@ import {
   AccordionDetails,
   AccordionSummary,
   Autocomplete,
+  Alert,
   Box,
   Button,
   Checkbox,
@@ -13,6 +14,7 @@ import {
   IconButton,
   MenuItem,
   Paper,
+  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -298,6 +300,13 @@ const emptyNote = (categoryId: string): Note => ({
   isDraft: true,
   relatedNoteIds: [],
 });
+const defaultNoteFieldSettings = {
+  showCategories: true,
+  showSubcategories: true,
+  showLinks: true,
+  showUpdatedAt: true,
+  showCategoryCounts: true,
+};
 
 export default function Notes() {
   const [location, setLocation] = useLocation();
@@ -346,13 +355,8 @@ export default function Notes() {
     "categories" | "subcategories" | "display" | false
   >(false);
   const [fieldSettings, setFieldSettings] = useState({
-    showCategories: true,
-    showSubcategories: true,
-    showLinks: true,
-    showUpdatedAt: true,
-    showCategoryCounts: true,
+    ...defaultNoteFieldSettings,
   });
-  const [subcategoriesExpanded, setSubcategoriesExpanded] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<{
     type: "category" | "subcategory";
     id: string;
@@ -365,6 +369,104 @@ export default function Notes() {
     defaultCategories[0]?.id || ""
   );
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
+  const restoreDefaultsSnapshotRef = useRef<{
+    categories: NoteCategory[];
+    subcategories: NoteSubcategory[];
+    fieldSettings: typeof fieldSettings;
+    activeCategory: string;
+    subcategoryFilter: string;
+    activeSubcategory: string | null;
+    settingsAccordion: typeof settingsAccordion;
+    newCategoryName: string;
+    newCategoryColor: string;
+    editingCategoryId: string | null;
+    editingCategoryName: string;
+    editingCategoryColor: string;
+    newSubcategoryName: string;
+    newSubcategoryCategory: string;
+    newSubcategoryColor: string;
+    editingSubcategoryId: string | null;
+    editingSubcategoryName: string;
+    editingSubcategoryCategory: string;
+    editingSubcategoryColor: string;
+  } | null>(null);
+  const [restoreDefaultsSnackbarOpen, setRestoreDefaultsSnackbarOpen] =
+    useState(false);
+  const handleRestoreNoteDefaults = () => {
+    restoreDefaultsSnapshotRef.current = {
+      categories,
+      subcategories,
+      fieldSettings,
+      activeCategory,
+      subcategoryFilter,
+      activeSubcategory,
+      settingsAccordion,
+      newCategoryName,
+      newCategoryColor,
+      editingCategoryId,
+      editingCategoryName,
+      editingCategoryColor,
+      newSubcategoryName,
+      newSubcategoryCategory,
+      newSubcategoryColor,
+      editingSubcategoryId,
+      editingSubcategoryName,
+      editingSubcategoryCategory,
+      editingSubcategoryColor,
+    };
+    setCategories(defaultCategories);
+    setSubcategories(defaultSubcategories);
+    setFieldSettings({ ...defaultNoteFieldSettings });
+    setActiveCategory(defaultCategories[0]?.id || "");
+    setSubcategoryFilter(defaultCategories[0]?.id || "");
+    setActiveSubcategory(null);
+    cancelEditCategory();
+    cancelEditSubcategory();
+    setNewCategoryName("");
+    setNewCategoryColor(DEFAULT_COLORS[0]);
+    setNewSubcategoryName("");
+    setNewSubcategoryCategory(defaultCategories[0]?.id || "");
+    setNewSubcategoryColor(DEFAULT_COLORS[0]);
+    setSettingsAccordion(false);
+    setRestoreDefaultsSnackbarOpen(true);
+  };
+
+  const handleUndoRestoreNoteDefaults = () => {
+    const snapshot = restoreDefaultsSnapshotRef.current;
+    if (!snapshot) {
+      setRestoreDefaultsSnackbarOpen(false);
+      return;
+    }
+    setCategories(snapshot.categories);
+    setSubcategories(snapshot.subcategories);
+    setFieldSettings(snapshot.fieldSettings);
+    setActiveCategory(snapshot.activeCategory);
+    setSubcategoryFilter(snapshot.subcategoryFilter);
+    setActiveSubcategory(snapshot.activeSubcategory);
+    setSettingsAccordion(snapshot.settingsAccordion);
+    setNewCategoryName(snapshot.newCategoryName);
+    setNewCategoryColor(snapshot.newCategoryColor);
+    setEditingCategoryId(snapshot.editingCategoryId);
+    setEditingCategoryName(snapshot.editingCategoryName);
+    setEditingCategoryColor(snapshot.editingCategoryColor);
+    setNewSubcategoryName(snapshot.newSubcategoryName);
+    setNewSubcategoryCategory(snapshot.newSubcategoryCategory);
+    setNewSubcategoryColor(snapshot.newSubcategoryColor);
+    setEditingSubcategoryId(snapshot.editingSubcategoryId);
+    setEditingSubcategoryName(snapshot.editingSubcategoryName);
+    setEditingSubcategoryCategory(snapshot.editingSubcategoryCategory);
+    setEditingSubcategoryColor(snapshot.editingSubcategoryColor);
+    restoreDefaultsSnapshotRef.current = null;
+    setRestoreDefaultsSnackbarOpen(false);
+  };
+
+  // Ao entrar na tela de lista (/notas ou /notas/arquivo), nunca manter nota aberta
+  useEffect(() => {
+    if (location === "/notas" || location === "/notas/arquivo") {
+      setSelectedNoteId(null);
+      setExpandedNoteId(null);
+    }
+  }, [location]);
 
   useEffect(() => {
     const storedNotes = window.localStorage.getItem(STORAGE_NOTES);
@@ -590,40 +692,42 @@ export default function Notes() {
   const prevSelectedNoteIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (noteIdFromRoute && noteIdFromRoute !== selectedNoteId) {
-      const match = notes.find(note => note.id === noteIdFromRoute);
-      if (match) {
-        if (match.archived !== isArchiveView) {
-          setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
-          return;
-        }
-        if (match.categoryIds?.length) {
-          setActiveCategory(match.categoryIds[0]);
-        }
-        setSelectedNoteId(noteIdFromRoute);
-        prevSelectedNoteIdRef.current = noteIdFromRoute;
-        return;
-      }
-    }
-    if (!filteredNotes.length) {
+    // Não auto-seleciona nota nunca. Só abre nota quando a rota tem /notas/:id
+    if (!noteIdFromRoute) {
       setSelectedNoteId(null);
+      setExpandedNoteId(null);
       prevSelectedNoteIdRef.current = null;
       return;
     }
-    // Only auto-select if there's no previous selection
-    if (
-      !selectedNoteId ||
-      !filteredNotes.some(note => note.id === selectedNoteId)
-    ) {
-      const nextNoteId = filteredNotes[0]?.id || null;
-      if (nextNoteId !== prevSelectedNoteIdRef.current) {
-        setSelectedNoteId(nextNoteId);
-        prevSelectedNoteIdRef.current = nextNoteId;
-      }
-    } else {
-      prevSelectedNoteIdRef.current = selectedNoteId;
+
+    if (noteIdFromRoute === selectedNoteId) {
+      prevSelectedNoteIdRef.current = noteIdFromRoute;
+      return;
     }
-  }, [filteredNotes, selectedNoteId, noteIdFromRoute, notes]);
+
+    const match = notes.find(note => note.id === noteIdFromRoute) || null;
+    if (!match) {
+      setSelectedNoteId(null);
+      setExpandedNoteId(null);
+      prevSelectedNoteIdRef.current = null;
+      setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
+      return;
+    }
+
+    // Se a nota existe mas está no “lado” errado (arquivo vs notas), ajusta a rota
+    if (match.archived !== isArchiveView) {
+      setLocation(
+        match.archived ? `/notas/arquivo/${match.id}` : `/notas/${match.id}`
+      );
+      return;
+    }
+
+    if (match.categoryIds?.length) {
+      setActiveCategory(match.categoryIds[0]);
+    }
+    setSelectedNoteId(match.id);
+    prevSelectedNoteIdRef.current = match.id;
+  }, [noteIdFromRoute, notes, isArchiveView, selectedNoteId, setLocation]);
 
   const selectNote = (note: Note) => {
     discardIfPristine(selectedNoteId);
@@ -837,14 +941,6 @@ export default function Notes() {
     });
   };
 
-  const updateRelatedNotes = (note: Note, relatedIds: string[]) => {
-    updateNote({
-      ...note,
-      relatedNoteIds: relatedIds,
-      updatedAt: new Date().toISOString(),
-    });
-  };
-
   const requestNoteAction = (
     note: Note,
     type: "archive" | "restore" | "delete"
@@ -879,20 +975,6 @@ export default function Notes() {
       return;
     }
     setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
-  };
-
-  const createSubpage = (note: Note) => {
-    const next = {
-      ...emptyNote(note.categoryIds[0] || activeCategory),
-      parentId: note.id,
-      categoryIds: note.categoryIds.length
-        ? note.categoryIds
-        : [activeCategory],
-      subcategoryIds: note.subcategoryIds,
-    };
-    setNotes(prev => [next, ...prev]);
-    setSelectedNoteId(next.id);
-    setLocation(`/notas/${next.id}`);
   };
 
   const showSidebar =
@@ -1016,86 +1098,86 @@ export default function Notes() {
                               </Typography>
                             ) : null}
                           </Stack>
+
+                          {fieldSettings.showSubcategories &&
+                          activeCategory === category.id ? (
+                            <Box sx={{ mt: 1, pl: 2 }}>
+                              {activeSubcategories.length ? (
+                                <Stack spacing={0.75}>
+                                  {activeSubcategories.map(subcategory => {
+                                    const isActive =
+                                      activeSubcategory === subcategory.id;
+                                    return (
+                                      <Box
+                                        key={subcategory.id}
+                                        onClick={event => {
+                                          event.stopPropagation();
+                                          setActiveSubcategory(prev =>
+                                            prev === subcategory.id
+                                              ? null
+                                              : subcategory.id
+                                          );
+                                        }}
+                                        sx={theme => ({
+                                          px: 1,
+                                          py: 0.75,
+                                          borderRadius: "var(--radius-card)",
+                                          border: 1,
+                                          borderColor: isActive
+                                            ? "primary.main"
+                                            : "divider",
+                                          backgroundColor: "background.paper",
+                                          cursor: "pointer",
+                                          ...interactiveCardSx(theme),
+                                        })}
+                                      >
+                                        <Stack
+                                          direction="row"
+                                          spacing={1}
+                                          alignItems="center"
+                                        >
+                                          <Box
+                                            sx={{
+                                              width: 8,
+                                              height: 8,
+                                              borderRadius: "50%",
+                                              backgroundColor:
+                                                subcategory.color ||
+                                                darkenColor(
+                                                  category.color,
+                                                  0.7
+                                                ),
+                                            }}
+                                          />
+                                          <Typography
+                                            variant="body2"
+                                            sx={{
+                                              color: "text.secondary",
+                                              fontWeight: 600,
+                                            }}
+                                          >
+                                            {subcategory.name}
+                                          </Typography>
+                                        </Stack>
+                                      </Box>
+                                    );
+                                  })}
+                                </Stack>
+                              ) : (
+                                <Typography
+                                  variant="body2"
+                                  sx={{ color: "text.secondary" }}
+                                >
+                                  Sem subcategorias.
+                                </Typography>
+                              )}
+                            </Box>
+                          ) : null}
                         </Box>
                       ))}
                     </Stack>
                   </Stack>
                 </Paper>
-              ) : null}
-
-              {fieldSettings.showSubcategories ? (
-                <Accordion
-                  expanded={subcategoriesExpanded}
-                  onChange={(_, isExpanded) =>
-                    setSubcategoriesExpanded(isExpanded)
-                  }
-                  elevation={0}
-                >
-                  <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                      Subcategorias
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Stack spacing={2}>
-                      {activeSubcategories.length ? (
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          flexWrap="wrap"
-                          useFlexGap
-                        >
-                          {activeSubcategories.map(subcategory => {
-                            const parentCategory = categories.find(
-                              category => category.id === subcategory.categoryId
-                            );
-                            const isActive =
-                              activeSubcategory === subcategory.id;
-                            return (
-                              <Chip
-                                key={subcategory.id}
-                                label={subcategory.name}
-                                clickable
-                                onClick={() =>
-                                  setActiveSubcategory(prev =>
-                                    prev === subcategory.id
-                                      ? null
-                                      : subcategory.id
-                                  )
-                                }
-                                sx={{
-                                  maxWidth: 220,
-                                  minHeight: 32,
-                                  color: "#e6edf3",
-                                  backgroundColor: parentCategory
-                                    ? darkenColor(parentCategory.color, 0.7)
-                                    : "rgba(15, 23, 42, 0.6)",
-                                  border: 1,
-                                  borderColor: isActive
-                                    ? "primary.main"
-                                    : "divider",
-                                  boxShadow: isActive ? 2 : "none",
-                                  "& .MuiChip-label": {
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
-                                  },
-                                }}
-                              />
-                            );
-                          })}
-                        </Stack>
-                      ) : (
-                        <Typography
-                          variant="body2"
-                          sx={{ color: "text.secondary" }}
-                        >
-                          Sem subcategorias.
-                        </Typography>
-                      )}
-                    </Stack>
-                  </AccordionDetails>
-                </Accordion>
               ) : null}
             </Stack>
           ) : null}
@@ -1112,7 +1194,19 @@ export default function Notes() {
                     sx={{ minWidth: 220 }}
                   />
                   {filteredNotes.length ? (
-                    <Stack spacing={2}>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gap: 2,
+                        gridTemplateColumns: {
+                          xs: "1fr",
+                          sm: "1fr 1fr",
+                          md: "1fr 1fr 1fr",
+                          lg: "1fr 1fr 1fr",
+                          xl: "1fr 1fr 1fr 1fr",
+                        },
+                      }}
+                    >
                       {(expandedNoteId
                         ? filteredNotes.filter(
                             note => note.id === expandedNoteId
@@ -1152,11 +1246,15 @@ export default function Notes() {
                             })}
                           >
                             <Stack spacing={isExpanded ? 1.5 : 1}>
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                alignItems="center"
-                                flexWrap="wrap"
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "flex-start",
+                                  flexWrap: "wrap",
+                                  gap: 1,
+                                  width: "100%",
+                                }}
                               >
                                 <Typography
                                   variant={
@@ -1185,14 +1283,18 @@ export default function Notes() {
                                 {fieldSettings.showUpdatedAt ? (
                                   <Typography
                                     variant="caption"
-                                    sx={{ color: "text.secondary" }}
+                                    sx={{
+                                      color: "text.secondary",
+                                      ml: "auto",
+                                      whiteSpace: "nowrap",
+                                    }}
                                   >
                                     {new Date(
                                       note.updatedAt
                                     ).toLocaleDateString("pt-BR")}
                                   </Typography>
                                 ) : null}
-                              </Stack>
+                              </Box>
                               {isExpanded && preview ? (
                                 <Typography
                                   variant="body2"
@@ -1207,7 +1309,7 @@ export default function Notes() {
                           </Paper>
                         );
                       })}
-                    </Stack>
+                    </Box>
                   ) : (
                     <Typography
                       variant="body2"
@@ -1254,6 +1356,9 @@ export default function Notes() {
                               e.preventDefault();
                               setSelectedNoteId(null);
                               setExpandedNoteId(null);
+                              setLocation(
+                                isArchiveView ? "/notas/arquivo" : "/notas"
+                              );
                             }}
                           >
                             <CloseRoundedIcon fontSize="small" />
@@ -1373,108 +1478,6 @@ export default function Notes() {
                     </Stack>
                   </Stack>
 
-                  <Stack spacing={1.5}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      Subpáginas
-                    </Typography>
-                    {notes.filter(note => note.parentId === selectedNote.id)
-                      .length ? (
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        flexWrap="wrap"
-                        useFlexGap
-                      >
-                        {notes
-                          .filter(note => note.parentId === selectedNote.id)
-                          .map(child => (
-                            <Chip
-                              key={child.id}
-                              label={child.title}
-                              onClick={() => selectNote(child)}
-                              size="small"
-                              variant="outlined"
-                            />
-                          ))}
-                      </Stack>
-                    ) : (
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "text.secondary" }}
-                      >
-                        Sem subpáginas.
-                      </Typography>
-                    )}
-                    <Button
-                      variant="outlined"
-                      onClick={() => createSubpage(selectedNote)}
-                      sx={{
-                        alignSelf: "flex-start",
-                        textTransform: "none",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Criar subpágina
-                    </Button>
-                  </Stack>
-
-                  <Stack spacing={1.5}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      Notas relacionadas
-                    </Typography>
-                    <Autocomplete
-                      multiple
-                      options={notes.filter(
-                        note => note.id !== selectedNote.id
-                      )}
-                      value={notes.filter(note =>
-                        (selectedNote.relatedNoteIds || []).includes(note.id)
-                      )}
-                      onChange={(_, value) =>
-                        updateRelatedNotes(
-                          selectedNote,
-                          value.map(item => item.id)
-                        )
-                      }
-                      getOptionLabel={option => option.title}
-                      renderOption={(props, option, { selected }) => (
-                        <li {...props}>
-                          <Checkbox
-                            checked={selected}
-                            size="small"
-                            sx={{ mr: 1 }}
-                          />
-                          {option.title}
-                        </li>
-                      )}
-                      renderInput={params => (
-                        <TextField
-                          {...params}
-                          label="Vincular notas"
-                          fullWidth
-                        />
-                      )}
-                    />
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      flexWrap="wrap"
-                      useFlexGap
-                    >
-                      {(selectedNote.relatedNoteIds || [])
-                        .map(id => notes.find(note => note.id === id))
-                        .filter(Boolean)
-                        .map(note => (
-                          <Chip
-                            key={note?.id}
-                            label={note?.title}
-                            onClick={() => note && selectNote(note)}
-                            size="small"
-                          />
-                        ))}
-                    </Stack>
-                  </Stack>
-
                   {fieldSettings.showLinks ? (
                     <Stack spacing={1.5}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -1562,25 +1565,49 @@ export default function Notes() {
                   />
                 </Stack>
               </Paper>
-            ) : (
-              <Paper elevation={0} variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Selecione uma nota para editar.
-                </Typography>
-              </Paper>
-            )}
+            ) : null}
           </Stack>
         </Box>
       </Stack>
       <Dialog
         open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
+        onClose={() => {
+          setSettingsOpen(false);
+          cancelEditCategory();
+          cancelEditSubcategory();
+          setSettingsAccordion(false);
+        }}
         maxWidth="sm"
         fullWidth
       >
         <DialogContent>
           <Stack spacing={2.5}>
-            <Typography variant="h6">Configurações de notas</Typography>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Typography variant="h6">Configurações de notas</Typography>
+              <IconButton
+                onClick={() => {
+                  setSettingsOpen(false);
+                  cancelEditCategory();
+                  cancelEditSubcategory();
+                  setSettingsAccordion(false);
+                }}
+                sx={{
+                  border: 1,
+                  borderColor: "divider",
+                  backgroundColor: "background.paper",
+                  color: "text.secondary",
+                  "&:hover": { backgroundColor: "action.hover" },
+                }}
+              >
+                <CloseRoundedIcon fontSize="small" />
+              </IconButton>
+            </Box>
             <Accordion
               elevation={0}
               expanded={settingsAccordion === "categories"}
@@ -2037,6 +2064,13 @@ export default function Notes() {
               </AccordionDetails>
             </Accordion>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                onClick={handleRestoreNoteDefaults}
+                sx={{ textTransform: "none", fontWeight: 600 }}
+              >
+                Restaurar padrão
+              </Button>
               <Button variant="outlined" onClick={() => setSettingsOpen(false)}>
                 Fechar
               </Button>
@@ -2094,6 +2128,39 @@ export default function Notes() {
           setNoteConfirm(null);
         }}
       />
+
+      <Snackbar
+        open={restoreDefaultsSnackbarOpen}
+        autoHideDuration={6000}
+        onClose={(_, reason) => {
+          if (reason === "clickaway") {
+            return;
+          }
+          setRestoreDefaultsSnackbarOpen(false);
+          restoreDefaultsSnapshotRef.current = null;
+        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="info"
+          onClose={() => {
+            setRestoreDefaultsSnackbarOpen(false);
+            restoreDefaultsSnapshotRef.current = null;
+          }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={handleUndoRestoreNoteDefaults}
+            >
+              Reverter
+            </Button>
+          }
+          sx={{ width: "100%" }}
+        >
+          Configurações restauradas.
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

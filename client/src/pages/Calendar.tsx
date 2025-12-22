@@ -4,6 +4,7 @@ import {
   AccordionDetails,
   AccordionSummary,
   Autocomplete,
+  Alert,
   Box,
   Badge,
   Button,
@@ -18,6 +19,7 @@ import {
   Pagination,
   Paper,
   Popover,
+  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -169,6 +171,20 @@ const monthLabels = [
 ];
 
 const weekLabels = ["D", "S", "T", "Q", "Q", "S", "S"];
+
+const defaultCalendarSettings = {
+  showAllDay: true,
+  showTime: true,
+  showLocation: true,
+  showParticipants: true,
+  showReminders: true,
+  showRepeat: true,
+  showCategories: true,
+  showDescription: true,
+  showMeetingLink: true,
+  showVisibility: true,
+  showNotifications: true,
+};
 
 const darkenColor = (value: string, factor: number) => {
   const color = value.replace("#", "");
@@ -404,17 +420,7 @@ export default function Calendar() {
     "fields" | "categories" | false
   >(false);
   const [calendarSettings, setCalendarSettings] = useState({
-    showAllDay: true,
-    showTime: true,
-    showLocation: true,
-    showParticipants: true,
-    showReminders: true,
-    showRepeat: true,
-    showCategories: true,
-    showDescription: true,
-    showMeetingLink: true,
-    showVisibility: true,
-    showNotifications: true,
+    ...defaultCalendarSettings,
   });
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -446,6 +452,18 @@ export default function Calendar() {
     columns: unknown[];
     sprints?: unknown;
   } | null>(null);
+  const restoreDefaultsSnapshotRef = useRef<{
+    categories: Category[];
+    calendarSettings: typeof calendarSettings;
+    configAccordion: typeof configAccordion;
+    newCategoryName: string;
+    newCategoryColor: string;
+    editingCategoryId: string | null;
+    editingCategoryName: string;
+    editingCategoryColor: string;
+  } | null>(null);
+  const [restoreDefaultsSnackbarOpen, setRestoreDefaultsSnackbarOpen] =
+    useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 3 } })
   );
@@ -997,6 +1015,44 @@ export default function Calendar() {
     setEditingCategoryId(null);
     setEditingCategoryName("");
     setEditingCategoryColor(DEFAULT_COLORS[0]);
+  };
+
+  const handleRestoreCalendarDefaults = () => {
+    restoreDefaultsSnapshotRef.current = {
+      categories,
+      calendarSettings,
+      configAccordion,
+      newCategoryName,
+      newCategoryColor,
+      editingCategoryId,
+      editingCategoryName,
+      editingCategoryColor,
+    };
+    cancelEditCategory();
+    setNewCategoryName("");
+    setNewCategoryColor(DEFAULT_COLORS[0]);
+    setConfigAccordion(false);
+    setCalendarSettings({ ...defaultCalendarSettings });
+    handleSaveCategories(defaultCategories);
+    setRestoreDefaultsSnackbarOpen(true);
+  };
+
+  const handleUndoRestoreCalendarDefaults = () => {
+    const snapshot = restoreDefaultsSnapshotRef.current;
+    if (!snapshot) {
+      setRestoreDefaultsSnackbarOpen(false);
+      return;
+    }
+    setEditingCategoryId(snapshot.editingCategoryId);
+    setEditingCategoryName(snapshot.editingCategoryName);
+    setEditingCategoryColor(snapshot.editingCategoryColor);
+    setNewCategoryName(snapshot.newCategoryName);
+    setNewCategoryColor(snapshot.newCategoryColor);
+    setConfigAccordion(snapshot.configAccordion);
+    setCalendarSettings(snapshot.calendarSettings);
+    handleSaveCategories(snapshot.categories);
+    restoreDefaultsSnapshotRef.current = null;
+    setRestoreDefaultsSnackbarOpen(false);
   };
 
   const saveCategory = () => {
@@ -2220,7 +2276,16 @@ export default function Calendar() {
               }}
             >
               <Typography variant="h6">Configurações do calendário</Typography>
-              <IconButton onClick={() => setCalendarSettingsOpen(false)}>
+              <IconButton
+                onClick={() => setCalendarSettingsOpen(false)}
+                sx={{
+                  border: 1,
+                  borderColor: "divider",
+                  backgroundColor: "background.paper",
+                  color: "text.secondary",
+                  "&:hover": { backgroundColor: "action.hover" },
+                }}
+              >
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -2466,9 +2531,58 @@ export default function Calendar() {
                 </Stack>
               </AccordionDetails>
             </Accordion>
+
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                onClick={handleRestoreCalendarDefaults}
+                sx={{ textTransform: "none", fontWeight: 600 }}
+              >
+                Restaurar padrão
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => setCalendarSettingsOpen(false)}
+              >
+                Fechar
+              </Button>
+            </Stack>
           </Stack>
         </DialogContent>
       </Dialog>
+
+      <Snackbar
+        open={restoreDefaultsSnackbarOpen}
+        autoHideDuration={6000}
+        onClose={(_, reason) => {
+          if (reason === "clickaway") {
+            return;
+          }
+          setRestoreDefaultsSnackbarOpen(false);
+          restoreDefaultsSnapshotRef.current = null;
+        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="info"
+          onClose={() => {
+            setRestoreDefaultsSnackbarOpen(false);
+            restoreDefaultsSnapshotRef.current = null;
+          }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={handleUndoRestoreCalendarDefaults}
+            >
+              Reverter
+            </Button>
+          }
+          sx={{ width: "100%" }}
+        >
+          Configurações restauradas.
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

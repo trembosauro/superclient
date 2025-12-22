@@ -22,7 +22,14 @@ export default function SettingsIconButton({
           onClick={onClick}
           disabled={disabled}
           size={size}
-          sx={{ border: 1, borderColor: "divider" }}
+          sx={{
+            borderRadius: 999,
+            border: 1,
+            borderColor: "divider",
+            backgroundColor: "transparent",
+            color: "text.secondary",
+            "&:hover": { backgroundColor: "action.hover" },
+          }}
         >
           <SettingsRoundedIcon fontSize={iconFontSize} />
         </IconButton>

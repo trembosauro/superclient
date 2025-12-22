@@ -3,6 +3,7 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Alert,
   Box,
   Button,
   Chip,
@@ -14,6 +15,7 @@ import {
   InputAdornment,
   MenuItem,
   Paper,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -156,6 +158,14 @@ const sanitizeCategories = (input: unknown): Category[] => {
   return input
     .map((cat, index) => normalizeCategory(cat as Partial<Category>, index))
     .filter((cat): cat is Category => Boolean(cat));
+};
+
+const defaultFinanceTableFields = {
+  title: true,
+  category: true,
+  amount: true,
+  date: true,
+  comment: true,
 };
 
 const shouldResetFinanceCategories = (cats: Category[]) => {
@@ -305,11 +315,7 @@ export default function Financas() {
     "categories" | "table" | false
   >(false);
   const [tableFields, setTableFields] = useState({
-    title: true,
-    category: true,
-    amount: true,
-    date: true,
-    comment: true,
+    ...defaultFinanceTableFields,
   });
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const [removeExpenseOpen, setRemoveExpenseOpen] = useState(false);
@@ -323,6 +329,56 @@ export default function Financas() {
   }));
   const isLoadedRef = useRef(false);
   const saveTimeoutRef = useRef<number | null>(null);
+  const restoreDefaultsSnapshotRef = useRef<{
+    categories: Category[];
+    tableFields: typeof tableFields;
+    settingsAccordion: typeof settingsAccordion;
+    newCategoryName: string;
+    newCategoryColor: string;
+    editingCategoryId: string | null;
+    editingCategoryName: string;
+    editingCategoryColor: string;
+  } | null>(null);
+  const [restoreDefaultsSnackbarOpen, setRestoreDefaultsSnackbarOpen] =
+    useState(false);
+
+  const handleRestoreFinanceDefaults = () => {
+    restoreDefaultsSnapshotRef.current = {
+      categories,
+      tableFields,
+      settingsAccordion,
+      newCategoryName,
+      newCategoryColor,
+      editingCategoryId,
+      editingCategoryName,
+      editingCategoryColor,
+    };
+    cancelEditCategory();
+    setNewCategoryName("");
+    setNewCategoryColor(DEFAULT_COLORS[0]);
+    setSettingsAccordion(false);
+    setCategories(defaultCategories);
+    setTableFields({ ...defaultFinanceTableFields });
+    setRestoreDefaultsSnackbarOpen(true);
+  };
+
+  const handleUndoRestoreFinanceDefaults = () => {
+    const snapshot = restoreDefaultsSnapshotRef.current;
+    if (!snapshot) {
+      setRestoreDefaultsSnackbarOpen(false);
+      return;
+    }
+    setCategories(snapshot.categories);
+    setTableFields(snapshot.tableFields);
+    setSettingsAccordion(snapshot.settingsAccordion);
+    setNewCategoryName(snapshot.newCategoryName);
+    setNewCategoryColor(snapshot.newCategoryColor);
+    setEditingCategoryId(snapshot.editingCategoryId);
+    setEditingCategoryName(snapshot.editingCategoryName);
+    setEditingCategoryColor(snapshot.editingCategoryColor);
+    restoreDefaultsSnapshotRef.current = null;
+    setRestoreDefaultsSnackbarOpen(false);
+  };
 
   const getStoredPermissions = () => {
     const storedUser = window.localStorage.getItem("sc_user");
@@ -1190,7 +1246,13 @@ export default function Financas() {
                   cancelEditCategory();
                   setSettingsAccordion(false);
                 }}
-                sx={{ color: "text.secondary" }}
+                sx={{
+                  border: 1,
+                  borderColor: "divider",
+                  backgroundColor: "background.paper",
+                  color: "text.secondary",
+                  "&:hover": { backgroundColor: "action.hover" },
+                }}
               >
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
@@ -1201,6 +1263,14 @@ export default function Financas() {
               onChange={(_, isExpanded) =>
                 setSettingsAccordion(isExpanded ? "categories" : false)
               }
+              elevation={0}
+              sx={{
+                border: 1,
+                borderColor: "divider",
+                borderRadius: "var(--radius-card)",
+                backgroundColor: "background.paper",
+                "&:before": { display: "none" },
+              }}
             >
               <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -1351,6 +1421,14 @@ export default function Financas() {
               onChange={(_, isExpanded) =>
                 setSettingsAccordion(isExpanded ? "table" : false)
               }
+              elevation={0}
+              sx={{
+                border: 1,
+                borderColor: "divider",
+                borderRadius: "var(--radius-card)",
+                backgroundColor: "background.paper",
+                "&:before": { display: "none" },
+              }}
             >
               <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -1509,24 +1587,8 @@ export default function Financas() {
             </Accordion>
 
             <Stack direction="row" spacing={2} justifyContent="flex-end">
-              <Button
-                variant="text"
-                onClick={() => {
-                  setTableFields({
-                    title: true,
-                    category: true,
-                    amount: true,
-                    date: true,
-                    comment: true,
-                  });
-                }}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  color: "text.secondary",
-                }}
-              >
-                Restaurar padrao
+              <Button variant="outlined" onClick={handleRestoreFinanceDefaults}>
+                Restaurar padrão
               </Button>
               <Button
                 variant="outlined"
@@ -1542,6 +1604,39 @@ export default function Financas() {
           </Stack>
         </DialogContent>
       </Dialog>
+
+      <Snackbar
+        open={restoreDefaultsSnackbarOpen}
+        autoHideDuration={6000}
+        onClose={(_, reason) => {
+          if (reason === "clickaway") {
+            return;
+          }
+          setRestoreDefaultsSnackbarOpen(false);
+          restoreDefaultsSnapshotRef.current = null;
+        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="info"
+          onClose={() => {
+            setRestoreDefaultsSnackbarOpen(false);
+            restoreDefaultsSnapshotRef.current = null;
+          }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={handleUndoRestoreFinanceDefaults}
+            >
+              Reverter
+            </Button>
+          }
+          sx={{ width: "100%" }}
+        >
+          Configurações restauradas.
+        </Alert>
+      </Snackbar>
 
       <Dialog
         open={Boolean(viewingExpense)}

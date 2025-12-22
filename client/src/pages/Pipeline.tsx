@@ -489,6 +489,21 @@ const addSprintDuration = (base: Date, duration: SprintState["duration"]) => {
   return next;
 };
 
+const defaultTaskFieldSettings = {
+  value: false,
+  link: false,
+  description: true,
+  priority: false,
+  dueDate: false,
+  checklist: false,
+  labels: false,
+  estimate: false,
+  timeSpent: false,
+  watchers: false,
+  attachments: false,
+  sprintInfo: false,
+};
+
 export default function Pipeline() {
   const [, setLocation] = useLocation();
   const [columns, setColumns] = useState<Column[]>(() => defaultColumns);
@@ -528,18 +543,7 @@ export default function Pipeline() {
     "fields" | "categories" | "columns" | "sprints" | false
   >(false);
   const [taskFieldSettings, setTaskFieldSettings] = useState({
-    value: false,
-    link: false,
-    description: true,
-    priority: false,
-    dueDate: false,
-    checklist: false,
-    labels: false,
-    estimate: false,
-    timeSpent: false,
-    watchers: false,
-    attachments: false,
-    sprintInfo: false,
+    ...defaultTaskFieldSettings,
   });
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_COLORS[0]);
@@ -579,12 +583,60 @@ export default function Pipeline() {
   const isLoadedRef = useRef(false);
   const saveTimeoutRef = useRef<number | null>(null);
   const openedFromLinkRef = useRef(false);
+  const restoreDefaultsSnapshotRef = useRef<{
+    taskFieldSettings: typeof taskFieldSettings;
+    configAccordion: typeof configAccordion;
+    newCategoryName: string;
+    newCategoryColor: string;
+    editingCategoryId: string | null;
+    editingCategoryName: string;
+    editingCategoryColor: string;
+  } | null>(null);
+  const [restoreDefaultsSnackbarOpen, setRestoreDefaultsSnackbarOpen] =
+    useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 3 } })
   );
   const canEditTasksOnBoard =
     permissions.pipeline_edit_tasks &&
     (!sprintState.enabled || !!sprintState.activeSprint);
+
+  const handleRestorePipelineDefaults = () => {
+    restoreDefaultsSnapshotRef.current = {
+      taskFieldSettings,
+      configAccordion,
+      newCategoryName,
+      newCategoryColor,
+      editingCategoryId,
+      editingCategoryName,
+      editingCategoryColor,
+    };
+    cancelEditCategory();
+    setNewCategoryName("");
+    setNewCategoryColor(DEFAULT_COLORS[0]);
+    setEditingCategoryName("");
+    setEditingCategoryColor(DEFAULT_COLORS[0]);
+    setConfigAccordion(false);
+    setTaskFieldSettings({ ...defaultTaskFieldSettings });
+    setRestoreDefaultsSnackbarOpen(true);
+  };
+
+  const handleUndoRestorePipelineDefaults = () => {
+    const snapshot = restoreDefaultsSnapshotRef.current;
+    if (!snapshot) {
+      setRestoreDefaultsSnackbarOpen(false);
+      return;
+    }
+    setTaskFieldSettings(snapshot.taskFieldSettings);
+    setConfigAccordion(snapshot.configAccordion);
+    setNewCategoryName(snapshot.newCategoryName);
+    setNewCategoryColor(snapshot.newCategoryColor);
+    setEditingCategoryId(snapshot.editingCategoryId);
+    setEditingCategoryName(snapshot.editingCategoryName);
+    setEditingCategoryColor(snapshot.editingCategoryColor);
+    restoreDefaultsSnapshotRef.current = null;
+    setRestoreDefaultsSnackbarOpen(false);
+  };
 
   useEffect(() => {
     const loadPipeline = async () => {
@@ -989,7 +1041,7 @@ export default function Pipeline() {
   );
 
   const visibleColumns = useMemo(() => {
-    if (!normalizedQuery) {
+    if (!normalizedQuery && categoryFilters.length === 0) {
       return activeColumns;
     }
     return activeColumns.filter(
@@ -2692,7 +2744,13 @@ export default function Pipeline() {
                     cancelEditCategory();
                     setConfigAccordion(false);
                   }}
-                  sx={{ color: "text.secondary" }}
+                  sx={{
+                    border: 1,
+                    borderColor: "divider",
+                    backgroundColor: "background.paper",
+                    color: "text.secondary",
+                    "&:hover": { backgroundColor: "action.hover" },
+                  }}
                 >
                   <CloseRoundedIcon fontSize="small" />
                 </IconButton>
@@ -3607,6 +3665,13 @@ export default function Pipeline() {
               <Stack direction="row" spacing={2} justifyContent="flex-end">
                 <Button
                   variant="outlined"
+                  onClick={handleRestorePipelineDefaults}
+                  sx={{ textTransform: "none", fontWeight: 600 }}
+                >
+                  Restaurar padrão
+                </Button>
+                <Button
+                  variant="outlined"
                   onClick={() => {
                     setTaskFieldSettingsOpen(false);
                     cancelEditCategory();
@@ -3903,6 +3968,39 @@ export default function Pipeline() {
             sx={{ width: "100%" }}
           >
             Task removida.
+          </Alert>
+        </Snackbar>
+
+        <Snackbar
+          open={restoreDefaultsSnackbarOpen}
+          autoHideDuration={6000}
+          onClose={(_, reason) => {
+            if (reason === "clickaway") {
+              return;
+            }
+            setRestoreDefaultsSnackbarOpen(false);
+            restoreDefaultsSnapshotRef.current = null;
+          }}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert
+            severity="info"
+            onClose={() => {
+              setRestoreDefaultsSnackbarOpen(false);
+              restoreDefaultsSnapshotRef.current = null;
+            }}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={handleUndoRestorePipelineDefaults}
+              >
+                Reverter
+              </Button>
+            }
+            sx={{ width: "100%" }}
+          >
+            Configurações restauradas.
           </Alert>
         </Snackbar>
 

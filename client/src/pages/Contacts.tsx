@@ -132,6 +132,22 @@ const emptyContact = (): Contact => ({
   role: "",
 });
 
+const defaultContactCardFields = {
+  phones: true,
+  emails: true,
+  addresses: true,
+  categories: true,
+};
+
+const defaultContactDetailFields = {
+  birthday: true,
+  categories: true,
+  phones: true,
+  emails: true,
+  addresses: true,
+  comments: true,
+};
+
 const sampleContacts: Contact[] = [
   {
     id: "contact-ana-mendes",
@@ -139,8 +155,14 @@ const sampleContacts: Contact[] = [
     birthday: "1992-04-18",
     phones: ["11988887777", "1133445566"],
     emails: ["ana.mendes@exemplo.com", "ana@agenciaflux.com"],
-    addresses: ["Rua Augusta, 1200, Sao Paulo, SP", "Av. Paulista, 1578, Sao Paulo, SP"],
-    comments: ["Preferencia por contato via WhatsApp.", "Cliente ativa desde 2021."],
+    addresses: [
+      "Rua Augusta, 1200, Sao Paulo, SP",
+      "Av. Paulista, 1578, Sao Paulo, SP",
+    ],
+    comments: [
+      "Preferencia por contato via WhatsApp.",
+      "Cliente ativa desde 2021.",
+    ],
     categoryIds: ["cat-cliente", "cat-vip"],
   },
   {
@@ -246,24 +268,20 @@ export default function Contacts() {
     "categories" | "cards" | "details" | false
   >(false);
   const [cardFields, setCardFields] = useState({
-    phones: true,
-    emails: true,
-    addresses: true,
-    categories: true,
+    ...defaultContactCardFields,
   });
   const [detailFields, setDetailFields] = useState({
-    birthday: true,
-    categories: true,
-    phones: true,
-    emails: true,
-    addresses: true,
-    comments: true,
+    ...defaultContactDetailFields,
   });
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_COLORS[0]);
-  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
+    null
+  );
   const [editingCategoryName, setEditingCategoryName] = useState("");
-  const [editingCategoryColor, setEditingCategoryColor] = useState(DEFAULT_COLORS[0]);
+  const [editingCategoryColor, setEditingCategoryColor] = useState(
+    DEFAULT_COLORS[0]
+  );
   const [copyMessage, setCopyMessage] = useState("");
   const [copySnackbarOpen, setCopySnackbarOpen] = useState(false);
   const [contactQuery, setContactQuery] = useState("");
@@ -278,6 +296,19 @@ export default function Contacts() {
   const calendarAnchorRef = useRef<HTMLButtonElement | null>(null);
   const isLoadedRef = useRef(false);
   const saveTimeoutRef = useRef<number | null>(null);
+  const restoreDefaultsSnapshotRef = useRef<{
+    categories: Category[];
+    cardFields: typeof cardFields;
+    detailFields: typeof detailFields;
+    settingsAccordion: typeof settingsAccordion;
+    newCategoryName: string;
+    newCategoryColor: string;
+    editingCategoryId: string | null;
+    editingCategoryName: string;
+    editingCategoryColor: string;
+  } | null>(null);
+  const [restoreDefaultsSnackbarOpen, setRestoreDefaultsSnackbarOpen] =
+    useState(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -289,9 +320,9 @@ export default function Contacts() {
     try {
       const parsed = JSON.parse(stored) as Contact[];
       if (Array.isArray(parsed)) {
-        const existingIds = new Set(parsed.map((contact) => contact.id));
+        const existingIds = new Set(parsed.map(contact => contact.id));
         const merged = [...parsed];
-        sampleContacts.forEach((contact) => {
+        sampleContacts.forEach(contact => {
           if (!existingIds.has(contact.id)) {
             merged.push(contact);
           }
@@ -311,12 +342,22 @@ export default function Contacts() {
     try {
       const parsed = JSON.parse(storedCategories) as Category[];
       if (Array.isArray(parsed) && parsed.length) {
-        const hasContactDefaults = parsed.some((cat) =>
-          ["Familia", "Amigos", "Cliente", "Fornecedor", "Prospect", "Equipe"].includes(cat.name)
+        const hasContactDefaults = parsed.some(cat =>
+          [
+            "Familia",
+            "Amigos",
+            "Cliente",
+            "Fornecedor",
+            "Prospect",
+            "Equipe",
+          ].includes(cat.name)
         );
         setCategories(hasContactDefaults ? parsed : defaultCategories);
         if (!hasContactDefaults) {
-          window.localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(defaultCategories));
+          window.localStorage.setItem(
+            CATEGORY_STORAGE_KEY,
+            JSON.stringify(defaultCategories)
+          );
         }
       }
     } catch {
@@ -333,7 +374,10 @@ export default function Contacts() {
     }
     saveTimeoutRef.current = window.setTimeout(() => {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts));
-      window.localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(categories));
+      window.localStorage.setItem(
+        CATEGORY_STORAGE_KEY,
+        JSON.stringify(categories)
+      );
       window.dispatchEvent(new Event("contacts-change"));
     }, 300);
     return () => {
@@ -350,7 +394,7 @@ export default function Contacts() {
     }
     try {
       const parsed = JSON.parse(stored) as Partial<typeof cardFields>;
-      setCardFields((prev) => ({ ...prev, ...parsed }));
+      setCardFields(prev => ({ ...prev, ...parsed }));
     } catch {
       window.localStorage.removeItem(CARD_FIELDS_KEY);
     }
@@ -367,17 +411,61 @@ export default function Contacts() {
     }
     try {
       const parsed = JSON.parse(stored) as Partial<typeof detailFields>;
-      setDetailFields((prev) => ({ ...prev, ...parsed }));
+      setDetailFields(prev => ({ ...prev, ...parsed }));
     } catch {
       window.localStorage.removeItem(DETAIL_FIELDS_KEY);
     }
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(DETAIL_FIELDS_KEY, JSON.stringify(detailFields));
+    window.localStorage.setItem(
+      DETAIL_FIELDS_KEY,
+      JSON.stringify(detailFields)
+    );
   }, [detailFields]);
 
-  const categoryMap = new Map(categories.map((cat) => [cat.id, cat]));
+  const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
+
+  const handleRestoreContactsDefaults = () => {
+    restoreDefaultsSnapshotRef.current = {
+      categories,
+      cardFields,
+      detailFields,
+      settingsAccordion,
+      newCategoryName,
+      newCategoryColor,
+      editingCategoryId,
+      editingCategoryName,
+      editingCategoryColor,
+    };
+    cancelEditCategory();
+    setNewCategoryName("");
+    setNewCategoryColor(DEFAULT_COLORS[0]);
+    setSettingsAccordion(false);
+    setCategories(defaultCategories);
+    setCardFields({ ...defaultContactCardFields });
+    setDetailFields({ ...defaultContactDetailFields });
+    setRestoreDefaultsSnackbarOpen(true);
+  };
+
+  const handleUndoRestoreContactsDefaults = () => {
+    const snapshot = restoreDefaultsSnapshotRef.current;
+    if (!snapshot) {
+      setRestoreDefaultsSnackbarOpen(false);
+      return;
+    }
+    setCategories(snapshot.categories);
+    setCardFields(snapshot.cardFields);
+    setDetailFields(snapshot.detailFields);
+    setSettingsAccordion(snapshot.settingsAccordion);
+    setNewCategoryName(snapshot.newCategoryName);
+    setNewCategoryColor(snapshot.newCategoryColor);
+    setEditingCategoryId(snapshot.editingCategoryId);
+    setEditingCategoryName(snapshot.editingCategoryName);
+    setEditingCategoryColor(snapshot.editingCategoryColor);
+    restoreDefaultsSnapshotRef.current = null;
+    setRestoreDefaultsSnackbarOpen(false);
+  };
 
   const openNewContact = () => {
     const next = emptyContact();
@@ -392,8 +480,12 @@ export default function Contacts() {
     setContactForm(null);
   };
 
-  const updateListField = (key: "phones" | "emails" | "addresses" | "comments", index: number, value: string) => {
-    setContactForm((prev) => {
+  const updateListField = (
+    key: "phones" | "emails" | "addresses" | "comments",
+    index: number,
+    value: string
+  ) => {
+    setContactForm(prev => {
       if (!prev) {
         return prev;
       }
@@ -442,30 +534,34 @@ export default function Contacts() {
       return;
     }
     const id = `cat-${Date.now()}`;
-    setCategories((prev) => [...prev, { id, name, color: newCategoryColor }]);
+    setCategories(prev => [...prev, { id, name, color: newCategoryColor }]);
     setNewCategoryName("");
   };
 
   const handleRemoveCategory = (id: string) => {
-    let nextCategories = categories.filter((cat) => cat.id !== id);
+    let nextCategories = categories.filter(cat => cat.id !== id);
     if (nextCategories.length === 0) {
       nextCategories = [
-        { id: `cat-${Date.now()}`, name: "Sem categoria", color: DEFAULT_COLORS[0] },
+        {
+          id: `cat-${Date.now()}`,
+          name: "Sem categoria",
+          color: DEFAULT_COLORS[0],
+        },
       ];
     }
     setCategories(nextCategories);
-    setEditingCategoryId((prev) => (prev === id ? null : prev));
-    setContacts((prev) =>
-      prev.map((contact) => ({
+    setEditingCategoryId(prev => (prev === id ? null : prev));
+    setContacts(prev =>
+      prev.map(contact => ({
         ...contact,
-        categoryIds: (contact.categoryIds || []).filter((catId) => catId !== id),
+        categoryIds: (contact.categoryIds || []).filter(catId => catId !== id),
       }))
     );
-    setContactForm((prev) =>
+    setContactForm(prev =>
       prev
         ? {
             ...prev,
-            categoryIds: (prev.categoryIds || []).filter((catId) => catId !== id),
+            categoryIds: (prev.categoryIds || []).filter(catId => catId !== id),
           }
         : prev
     );
@@ -489,16 +585,20 @@ export default function Contacts() {
     if (!name) {
       return;
     }
-    setCategories((prev) =>
-      prev.map((cat) =>
-        cat.id === editingCategoryId ? { ...cat, name, color: editingCategoryColor } : cat
+    setCategories(prev =>
+      prev.map(cat =>
+        cat.id === editingCategoryId
+          ? { ...cat, name, color: editingCategoryColor }
+          : cat
       )
     );
     setEditingCategoryId(null);
   };
 
-  const addListField = (key: "phones" | "emails" | "addresses" | "comments") => {
-    setContactForm((prev) => {
+  const addListField = (
+    key: "phones" | "emails" | "addresses" | "comments"
+  ) => {
+    setContactForm(prev => {
       if (!prev) {
         return prev;
       }
@@ -506,8 +606,11 @@ export default function Contacts() {
     });
   };
 
-  const removeListField = (key: "phones" | "emails" | "addresses" | "comments", index: number) => {
-    setContactForm((prev) => {
+  const removeListField = (
+    key: "phones" | "emails" | "addresses" | "comments",
+    index: number
+  ) => {
+    setContactForm(prev => {
       if (!prev) {
         return prev;
       }
@@ -520,16 +623,16 @@ export default function Contacts() {
     if (contact.name.trim() || contact.birthday) {
       return true;
     }
-    if (contact.phones.some((phone) => phone.trim())) {
+    if (contact.phones.some(phone => phone.trim())) {
       return true;
     }
-    if (contact.emails.some((email) => email.trim())) {
+    if (contact.emails.some(email => email.trim())) {
       return true;
     }
-    if (contact.addresses.some((address) => address.trim())) {
+    if (contact.addresses.some(address => address.trim())) {
       return true;
     }
-    if (contact.comments.some((comment) => comment.trim())) {
+    if (contact.comments.some(comment => comment.trim())) {
       return true;
     }
     if (contact.categoryIds && contact.categoryIds.length) {
@@ -539,7 +642,7 @@ export default function Contacts() {
   };
 
   const updateUserRole = (contact: Contact) => {
-    const email = (contact.emails || []).find((value) => value.trim())?.trim();
+    const email = (contact.emails || []).find(value => value.trim())?.trim();
     if (!email) {
       return;
     }
@@ -563,11 +666,11 @@ export default function Contacts() {
 
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
 
-  const filteredContacts = contacts.filter((contact) => {
+  const filteredContacts = contacts.filter(contact => {
     const term = contactQuery.trim().toLowerCase();
     if (categoryFilters.length > 0) {
       const ids = contact.categoryIds || [];
-      if (!categoryFilters.some((filterId) => ids.includes(filterId))) {
+      if (!categoryFilters.some(filterId => ids.includes(filterId))) {
         return false;
       }
     }
@@ -581,7 +684,7 @@ export default function Contacts() {
       ...contact.addresses,
       ...contact.comments,
       ...((contact.categoryIds || [])
-        .map((id) => categoryMap.get(id)?.name)
+        .map(id => categoryMap.get(id)?.name)
         .filter(Boolean) as string[]),
     ]
       .filter(Boolean)
@@ -594,7 +697,7 @@ export default function Contacts() {
     if (!editingContact) {
       return;
     }
-    setContacts((prev) => prev.filter((item) => item.id !== editingContact.id));
+    setContacts(prev => prev.filter(item => item.id !== editingContact.id));
     setEditingContact(null);
     setContactForm(null);
   };
@@ -607,8 +710,8 @@ export default function Contacts() {
       ...contactForm,
       categoryIds: contactForm.categoryIds || [],
     };
-    setContacts((prev) => {
-      const existingIndex = prev.findIndex((item) => item.id === nextContact.id);
+    setContacts(prev => {
+      const existingIndex = prev.findIndex(item => item.id === nextContact.id);
       if (existingIndex === -1) {
         return [nextContact, ...prev];
       }
@@ -628,8 +731,8 @@ export default function Contacts() {
     if (!hasContactContent(contactForm)) {
       return;
     }
-    setContacts((prev) => {
-      const existingIndex = prev.findIndex((item) => item.id === contactForm.id);
+    setContacts(prev => {
+      const existingIndex = prev.findIndex(item => item.id === contactForm.id);
       if (existingIndex === -1) {
         return [contactForm, ...prev];
       }
@@ -770,7 +873,7 @@ export default function Contacts() {
             sx={{
               p: 3,
               border: 1,
-                      borderColor: "divider",
+              borderColor: "divider",
               backgroundColor: "background.paper",
             }}
           >
@@ -788,7 +891,7 @@ export default function Contacts() {
               <TextField
                 label="Buscar contatos"
                 value={contactQuery}
-                onChange={(event) => setContactQuery(event.target.value)}
+                onChange={event => setContactQuery(event.target.value)}
                 sx={{ maxWidth: 360 }}
                 InputProps={{
                   endAdornment: contactQuery ? (
@@ -807,9 +910,13 @@ export default function Contacts() {
               <Autocomplete
                 multiple
                 options={categories}
-                value={categories.filter((cat) => categoryFilters.includes(cat.id))}
-                onChange={(_, value) => setCategoryFilters(value.map((cat) => cat.id))}
-                getOptionLabel={(option) => option.name}
+                value={categories.filter(cat =>
+                  categoryFilters.includes(cat.id)
+                )}
+                onChange={(_, value) =>
+                  setCategoryFilters(value.map(cat => cat.id))
+                }
+                getOptionLabel={option => option.name}
                 disableCloseOnSelect
                 ListboxProps={{
                   style: { maxHeight: 240 },
@@ -820,7 +927,7 @@ export default function Contacts() {
                     {option.name}
                   </li>
                 )}
-                renderInput={(params) => (
+                renderInput={params => (
                   <TextField {...params} label="Filtrar categorias" />
                 )}
                 renderTags={(value, getTagProps) => {
@@ -853,7 +960,7 @@ export default function Contacts() {
                           sx={{
                             color: "text.secondary",
                             border: 1,
-                      borderColor: "divider",
+                            borderColor: "divider",
                           }}
                         />
                       ) : null}
@@ -873,7 +980,7 @@ export default function Contacts() {
             </Stack>
             {filteredContacts.length === 0 ? (
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                 Nenhum contato encontrado.
+                Nenhum contato encontrado.
               </Typography>
             ) : (
               <Box
@@ -883,7 +990,7 @@ export default function Contacts() {
                   gap: 2,
                 }}
               >
-                {filteredContacts.map((contact) => (
+                {filteredContacts.map(contact =>
                   (() => {
                     const visibleDetailCount = [
                       cardFields.phones,
@@ -900,65 +1007,95 @@ export default function Contacts() {
                             ? 136
                             : 160;
                     return (
-                  <Paper
-                    key={contact.id}
-                    elevation={0}
-                    onClick={() => openContact(contact)}
-                    sx={(theme) => ({
-                      p: 2.5,
-                      minHeight,
-                      border: 1,
-                      borderColor: "divider",
-                      backgroundColor: "background.paper",
-                      cursor: "pointer",
-                      ...interactiveCardSx(theme),
-                    })}
-                  >
-                    <Stack spacing={1}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                        {contact.name || "Sem nome"}
-                      </Typography>
-                      {cardFields.phones ? (
-                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                          {contact.phones.filter(Boolean).length} telefones
-                        </Typography>
-                      ) : null}
-                      {cardFields.emails ? (
-                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                          {contact.emails.filter(Boolean).length} emails
-                        </Typography>
-                      ) : null}
-                      {cardFields.addresses ? (
-                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                          {contact.addresses.filter(Boolean).length} enderecos
-                        </Typography>
-                      ) : null}
-                      {cardFields.categories ? (
-                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                          {contact.categoryIds?.length
-                            ? `${contact.categoryIds.length} categorias`
-                            : "Sem categoria"}
-                        </Typography>
-                      ) : null}
-                    </Stack>
-                  </Paper>
+                      <Paper
+                        key={contact.id}
+                        elevation={0}
+                        onClick={() => openContact(contact)}
+                        sx={theme => ({
+                          p: 2.5,
+                          minHeight,
+                          border: 1,
+                          borderColor: "divider",
+                          backgroundColor: "background.paper",
+                          cursor: "pointer",
+                          ...interactiveCardSx(theme),
+                        })}
+                      >
+                        <Stack spacing={1}>
+                          <Typography
+                            variant="subtitle1"
+                            sx={{ fontWeight: 700 }}
+                          >
+                            {contact.name || "Sem nome"}
+                          </Typography>
+                          {cardFields.phones ? (
+                            <Typography
+                              variant="caption"
+                              sx={{ color: "text.secondary" }}
+                            >
+                              {contact.phones.filter(Boolean).length} telefones
+                            </Typography>
+                          ) : null}
+                          {cardFields.emails ? (
+                            <Typography
+                              variant="caption"
+                              sx={{ color: "text.secondary" }}
+                            >
+                              {contact.emails.filter(Boolean).length} emails
+                            </Typography>
+                          ) : null}
+                          {cardFields.addresses ? (
+                            <Typography
+                              variant="caption"
+                              sx={{ color: "text.secondary" }}
+                            >
+                              {contact.addresses.filter(Boolean).length}{" "}
+                              enderecos
+                            </Typography>
+                          ) : null}
+                          {cardFields.categories ? (
+                            <Typography
+                              variant="caption"
+                              sx={{ color: "text.secondary" }}
+                            >
+                              {contact.categoryIds?.length
+                                ? `${contact.categoryIds.length} categorias`
+                                : "Sem categoria"}
+                            </Typography>
+                          ) : null}
+                        </Stack>
+                      </Paper>
                     );
                   })()
-                ))}
+                )}
               </Box>
             )}
           </Stack>
         )}
       </Stack>
 
-      <Dialog open={Boolean(selectedContact)} onClose={() => setSelectedContact(null)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={Boolean(selectedContact)}
+        onClose={() => setSelectedContact(null)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogContent>
           <Stack spacing={2.5}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <Typography variant="h6">
                 {selectedContact?.name || "Contato"}
               </Typography>
-              <IconButton onClick={closeSelectedContact} sx={{ color: "text.secondary" }}>
+              <IconButton
+                onClick={closeSelectedContact}
+                sx={{ color: "text.secondary" }}
+              >
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -969,7 +1106,9 @@ export default function Contacts() {
                 </Typography>
                 {selectedContact?.birthday ? (
                   <Typography variant="body2">
-                    {new Date(selectedContact.birthday).toLocaleDateString("pt-BR")}
+                    {new Date(selectedContact.birthday).toLocaleDateString(
+                      "pt-BR"
+                    )}
                   </Typography>
                 ) : (
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
@@ -986,16 +1125,19 @@ export default function Contacts() {
                 {selectedContact?.categoryIds?.length ? (
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                     {selectedContact.categoryIds
-                      .map((catId) => categoryMap.get(catId))
+                      .map(catId => categoryMap.get(catId))
                       .filter(Boolean)
-                      .map((cat) => (
+                      .map(cat => (
                         <Chip
                           key={cat?.id}
                           label={cat?.name}
                           size="small"
                           sx={{
                             color: "#e6edf3",
-                            backgroundColor: darkenColor(cat?.color || "#0f172a", 0.5),
+                            backgroundColor: darkenColor(
+                              cat?.color || "#0f172a",
+                              0.5
+                            ),
                           }}
                         />
                       ))}
@@ -1013,38 +1155,40 @@ export default function Contacts() {
                   Telefones
                 </Typography>
                 {selectedContact?.phones.filter(Boolean).length ? (
-                  selectedContact?.phones.filter(Boolean).map((phone, index) => (
-                    <Stack
-                      key={`view-phone-${index}`}
-                      direction="row"
-                      spacing={1}
-                      alignItems="center"
-                    >
-                      <Typography variant="body2">{phone}</Typography>
-                      <Tooltip title="Copiar telefone" placement="top">
-                        <IconButton
-                          size="small"
-                          onClick={() => copyText(phone)}
-                          aria-label="Copiar telefone"
-                        >
-                          <ContentCopyRoundedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Abrir no WhatsApp" placement="top">
-                        <IconButton
-                          component="a"
-                          href={formatWhatsAppLink(phone)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          size="small"
-                          aria-label="Abrir WhatsApp"
-                          disabled={!formatWhatsAppLink(phone)}
-                        >
-                          <WhatsAppIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
-                  ))
+                  selectedContact?.phones
+                    .filter(Boolean)
+                    .map((phone, index) => (
+                      <Stack
+                        key={`view-phone-${index}`}
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                      >
+                        <Typography variant="body2">{phone}</Typography>
+                        <Tooltip title="Copiar telefone" placement="top">
+                          <IconButton
+                            size="small"
+                            onClick={() => copyText(phone)}
+                            aria-label="Copiar telefone"
+                          >
+                            <ContentCopyRoundedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Abrir no WhatsApp" placement="top">
+                          <IconButton
+                            component="a"
+                            href={formatWhatsAppLink(phone)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            size="small"
+                            aria-label="Abrir WhatsApp"
+                            disabled={!formatWhatsAppLink(phone)}
+                          >
+                            <WhatsAppIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    ))
                 ) : (
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
                     Nenhum telefone informado.
@@ -1058,25 +1202,27 @@ export default function Contacts() {
                   Emails
                 </Typography>
                 {selectedContact?.emails.filter(Boolean).length ? (
-                  selectedContact?.emails.filter(Boolean).map((email, index) => (
-                    <Stack
-                      key={`view-email-${index}`}
-                      direction="row"
-                      spacing={1}
-                      alignItems="center"
-                    >
-                      <Typography variant="body2">{email}</Typography>
-                      <Tooltip title="Copiar email" placement="top">
-                        <IconButton
-                          size="small"
-                          onClick={() => copyText(email)}
-                          aria-label="Copiar email"
-                        >
-                          <ContentCopyRoundedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
-                  ))
+                  selectedContact?.emails
+                    .filter(Boolean)
+                    .map((email, index) => (
+                      <Stack
+                        key={`view-email-${index}`}
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                      >
+                        <Typography variant="body2">{email}</Typography>
+                        <Tooltip title="Copiar email" placement="top">
+                          <IconButton
+                            size="small"
+                            onClick={() => copyText(email)}
+                            aria-label="Copiar email"
+                          >
+                            <ContentCopyRoundedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    ))
                 ) : (
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
                     Nenhum email informado.
@@ -1090,39 +1236,41 @@ export default function Contacts() {
                   Endereços
                 </Typography>
                 {selectedContact?.addresses.filter(Boolean).length ? (
-                  selectedContact?.addresses.filter(Boolean).map((address, index) => (
-                    <Stack
-                      key={`view-address-${index}`}
-                      direction="row"
-                      spacing={1}
-                      alignItems="center"
-                    >
-                      <Typography variant="body2">{address}</Typography>
-                      <Tooltip title="Copiar endereco" placement="top">
-                        <IconButton
-                          size="small"
-                          onClick={() => copyText(address)}
-                          aria-label="Copiar endereco"
-                        >
-                          <ContentCopyRoundedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Abrir no Maps" placement="top">
-                        <IconButton
-                          component="a"
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                            address
-                          )}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          size="small"
-                          aria-label="Abrir no Maps"
-                        >
-                          <LinkRoundedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
-                  ))
+                  selectedContact?.addresses
+                    .filter(Boolean)
+                    .map((address, index) => (
+                      <Stack
+                        key={`view-address-${index}`}
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                      >
+                        <Typography variant="body2">{address}</Typography>
+                        <Tooltip title="Copiar endereco" placement="top">
+                          <IconButton
+                            size="small"
+                            onClick={() => copyText(address)}
+                            aria-label="Copiar endereco"
+                          >
+                            <ContentCopyRoundedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Abrir no Maps" placement="top">
+                          <IconButton
+                            component="a"
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                              address
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            size="small"
+                            aria-label="Abrir no Maps"
+                          >
+                            <LinkRoundedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    ))
                 ) : (
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
                     Nenhum endereco informado.
@@ -1136,11 +1284,13 @@ export default function Contacts() {
                   Comentarios
                 </Typography>
                 {selectedContact?.comments.filter(Boolean).length ? (
-                  selectedContact?.comments.filter(Boolean).map((comment, index) => (
-                    <Typography key={`view-comment-${index}`} variant="body2">
-                      {comment}
-                    </Typography>
-                  ))
+                  selectedContact?.comments
+                    .filter(Boolean)
+                    .map((comment, index) => (
+                      <Typography key={`view-comment-${index}`} variant="body2">
+                        {comment}
+                      </Typography>
+                    ))
                 ) : (
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
                     Nenhum comentario informado.
@@ -1180,14 +1330,30 @@ export default function Contacts() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(editingContact)} onClose={() => setEditingContact(null)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={Boolean(editingContact)}
+        onClose={() => setEditingContact(null)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogContent>
           <Stack spacing={2.5}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <Typography variant="h6">
-                {editingContact?.name ? `Editar ${editingContact.name}` : "Novo contato"}
+                {editingContact?.name
+                  ? `Editar ${editingContact.name}`
+                  : "Novo contato"}
               </Typography>
-              <IconButton onClick={() => setEditingContact(null)} sx={{ color: "text.secondary" }}>
+              <IconButton
+                onClick={() => setEditingContact(null)}
+                sx={{ color: "text.secondary" }}
+              >
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -1195,8 +1361,10 @@ export default function Contacts() {
               label="Nome"
               fullWidth
               value={contactForm?.name || ""}
-              onChange={(event) =>
-                setContactForm((prev) => (prev ? { ...prev, name: event.target.value } : prev))
+              onChange={event =>
+                setContactForm(prev =>
+                  prev ? { ...prev, name: event.target.value } : prev
+                )
               }
             />
             <TextField
@@ -1204,12 +1372,14 @@ export default function Contacts() {
               label="Papel (Gestão)"
               fullWidth
               value={contactForm?.role || ""}
-              onChange={(event) =>
-                setContactForm((prev) => (prev ? { ...prev, role: event.target.value } : prev))
+              onChange={event =>
+                setContactForm(prev =>
+                  prev ? { ...prev, role: event.target.value } : prev
+                )
               }
             >
               <MenuItem value="">Sem papel</MenuItem>
-              {roleOptions.map((role) => (
+              {roleOptions.map(role => (
                 <MenuItem key={role} value={role}>
                   {role}
                 </MenuItem>
@@ -1220,19 +1390,25 @@ export default function Contacts() {
               fullWidth
               placeholder="DD/MM/AAAA"
               value={birthdayInput}
-              onChange={(event) => {
+              onChange={event => {
                 const nextValue = normalizeBirthdayInput(event.target.value);
                 setBirthdayInput(nextValue);
                 const iso = parseBirthdayToIso(nextValue);
-                setContactForm((prev) => (prev ? { ...prev, birthday: iso } : prev));
+                setContactForm(prev =>
+                  prev ? { ...prev, birthday: iso } : prev
+                );
               }}
               onBlur={() => {
                 if (!birthdayInput.trim()) {
-                  setContactForm((prev) => (prev ? { ...prev, birthday: "" } : prev));
+                  setContactForm(prev =>
+                    prev ? { ...prev, birthday: "" } : prev
+                  );
                   return;
                 }
                 const iso = parseBirthdayToIso(birthdayInput);
-                setContactForm((prev) => (prev ? { ...prev, birthday: iso } : prev));
+                setContactForm(prev =>
+                  prev ? { ...prev, birthday: iso } : prev
+                );
                 if (!iso) {
                   return;
                 }
@@ -1275,25 +1451,40 @@ export default function Contacts() {
               }}
             >
               <Stack spacing={1.5}>
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
                   <IconButton
                     size="small"
                     onClick={() =>
                       setCalendarMonth(
-                        new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1)
+                        new Date(
+                          calendarMonth.getFullYear(),
+                          calendarMonth.getMonth() - 1,
+                          1
+                        )
                       )
                     }
                   >
                     <ChevronLeftRoundedIcon fontSize="small" />
                   </IconButton>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    {monthLabels[calendarMonth.getMonth()]} {calendarMonth.getFullYear()}
+                    {monthLabels[calendarMonth.getMonth()]}{" "}
+                    {calendarMonth.getFullYear()}
                   </Typography>
                   <IconButton
                     size="small"
                     onClick={() =>
                       setCalendarMonth(
-                        new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1)
+                        new Date(
+                          calendarMonth.getFullYear(),
+                          calendarMonth.getMonth() + 1,
+                          1
+                        )
                       )
                     }
                   >
@@ -1308,7 +1499,7 @@ export default function Contacts() {
                     textAlign: "center",
                   }}
                 >
-                  {weekLabels.map((label) => (
+                  {weekLabels.map(label => (
                     <Typography
                       key={label}
                       variant="caption"
@@ -1317,9 +1508,13 @@ export default function Contacts() {
                       {label}
                     </Typography>
                   ))}
-                  {getCalendarDays(calendarMonth).map((day) => {
-                    const selectedDate = parseIsoDate(contactForm?.birthday || "");
-                    const isSelected = selectedDate ? isSameDay(day.date, selectedDate) : false;
+                  {getCalendarDays(calendarMonth).map(day => {
+                    const selectedDate = parseIsoDate(
+                      contactForm?.birthday || ""
+                    );
+                    const isSelected = selectedDate
+                      ? isSameDay(day.date, selectedDate)
+                      : false;
                     const isToday = isSameDay(day.date, new Date());
                     return (
                       <Box
@@ -1329,8 +1524,11 @@ export default function Contacts() {
                         onClick={() => {
                           const iso = `${day.date.getFullYear()}-${String(
                             day.date.getMonth() + 1
-                          ).padStart(2, "0")}-${String(day.date.getDate()).padStart(2, "0")}`;
-                          setContactForm((prev) =>
+                          ).padStart(
+                            2,
+                            "0"
+                          )}-${String(day.date.getDate()).padStart(2, "0")}`;
+                          setContactForm(prev =>
                             prev ? { ...prev, birthday: iso } : prev
                           );
                           setBirthdayInput(
@@ -1348,11 +1546,17 @@ export default function Contacts() {
                           backgroundColor: isSelected
                             ? "rgba(34, 201, 166, 0.25)"
                             : "transparent",
-                          color: day.inMonth ? "text.primary" : "text.secondary",
-                          border: isToday ? "1px solid rgba(34, 201, 166, 0.5)" : "1px solid transparent",
+                          color: day.inMonth
+                            ? "text.primary"
+                            : "text.secondary",
+                          border: isToday
+                            ? "1px solid rgba(34, 201, 166, 0.5)"
+                            : "1px solid transparent",
                         }}
                       >
-                        <Typography variant="caption">{day.date.getDate()}</Typography>
+                        <Typography variant="caption">
+                          {day.date.getDate()}
+                        </Typography>
                       </Box>
                     );
                   })}
@@ -1362,15 +1566,17 @@ export default function Contacts() {
             <Autocomplete
               multiple
               options={categories}
-              value={categories.filter((cat) =>
+              value={categories.filter(cat =>
                 (contactForm?.categoryIds || []).includes(cat.id)
               )}
               onChange={(_, value) =>
-                setContactForm((prev) =>
-                  prev ? { ...prev, categoryIds: value.map((cat) => cat.id) } : prev
+                setContactForm(prev =>
+                  prev
+                    ? { ...prev, categoryIds: value.map(cat => cat.id) }
+                    : prev
                 )
               }
-              getOptionLabel={(option) => option.name}
+              getOptionLabel={option => option.name}
               disableCloseOnSelect
               renderOption={(props, option, { selected }) => (
                 <li {...props}>
@@ -1378,7 +1584,7 @@ export default function Contacts() {
                   {option.name}
                 </li>
               )}
-              renderInput={(params) => (
+              renderInput={params => (
                 <TextField {...params} label="Categorias" fullWidth />
               )}
               renderTags={(value, getTagProps) =>
@@ -1402,13 +1608,22 @@ export default function Contacts() {
                 Telefones
               </Typography>
               {contactForm?.phones.map((phone, index) => (
-                <Stack key={`phone-${index}`} direction="row" spacing={1} alignItems="center">
+                <Stack
+                  key={`phone-${index}`}
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                >
                   <TextField
                     label={`Telefone ${index + 1}`}
                     fullWidth
                     value={phone}
-                    onChange={(event) =>
-                      updateListField("phones", index, sanitizePhone(event.target.value))
+                    onChange={event =>
+                      updateListField(
+                        "phones",
+                        index,
+                        sanitizePhone(event.target.value)
+                      )
                     }
                     inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
                   />
@@ -1421,7 +1636,11 @@ export default function Contacts() {
                 variant="outlined"
                 startIcon={<AddRoundedIcon />}
                 onClick={() => addListField("phones")}
-                sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                sx={{
+                  alignSelf: "flex-start",
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
               >
                 Adicionar telefone
               </Button>
@@ -1432,12 +1651,19 @@ export default function Contacts() {
                 Emails
               </Typography>
               {contactForm?.emails.map((email, index) => (
-                <Stack key={`email-${index}`} direction="row" spacing={1} alignItems="center">
+                <Stack
+                  key={`email-${index}`}
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                >
                   <TextField
                     label={`Email ${index + 1}`}
                     fullWidth
                     value={email}
-                    onChange={(event) => updateListField("emails", index, event.target.value)}
+                    onChange={event =>
+                      updateListField("emails", index, event.target.value)
+                    }
                   />
                   <IconButton onClick={() => removeListField("emails", index)}>
                     <CloseRoundedIcon fontSize="small" />
@@ -1448,7 +1674,11 @@ export default function Contacts() {
                 variant="outlined"
                 startIcon={<AddRoundedIcon />}
                 onClick={() => addListField("emails")}
-                sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                sx={{
+                  alignSelf: "flex-start",
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
               >
                 Adicionar email
               </Button>
@@ -1459,12 +1689,19 @@ export default function Contacts() {
                 Endereços
               </Typography>
               {contactForm?.addresses.map((address, index) => (
-                <Stack key={`address-${index}`} direction="row" spacing={1} alignItems="center">
+                <Stack
+                  key={`address-${index}`}
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                >
                   <TextField
                     label={`Endereço ${index + 1}`}
                     fullWidth
                     value={address}
-                    onChange={(event) => updateListField("addresses", index, event.target.value)}
+                    onChange={event =>
+                      updateListField("addresses", index, event.target.value)
+                    }
                   />
                   <IconButton
                     component="a"
@@ -1479,7 +1716,9 @@ export default function Contacts() {
                   >
                     <LinkRoundedIcon fontSize="small" />
                   </IconButton>
-                  <IconButton onClick={() => removeListField("addresses", index)}>
+                  <IconButton
+                    onClick={() => removeListField("addresses", index)}
+                  >
                     <CloseRoundedIcon fontSize="small" />
                   </IconButton>
                 </Stack>
@@ -1488,7 +1727,11 @@ export default function Contacts() {
                 variant="outlined"
                 startIcon={<AddRoundedIcon />}
                 onClick={() => addListField("addresses")}
-                sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                sx={{
+                  alignSelf: "flex-start",
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
               >
                 Adicionar endereco
               </Button>
@@ -1499,16 +1742,25 @@ export default function Contacts() {
                 Comentarios
               </Typography>
               {contactForm?.comments.map((comment, index) => (
-                <Stack key={`comment-${index}`} direction="row" spacing={1} alignItems="center">
+                <Stack
+                  key={`comment-${index}`}
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                >
                   <TextField
                     label={`Comentario ${index + 1}`}
                     fullWidth
                     multiline
                     minRows={2}
                     value={comment}
-                    onChange={(event) => updateListField("comments", index, event.target.value)}
+                    onChange={event =>
+                      updateListField("comments", index, event.target.value)
+                    }
                   />
-                  <IconButton onClick={() => removeListField("comments", index)}>
+                  <IconButton
+                    onClick={() => removeListField("comments", index)}
+                  >
                     <CloseRoundedIcon fontSize="small" />
                   </IconButton>
                 </Stack>
@@ -1517,7 +1769,11 @@ export default function Contacts() {
                 variant="outlined"
                 startIcon={<AddRoundedIcon />}
                 onClick={() => addListField("comments")}
-                sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                sx={{
+                  alignSelf: "flex-start",
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
               >
                 Adicionar comentario
               </Button>
@@ -1527,7 +1783,10 @@ export default function Contacts() {
               <Button color="error" variant="outlined" onClick={removeContact}>
                 Remover
               </Button>
-              <Button variant="outlined" onClick={() => setEditingContact(null)}>
+              <Button
+                variant="outlined"
+                onClick={() => setEditingContact(null)}
+              >
                 Cancelar
               </Button>
               <Button variant="contained" onClick={saveContact}>
@@ -1546,17 +1805,30 @@ export default function Contacts() {
       >
         <DialogContent>
           <Stack spacing={2}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <Typography variant="h6">Remover contato</Typography>
-              <IconButton onClick={() => setRemoveContactOpen(false)} sx={{ color: "text.secondary" }}>
+              <IconButton
+                onClick={() => setRemoveContactOpen(false)}
+                sx={{ color: "text.secondary" }}
+              >
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
             </Box>
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              Você confirma a exclusão deste contato? Essa ação não pode ser desfeita.
+              Você confirma a exclusão deste contato? Essa ação não pode ser
+              desfeita.
             </Typography>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
-              <Button variant="outlined" onClick={() => setRemoveContactOpen(false)}>
+              <Button
+                variant="outlined"
+                onClick={() => setRemoveContactOpen(false)}
+              >
                 Cancelar
               </Button>
               <Button
@@ -1566,7 +1838,9 @@ export default function Contacts() {
                   if (!selectedContact) {
                     return;
                   }
-                  setContacts((prev) => prev.filter((item) => item.id !== selectedContact.id));
+                  setContacts(prev =>
+                    prev.filter(item => item.id !== selectedContact.id)
+                  );
                   closeSelectedContact();
                 }}
               >
@@ -1589,7 +1863,13 @@ export default function Contacts() {
       >
         <DialogContent>
           <Stack spacing={2.5}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <Typography variant="h6">Configurações</Typography>
               <IconButton
                 onClick={() => {
@@ -1597,7 +1877,13 @@ export default function Contacts() {
                   cancelEditCategory();
                   setSettingsAccordion(false);
                 }}
-                sx={{ color: "text.secondary" }}
+                sx={{
+                  border: 1,
+                  borderColor: "divider",
+                  backgroundColor: "background.paper",
+                  color: "text.secondary",
+                  "&:hover": { backgroundColor: "action.hover" },
+                }}
               >
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
@@ -1611,7 +1897,7 @@ export default function Contacts() {
               elevation={0}
               sx={{
                 border: 1,
-                      borderColor: "divider",
+                borderColor: "divider",
                 borderRadius: "var(--radius-card)",
                 backgroundColor: "background.paper",
                 "&:before": { display: "none" },
@@ -1630,22 +1916,32 @@ export default function Contacts() {
                         p: 2,
                         borderRadius: "var(--radius-card)",
                         border: 1,
-                      borderColor: "divider",
+                        borderColor: "divider",
                         backgroundColor: "background.paper",
                       }}
                     >
                       <Stack spacing={1.5}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 600 }}
+                        >
                           Editar categoria
                         </Typography>
                         <TextField
                           label="Nome"
                           fullWidth
                           value={editingCategoryName}
-                          onChange={(event) => setEditingCategoryName(event.target.value)}
+                          onChange={event =>
+                            setEditingCategoryName(event.target.value)
+                          }
                         />
-                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                          {DEFAULT_COLORS.map((color) => (
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
+                          {DEFAULT_COLORS.map(color => (
                             <Box
                               key={color}
                               onClick={() => setEditingCategoryColor(color)}
@@ -1655,15 +1951,23 @@ export default function Contacts() {
                                 borderRadius: 1,
                                 backgroundColor: color,
                                 borderStyle: "solid",
-                                borderWidth: editingCategoryColor === color ? 2 : 1,
+                                borderWidth:
+                                  editingCategoryColor === color ? 2 : 1,
                                 borderColor: "divider",
                                 cursor: "pointer",
                               }}
                             />
                           ))}
                         </Stack>
-                        <Stack direction="row" spacing={2} justifyContent="flex-end">
-                          <Button variant="outlined" onClick={cancelEditCategory}>
+                        <Stack
+                          direction="row"
+                          spacing={2}
+                          justifyContent="flex-end"
+                        >
+                          <Button
+                            variant="outlined"
+                            onClick={cancelEditCategory}
+                          >
                             Cancelar
                           </Button>
                           <Button variant="contained" onClick={saveCategory}>
@@ -1674,7 +1978,7 @@ export default function Contacts() {
                     </Box>
                   ) : null}
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {categories.map((cat) => (
+                    {categories.map(cat => (
                       <Chip
                         key={cat.id}
                         label={cat.name}
@@ -1689,7 +1993,10 @@ export default function Contacts() {
                   </Stack>
                   {editingCategoryId ? null : (
                     <Box>
-                      <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "text.secondary", mb: 1 }}
+                      >
                         Nova categoria
                       </Typography>
                       <Stack spacing={1.5}>
@@ -1697,10 +2004,17 @@ export default function Contacts() {
                           label="Nome"
                           fullWidth
                           value={newCategoryName}
-                          onChange={(event) => setNewCategoryName(event.target.value)}
+                          onChange={event =>
+                            setNewCategoryName(event.target.value)
+                          }
                         />
-                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                          {DEFAULT_COLORS.map((color) => (
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
+                          {DEFAULT_COLORS.map(color => (
                             <Box
                               key={color}
                               onClick={() => setNewCategoryColor(color)}
@@ -1721,7 +2035,11 @@ export default function Contacts() {
                           variant="outlined"
                           onClick={handleAddCategory}
                           startIcon={<AddRoundedIcon />}
-                          sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                          sx={{
+                            alignSelf: "flex-start",
+                            textTransform: "none",
+                            fontWeight: 600,
+                          }}
                         >
                           Criar categoria
                         </Button>
@@ -1740,7 +2058,7 @@ export default function Contacts() {
               elevation={0}
               sx={{
                 border: 1,
-                      borderColor: "divider",
+                borderColor: "divider",
                 borderRadius: "var(--radius-card)",
                 backgroundColor: "background.paper",
                 "&:before": { display: "none" },
@@ -1760,7 +2078,7 @@ export default function Contacts() {
                   }}
                 >
                   <Box
-                    sx={(theme) => ({
+                    sx={theme => ({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
@@ -1773,23 +2091,23 @@ export default function Contacts() {
                       ...interactiveCardSx(theme),
                     })}
                     onClick={() =>
-                      setCardFields((prev) => ({ ...prev, phones: !prev.phones }))
+                      setCardFields(prev => ({ ...prev, phones: !prev.phones }))
                     }
                   >
                     <Typography variant="subtitle2">Telefones</Typography>
                     <ToggleCheckbox
                       checked={cardFields.phones}
-                      onChange={(event) =>
-                        setCardFields((prev) => ({
+                      onChange={event =>
+                        setCardFields(prev => ({
                           ...prev,
                           phones: event.target.checked,
                         }))
                       }
-                      onClick={(event) => event.stopPropagation()}
+                      onClick={event => event.stopPropagation()}
                     />
                   </Box>
                   <Box
-                    sx={(theme) => ({
+                    sx={theme => ({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
@@ -1802,23 +2120,23 @@ export default function Contacts() {
                       ...interactiveCardSx(theme),
                     })}
                     onClick={() =>
-                      setCardFields((prev) => ({ ...prev, emails: !prev.emails }))
+                      setCardFields(prev => ({ ...prev, emails: !prev.emails }))
                     }
                   >
                     <Typography variant="subtitle2">Emails</Typography>
                     <ToggleCheckbox
                       checked={cardFields.emails}
-                      onChange={(event) =>
-                        setCardFields((prev) => ({
+                      onChange={event =>
+                        setCardFields(prev => ({
                           ...prev,
                           emails: event.target.checked,
                         }))
                       }
-                      onClick={(event) => event.stopPropagation()}
+                      onClick={event => event.stopPropagation()}
                     />
                   </Box>
                   <Box
-                    sx={(theme) => ({
+                    sx={theme => ({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
@@ -1831,23 +2149,26 @@ export default function Contacts() {
                       ...interactiveCardSx(theme),
                     })}
                     onClick={() =>
-                      setCardFields((prev) => ({ ...prev, addresses: !prev.addresses }))
+                      setCardFields(prev => ({
+                        ...prev,
+                        addresses: !prev.addresses,
+                      }))
                     }
                   >
                     <Typography variant="subtitle2">Endereços</Typography>
                     <ToggleCheckbox
                       checked={cardFields.addresses}
-                      onChange={(event) =>
-                        setCardFields((prev) => ({
+                      onChange={event =>
+                        setCardFields(prev => ({
                           ...prev,
                           addresses: event.target.checked,
                         }))
                       }
-                      onClick={(event) => event.stopPropagation()}
+                      onClick={event => event.stopPropagation()}
                     />
                   </Box>
                   <Box
-                    sx={(theme) => ({
+                    sx={theme => ({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
@@ -1860,19 +2181,22 @@ export default function Contacts() {
                       ...interactiveCardSx(theme),
                     })}
                     onClick={() =>
-                      setCardFields((prev) => ({ ...prev, categories: !prev.categories }))
+                      setCardFields(prev => ({
+                        ...prev,
+                        categories: !prev.categories,
+                      }))
                     }
                   >
                     <Typography variant="subtitle2">Categorias</Typography>
                     <ToggleCheckbox
                       checked={cardFields.categories}
-                      onChange={(event) =>
-                        setCardFields((prev) => ({
+                      onChange={event =>
+                        setCardFields(prev => ({
                           ...prev,
                           categories: event.target.checked,
                         }))
                       }
-                      onClick={(event) => event.stopPropagation()}
+                      onClick={event => event.stopPropagation()}
                     />
                   </Box>
                 </Box>
@@ -1887,7 +2211,7 @@ export default function Contacts() {
               elevation={0}
               sx={{
                 border: 1,
-                      borderColor: "divider",
+                borderColor: "divider",
                 borderRadius: "var(--radius-card)",
                 backgroundColor: "background.paper",
                 "&:before": { display: "none" },
@@ -1913,10 +2237,10 @@ export default function Contacts() {
                     { key: "emails", label: "Emails" },
                     { key: "addresses", label: "Endereços" },
                     { key: "comments", label: "Comentarios" },
-                  ].map((item) => (
+                  ].map(item => (
                     <Box
                       key={item.key}
-                      sx={(theme) => ({
+                      sx={theme => ({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
@@ -1929,22 +2253,25 @@ export default function Contacts() {
                         ...interactiveCardSx(theme),
                       })}
                       onClick={() =>
-                        setDetailFields((prev) => ({
+                        setDetailFields(prev => ({
                           ...prev,
-                          [item.key]: !prev[item.key as keyof typeof detailFields],
+                          [item.key]:
+                            !prev[item.key as keyof typeof detailFields],
                         }))
                       }
                     >
                       <Typography variant="subtitle2">{item.label}</Typography>
                       <ToggleCheckbox
-                        checked={Boolean(detailFields[item.key as keyof typeof detailFields])}
-                        onChange={(event) =>
-                          setDetailFields((prev) => ({
+                        checked={Boolean(
+                          detailFields[item.key as keyof typeof detailFields]
+                        )}
+                        onChange={event =>
+                          setDetailFields(prev => ({
                             ...prev,
                             [item.key]: event.target.checked,
                           }))
                         }
-                        onClick={(event) => event.stopPropagation()}
+                        onClick={event => event.stopPropagation()}
                       />
                     </Box>
                   ))}
@@ -1953,6 +2280,13 @@ export default function Contacts() {
             </Accordion>
 
             <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                onClick={handleRestoreContactsDefaults}
+                sx={{ textTransform: "none", fontWeight: 600 }}
+              >
+                Restaurar padrão
+              </Button>
               <Button
                 variant="outlined"
                 onClick={() => {
@@ -1980,6 +2314,39 @@ export default function Contacts() {
           sx={{ width: "100%" }}
         >
           {copyMessage}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={restoreDefaultsSnackbarOpen}
+        autoHideDuration={6000}
+        onClose={(_, reason) => {
+          if (reason === "clickaway") {
+            return;
+          }
+          setRestoreDefaultsSnackbarOpen(false);
+          restoreDefaultsSnapshotRef.current = null;
+        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="info"
+          onClose={() => {
+            setRestoreDefaultsSnackbarOpen(false);
+            restoreDefaultsSnapshotRef.current = null;
+          }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={handleUndoRestoreContactsDefaults}
+            >
+              Reverter
+            </Button>
+          }
+          sx={{ width: "100%" }}
+        >
+          Configurações restauradas.
         </Alert>
       </Snackbar>
     </Box>
