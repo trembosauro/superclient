@@ -1135,9 +1135,9 @@ export default function Calendar() {
           </Stack>
 
           <Stack
-            direction={{ xs: "column", sm: "row" }}
+            direction={{ xs: "row", sm: "row" }}
             spacing={1.5}
-            alignItems={{ xs: "stretch", sm: "center" }}
+            alignItems="center"
           >
             <Button
               variant="outlined"
@@ -1146,10 +1146,11 @@ export default function Calendar() {
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                width: { xs: "100%", sm: "auto" },
+                flex: { xs: 1, sm: "0 0 auto" },
+                minWidth: 0,
               }}
             >
-              Ver tarefas feitas
+              tarefas feitas
             </Button>
             <Button
               variant="outlined"
@@ -1163,7 +1164,8 @@ export default function Calendar() {
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                width: { xs: "100%", sm: "auto" },
+                flex: { xs: 1, sm: "0 0 auto" },
+                minWidth: 0,
               }}
             >
               Hoje

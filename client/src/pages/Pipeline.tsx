@@ -58,6 +58,9 @@ import {
   PointerSensor,
   DragOverlay,
   closestCorners,
+  type DragStartEvent,
+  type DragOverEvent,
+  type DragEndEvent,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -1481,10 +1484,7 @@ export default function Pipeline() {
     return [...nextActive, ...archivedList];
   };
 
-  const handleColumnReorder = (event: {
-    active: { id: string };
-    over?: { id: string };
-  }) => {
+  const handleColumnReorder = (event: DragEndEvent) => {
     const activeId = String(event.active.id);
     const overId = event.over ? String(event.over.id) : null;
     if (!overId || activeId === overId) {
@@ -1493,14 +1493,11 @@ export default function Pipeline() {
     setColumns(prev => reorderActiveColumns(prev, activeId, overId));
   };
 
-  const handleDragStart = (event: { active: { id: string } }) => {
+  const handleDragStart = (event: DragStartEvent) => {
     setActiveDragId(String(event.active.id));
   };
 
-  const handleDragOver = (event: {
-    active: { id: string };
-    over?: { id: string };
-  }) => {
+  const handleDragOver = (event: DragOverEvent) => {
     const activeId = String(event.active.id);
     let overId = event.over ? String(event.over.id) : null;
     if (!overId || activeId === overId) {
@@ -1608,10 +1605,7 @@ export default function Pipeline() {
     }
   };
 
-  const handleDragEnd = (event: {
-    active: { id: string };
-    over?: { id: string };
-  }) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     setActiveDragId(null);
     const activeId = String(event.active.id);
     const overId = event.over ? String(event.over.id) : null;
@@ -2258,7 +2252,12 @@ export default function Pipeline() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        ...interactiveCardSx(theme),
+                        transition: theme.transitions.create(
+                          ["background-color", "border-color"],
+                          { duration: theme.transitions.duration.short }
+                        ),
+                        "&:hover": { backgroundColor: "action.hover" },
+                        "&:active": { backgroundColor: "action.selected" },
                       })}
                     >
                       <Stack spacing={1} alignItems="center">
@@ -2500,9 +2499,6 @@ export default function Pipeline() {
                         sx={theme => ({
                           p: 2,
                           borderRadius: "var(--radius-card)",
-                          border: 1,
-                          borderColor: "divider",
-                          backgroundColor: "background.paper",
                           cursor: "pointer",
                           ...interactiveCardSx(theme),
                         })}
@@ -2830,9 +2826,6 @@ export default function Pipeline() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
-                        borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -4289,7 +4282,6 @@ function SortableColumn({
                 deal={deal}
                 onEdit={onEdit}
                 ownerLabel={getDealOwnerLabel(deal)}
-                category={categoryMap.get(deal.categoryId || "")}
                 showValue={showValue}
                 canEditTasks={canEditTasks}
               />
@@ -4306,14 +4298,12 @@ function SortableDeal({
   onEdit,
   ownerLabel,
   showValue,
-  category,
   canEditTasks,
 }: {
   deal: Deal;
   onEdit: (deal: Deal) => void;
   ownerLabel: string;
   showValue: boolean;
-  category?: Category;
   canEditTasks: boolean;
 }) {
   const dragId = cardDragId(deal.id);
@@ -4537,7 +4527,7 @@ function RichTextEditor({
       return;
     }
     if (editor.getHTML() !== value) {
-      editor.commands.setContent(value || "", false);
+      editor.commands.setContent(value || "", { emitUpdate: false });
     }
   }, [editor, value]);
 

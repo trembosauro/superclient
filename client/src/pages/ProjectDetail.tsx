@@ -1,7 +1,7 @@
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, ExternalLink, Mail, Phone, Linkedin } from "lucide-react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { ArrowLeft, ExternalLink } from "lucide-react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 const projectsData: Record<string, any> = {
   picpay: {

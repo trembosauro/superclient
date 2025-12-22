@@ -498,9 +498,6 @@ export default function PipelineData() {
                     sx={theme => ({
                       p: 2,
                       borderRadius: "var(--radius-card)",
-                      border: 1,
-                      borderColor: "divider",
-                      backgroundColor: "background.paper",
                       cursor: "pointer",
                       ...interactiveCardSx(theme),
                     })}

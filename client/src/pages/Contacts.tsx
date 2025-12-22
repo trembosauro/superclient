@@ -14,7 +14,6 @@ import {
   IconButton,
   InputAdornment,
   MenuItem,
-  Paper,
   Popover,
   Snackbar,
   Stack,
@@ -1067,7 +1066,7 @@ export default function Contacts() {
                             </Typography>
                           ) : null}
                         </Stack>
-                      </Paper>
+                      </AppCard>
                     );
                   })()
                 )}
@@ -1570,7 +1569,7 @@ export default function Contacts() {
                   })}
                 </Box>
               </Stack>
-                      </AppCard>
+            </Popover>
             <Autocomplete
               multiple
               options={categories}
@@ -1579,7 +1578,7 @@ export default function Contacts() {
               )}
               onChange={(_, value) =>
                 setContactForm(prev =>
-    </PageContainer>
+                  prev
                     ? { ...prev, categoryIds: value.map(cat => cat.id) }
                     : prev
                 )
@@ -2100,9 +2099,6 @@ export default function Contacts() {
                       justifyContent: "space-between",
                       p: 1.5,
                       borderRadius: "var(--radius-card)",
-                      border: 1,
-                      borderColor: "divider",
-                      backgroundColor: "background.paper",
                       cursor: "pointer",
                       ...interactiveCardSx(theme),
                     })}
@@ -2129,9 +2125,6 @@ export default function Contacts() {
                       justifyContent: "space-between",
                       p: 1.5,
                       borderRadius: "var(--radius-card)",
-                      border: 1,
-                      borderColor: "divider",
-                      backgroundColor: "background.paper",
                       cursor: "pointer",
                       ...interactiveCardSx(theme),
                     })}
@@ -2158,9 +2151,6 @@ export default function Contacts() {
                       justifyContent: "space-between",
                       p: 1.5,
                       borderRadius: "var(--radius-card)",
-                      border: 1,
-                      borderColor: "divider",
-                      backgroundColor: "background.paper",
                       cursor: "pointer",
                       ...interactiveCardSx(theme),
                     })}
@@ -2190,9 +2180,6 @@ export default function Contacts() {
                       justifyContent: "space-between",
                       p: 1.5,
                       borderRadius: "var(--radius-card)",
-                      border: 1,
-                      borderColor: "divider",
-                      backgroundColor: "background.paper",
                       cursor: "pointer",
                       ...interactiveCardSx(theme),
                     })}
@@ -2262,9 +2249,6 @@ export default function Contacts() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
-                        borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -2370,6 +2354,6 @@ export default function Contacts() {
           Configurações restauradas.
         </Alert>
       </Snackbar>
-    </Box>
+    </PageContainer>
   );
 }

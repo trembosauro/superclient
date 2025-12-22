@@ -287,6 +287,11 @@ export default function Profile() {
       };
       preferences?: {
         emailNotifications?: boolean;
+        notifyMentions?: boolean;
+        notifyPipelineUpdates?: boolean;
+        notifyFinanceAlerts?: boolean;
+        notifyWeeklySummary?: boolean;
+        notifyProductUpdates?: boolean;
         singleSession?: boolean;
         modulePipeline?: boolean;
         moduleFinance?: boolean;
@@ -353,12 +358,12 @@ export default function Profile() {
       })
     );
     window.dispatchEvent(new Event("prefs-change"));
-    if (user?.email) {
+    if (typeof user?.email === "string" && user.email) {
       window.localStorage.setItem(
         "sc_user",
         JSON.stringify({ name: user.name || "", email: user.email })
       );
-      persistAccount(user);
+      persistAccount({ name: user.name ?? null, email: user.email });
     }
   };
 
