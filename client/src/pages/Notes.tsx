@@ -476,7 +476,7 @@ export default function Notes() {
           Note & { categoryId?: string; subcategoryId?: string }
         >;
         if (Array.isArray(parsed) && parsed.length) {
-          const normalized = parsed.map(note => ({
+          const normalized: Note[] = parsed.map(note => ({
             ...note,
             categoryIds: note.categoryIds?.length
               ? note.categoryIds
@@ -1078,6 +1078,7 @@ export default function Notes() {
                             setActiveSubcategory(null);
                           }}
                           sx={theme => ({
+                            ...interactiveCardSx(theme),
                             p: 1,
                             borderRadius: "var(--radius-card)",
                             border: 1,
@@ -1087,7 +1088,6 @@ export default function Notes() {
                                 : "divider",
                             backgroundColor: "background.paper",
                             cursor: "pointer",
-                            ...interactiveCardSx(theme),
                           })}
                         >
                           <Stack
@@ -1146,6 +1146,7 @@ export default function Notes() {
                                           );
                                         }}
                                         sx={theme => ({
+                                          ...interactiveCardSx(theme),
                                           px: 1,
                                           py: 0.75,
                                           borderRadius: "var(--radius-card)",
@@ -1155,7 +1156,6 @@ export default function Notes() {
                                             : "divider",
                                           backgroundColor: "background.paper",
                                           cursor: "pointer",
-                                          ...interactiveCardSx(theme),
                                         })}
                                       >
                                         <Stack
@@ -1260,6 +1260,7 @@ export default function Notes() {
                               }
                             }}
                             sx={theme => ({
+                              ...interactiveCardSx(theme),
                               p: isExpanded ? 2.5 : 2,
                               borderRadius: "var(--radius-card)",
                               border: 1,
@@ -1269,7 +1270,6 @@ export default function Notes() {
                               backgroundColor: "background.paper",
                               cursor: "pointer",
                               minHeight: isExpanded ? "auto" : 120,
-                              ...interactiveCardSx(theme),
                             })}
                           >
                             <Stack spacing={isExpanded ? 1.5 : 1}>
@@ -2051,6 +2051,7 @@ export default function Notes() {
                     <Box
                       key={item.key}
                       sx={theme => ({
+                        ...interactiveCardSx(theme),
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
@@ -2060,7 +2061,6 @@ export default function Notes() {
                         borderColor: "divider",
                         backgroundColor: "background.paper",
                         cursor: "pointer",
-                        ...interactiveCardSx(theme),
                       })}
                       onClick={() =>
                         setFieldSettings(prev => ({
@@ -2262,7 +2262,7 @@ function RichTextEditor({
       return;
     }
     if (editor.getHTML() !== value) {
-      editor.commands.setContent(value || "", false);
+      editor.commands.setContent(value || "", { emitUpdate: false });
     }
   }, [editor, value]);
 

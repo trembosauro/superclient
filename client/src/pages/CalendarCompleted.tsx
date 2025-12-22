@@ -66,9 +66,18 @@ const darkenColor = (value: string, factor: number) => {
   if (color.length !== 6) {
     return value;
   }
-  const r = Math.max(0, Math.min(255, Math.floor(parseInt(color.slice(0, 2), 16) * factor)));
-  const g = Math.max(0, Math.min(255, Math.floor(parseInt(color.slice(2, 4), 16) * factor)));
-  const b = Math.max(0, Math.min(255, Math.floor(parseInt(color.slice(4, 6), 16) * factor)));
+  const r = Math.max(
+    0,
+    Math.min(255, Math.floor(parseInt(color.slice(0, 2), 16) * factor))
+  );
+  const g = Math.max(
+    0,
+    Math.min(255, Math.floor(parseInt(color.slice(2, 4), 16) * factor))
+  );
+  const b = Math.max(
+    0,
+    Math.min(255, Math.floor(parseInt(color.slice(4, 6), 16) * factor))
+  );
   return `#${r.toString(16).padStart(2, "0")}${g
     .toString(16)
     .padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
@@ -152,29 +161,42 @@ export default function CalendarCompleted() {
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_CATEGORY_FILTER, JSON.stringify(categoryFilter));
+    window.localStorage.setItem(
+      STORAGE_CATEGORY_FILTER,
+      JSON.stringify(categoryFilter)
+    );
   }, [categoryFilter]);
 
   const activeCalendarIds = useMemo(
-    () => new Set(calendarSources.filter((item) => item.enabled).map((item) => item.id)),
+    () =>
+      new Set(
+        calendarSources.filter(item => item.enabled).map(item => item.id)
+      ),
     [calendarSources]
   );
 
   const doneTasksByDate = useMemo(() => {
     const map = new Map<string, CalendarTask[]>();
-    tasks.forEach((task) => {
+    tasks.forEach(task => {
       if (!task.done) {
         return;
       }
-      if (task.calendarId && calendarSources.length && !activeCalendarIds.has(task.calendarId)) {
+      if (
+        task.calendarId &&
+        calendarSources.length &&
+        !activeCalendarIds.has(task.calendarId)
+      ) {
         return;
       }
-      if (calendarFilter.length && !calendarFilter.includes(task.calendarId || "")) {
+      if (
+        calendarFilter.length &&
+        !calendarFilter.includes(task.calendarId || "")
+      ) {
         return;
       }
       if (categoryFilter.length) {
         const taskCategories = task.categoryIds || [];
-        const hasMatch = taskCategories.some((id) => categoryFilter.includes(id));
+        const hasMatch = taskCategories.some(id => categoryFilter.includes(id));
         if (!hasMatch) {
           return;
         }
@@ -185,8 +207,10 @@ export default function CalendarCompleted() {
       }
       map.get(key)?.push(task);
     });
-    map.forEach((list) =>
-      list.sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }))
+    map.forEach(list =>
+      list.sort((a, b) =>
+        a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })
+      )
     );
     return map;
   }, [
@@ -236,9 +260,13 @@ export default function CalendarCompleted() {
             <Autocomplete
               multiple
               options={calendarSources}
-              value={calendarSources.filter((item) => calendarFilter.includes(item.id))}
-              onChange={(_, value) => setCalendarFilter(value.map((item) => item.id))}
-              getOptionLabel={(option) => option.name}
+              value={calendarSources.filter(item =>
+                calendarFilter.includes(item.id)
+              )}
+              onChange={(_, value) =>
+                setCalendarFilter(value.map(item => item.id))
+              }
+              getOptionLabel={option => option.name}
               noOptionsText="Sem calendarios"
               renderOption={(props, option, { selected }) => (
                 <li {...props}>
@@ -246,7 +274,7 @@ export default function CalendarCompleted() {
                   {option.name}
                 </li>
               )}
-              renderInput={(params) => (
+              renderInput={params => (
                 <TextField {...params} label="Filtrar calendarios" fullWidth />
               )}
               renderTags={(value, getTagProps) =>
@@ -264,9 +292,13 @@ export default function CalendarCompleted() {
             <Autocomplete
               multiple
               options={categories}
-              value={categories.filter((item) => categoryFilter.includes(item.id))}
-              onChange={(_, value) => setCategoryFilter(value.map((item) => item.id))}
-              getOptionLabel={(option) => option.name}
+              value={categories.filter(item =>
+                categoryFilter.includes(item.id)
+              )}
+              onChange={(_, value) =>
+                setCategoryFilter(value.map(item => item.id))
+              }
+              getOptionLabel={option => option.name}
               noOptionsText="Sem categorias"
               renderOption={(props, option, { selected }) => (
                 <li {...props}>
@@ -274,7 +306,7 @@ export default function CalendarCompleted() {
                   {option.name}
                 </li>
               )}
-              renderInput={(params) => (
+              renderInput={params => (
                 <TextField {...params} label="Filtrar categorias" fullWidth />
               )}
               renderTags={(value, getTagProps) =>
@@ -300,38 +332,51 @@ export default function CalendarCompleted() {
           </Paper>
         ) : (
           <Stack spacing={2}>
-            {agendaDays.map((day) => {
+            {agendaDays.map(day => {
               const dateKey = formatDateKey(day);
               const dayTasks = doneTasksByDate.get(dateKey) || [];
               return (
-                <Paper key={dateKey} elevation={0} variant="outlined" sx={{ p: 2 }}>
+                <Paper
+                  key={dateKey}
+                  elevation={0}
+                  variant="outlined"
+                  sx={{ p: 2 }}
+                >
                   <Stack spacing={1.5}>
-                    <Stack direction="row" alignItems="center" justifyContent="space-between">
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                    >
                       <Stack>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 700 }}
+                        >
                           {day.toLocaleDateString("pt-BR", {
                             weekday: "short",
                             day: "2-digit",
                             month: "short",
                           })}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "text.secondary" }}
+                        >
                           {dayTasks.length} tarefas
                         </Typography>
                       </Stack>
                     </Stack>
                     <Divider />
                     <Stack spacing={1.5}>
-                      {dayTasks.map((task) => (
+                      {dayTasks.map(task => (
                         <Paper
                           key={task.id}
                           elevation={0}
-                          sx={(theme) => ({
+                          sx={theme => ({
                             p: 1.5,
                             borderRadius: "var(--radius-card)",
-                            border: 1,
                             borderColor: "divider",
-                            backgroundColor: "background.paper",
                             ...interactiveCardSx(theme),
                           })}
                         >
@@ -342,7 +387,11 @@ export default function CalendarCompleted() {
                             justifyContent="space-between"
                           >
                             <Stack spacing={0.5}>
-                              <Stack direction="row" spacing={1} alignItems="center">
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                              >
                                 <Box
                                   sx={{
                                     width: 8,
@@ -350,38 +399,56 @@ export default function CalendarCompleted() {
                                     borderRadius: "50%",
                                     backgroundColor:
                                       calendarSources.find(
-                                        (source) => source.id === task.calendarId
+                                        source => source.id === task.calendarId
                                       )?.color || "primary.main",
                                   }}
                                 />
-                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                <Typography
+                                  variant="subtitle2"
+                                  sx={{ fontWeight: 600 }}
+                                >
                                   {task.name}
                                 </Typography>
                               </Stack>
-                              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                              <Typography
+                                variant="caption"
+                                sx={{ color: "text.secondary" }}
+                              >
                                 {task.allDay
                                   ? "Dia todo"
-                                  : [task.startTime, task.endTime].filter(Boolean).join(" - ") ||
-                                    "Horário livre"}
+                                  : [task.startTime, task.endTime]
+                                      .filter(Boolean)
+                                      .join(" - ") || "Horário livre"}
                               </Typography>
                               {task.location ? (
-                                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                                <Typography
+                                  variant="caption"
+                                  sx={{ color: "text.secondary" }}
+                                >
                                   {task.location}
                                 </Typography>
                               ) : null}
                             </Stack>
-                            <Stack direction="row" spacing={1} alignItems="center">
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                            >
                               {(task.categoryIds || [])
-                                .map((id) => categories.find((cat) => cat.id === id))
+                                .map(id =>
+                                  categories.find(cat => cat.id === id)
+                                )
                                 .filter(Boolean)
-                                .map((cat) => (
+                                .map(cat => (
                                   <Chip
                                     key={cat?.id}
                                     label={cat?.name}
                                     size="small"
                                     sx={{
                                       color: "#e6edf3",
-                                      backgroundColor: cat ? darkenColor(cat.color, 0.5) : "transparent",
+                                      backgroundColor: cat
+                                        ? darkenColor(cat.color, 0.5)
+                                        : "transparent",
                                     }}
                                   />
                                 ))}
@@ -389,9 +456,11 @@ export default function CalendarCompleted() {
                                 variant="outlined"
                                 size="small"
                                 onClick={() =>
-                                  setTasks((prev) =>
-                                    prev.map((item) =>
-                                      item.id === task.id ? { ...item, done: false } : item
+                                  setTasks(prev =>
+                                    prev.map(item =>
+                                      item.id === task.id
+                                        ? { ...item, done: false }
+                                        : item
                                     )
                                   )
                                 }

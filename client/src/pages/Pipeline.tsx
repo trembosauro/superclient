@@ -155,6 +155,22 @@ type SprintState = {
   history: SprintHistory[];
 };
 
+type Permissions = {
+  pipeline_view: boolean;
+  pipeline_edit_tasks: boolean;
+  pipeline_edit_columns: boolean;
+  finance_view: boolean;
+  finance_edit: boolean;
+};
+
+const DEFAULT_PERMISSIONS: Permissions = {
+  pipeline_view: true,
+  pipeline_edit_tasks: true,
+  pipeline_edit_columns: true,
+  finance_view: true,
+  finance_edit: true,
+};
+
 const DEFAULT_COLORS = [
   "#0f766e",
   "#1d4ed8",
@@ -573,12 +589,8 @@ export default function Pipeline() {
   const [removeColumnTarget, setRemoveColumnTarget] = useState<Column | null>(
     null
   );
-  const [permissions, setPermissions] = useState(() => ({
-    pipeline_view: true,
-    pipeline_edit_tasks: true,
-    pipeline_edit_columns: true,
-    finance_view: true,
-    finance_edit: true,
+  const [permissions, setPermissions] = useState<Permissions>(() => ({
+    ...DEFAULT_PERMISSIONS,
   }));
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
@@ -772,13 +784,7 @@ export default function Pipeline() {
       try {
         setPermissions(getStoredPermissions());
       } catch {
-        setPermissions({
-          pipeline_view: true,
-          pipeline_edit_tasks: true,
-          pipeline_edit_columns: true,
-          finance_view: true,
-          finance_edit: true,
-        });
+        setPermissions({ ...DEFAULT_PERMISSIONS });
       }
     };
     syncPermissions();
@@ -825,7 +831,7 @@ export default function Pipeline() {
 
   const normalizedQuery = taskQuery.trim().toLowerCase();
 
-  const getStoredPermissions = () => {
+  const getStoredPermissions = (): Permissions => {
     const storedUser = window.localStorage.getItem("sc_user");
     const email = storedUser
       ? (JSON.parse(storedUser) as { email?: string }).email
@@ -844,15 +850,20 @@ export default function Pipeline() {
           Record<string, boolean>
         >)
       : {};
-    return (
-      rolePermissions[roleName] || {
-        pipeline_view: true,
-        pipeline_edit_tasks: true,
-        pipeline_edit_columns: true,
-        finance_view: true,
-        finance_edit: true,
-      }
-    );
+
+    const raw = rolePermissions[roleName] as
+      | Partial<Record<keyof Permissions, boolean>>
+      | undefined;
+
+    return {
+      pipeline_view: raw?.pipeline_view ?? DEFAULT_PERMISSIONS.pipeline_view,
+      pipeline_edit_tasks:
+        raw?.pipeline_edit_tasks ?? DEFAULT_PERMISSIONS.pipeline_edit_tasks,
+      pipeline_edit_columns:
+        raw?.pipeline_edit_columns ?? DEFAULT_PERMISSIONS.pipeline_edit_columns,
+      finance_view: raw?.finance_view ?? DEFAULT_PERMISSIONS.finance_view,
+      finance_edit: raw?.finance_edit ?? DEFAULT_PERMISSIONS.finance_edit,
+    };
   };
 
   const categoryMap = useMemo(() => {
@@ -1321,7 +1332,11 @@ export default function Pipeline() {
     }
     const fallback = nextCategories[0]?.id || "";
     setCategories(nextCategories);
-    setEditCategoryId(prev => (prev === id ? fallback : prev));
+    setEditCategoryIds((prev: string[]) =>
+      prev
+        .map(categoryId => (categoryId === id ? fallback : categoryId))
+        .filter(Boolean)
+    );
     setColumns(prev =>
       prev.map(column => ({
         ...column,
@@ -2996,9 +3011,7 @@ export default function Pipeline() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
                         borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -3028,9 +3041,7 @@ export default function Pipeline() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
                         borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -3060,9 +3071,7 @@ export default function Pipeline() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
                         borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -3094,9 +3103,7 @@ export default function Pipeline() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
                         borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -3126,9 +3133,7 @@ export default function Pipeline() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
                         borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -3160,9 +3165,7 @@ export default function Pipeline() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
                         borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -3192,9 +3195,7 @@ export default function Pipeline() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
                         borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -3224,9 +3225,7 @@ export default function Pipeline() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
                         borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -3256,9 +3255,7 @@ export default function Pipeline() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
                         borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -3288,9 +3285,7 @@ export default function Pipeline() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
                         borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -3320,9 +3315,7 @@ export default function Pipeline() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
                         borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -3352,9 +3345,7 @@ export default function Pipeline() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
                         borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}

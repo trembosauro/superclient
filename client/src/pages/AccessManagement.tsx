@@ -428,9 +428,7 @@ export default function AccessManagement() {
                   onClick={() => requestModuleToggle(index)}
                   sx={theme => ({
                     p: 2.5,
-                    border: 1,
                     borderColor: "divider",
-                    backgroundColor: "background.paper",
                     cursor: "pointer",
                     ...interactiveCardSx(theme),
                   })}
@@ -524,9 +522,7 @@ export default function AccessManagement() {
                     onClick={() => toggleRolePermission(index)}
                     sx={theme => ({
                       p: 2.5,
-                      border: 1,
                       borderColor: "divider",
-                      backgroundColor: "background.paper",
                       cursor: "pointer",
                       ...interactiveCardSx(theme),
                     })}

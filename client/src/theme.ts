@@ -60,7 +60,7 @@ const theme = createTheme({
         elevation: 0,
       },
       styleOverrides: {
-        root: ({ theme }) => ({
+        root: () => ({
           backgroundImage: "none",
         }),
         outlined: ({ theme }) => ({
@@ -96,7 +96,7 @@ const theme = createTheme({
     },
     MuiAccordionSummary: {
       styleOverrides: {
-        root: ({ theme }) => ({
+        root: () => ({
           minHeight: 56,
           "&.Mui-expanded": {
             minHeight: 56,

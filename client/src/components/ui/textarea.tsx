@@ -19,9 +19,11 @@ function Textarea({
     onCompositionEnd: handleCompositionEnd,
     onKeyDown: handleKeyDown,
   } = useComposition<HTMLTextAreaElement>({
-    onKeyDown: (e) => {
+    onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       // Check if this is an Enter key that should be blocked
-      const isComposing = (e.nativeEvent as any).isComposing || dialogComposition.justEndedComposing();
+      const isComposing =
+        (e.nativeEvent as any).isComposing ||
+        dialogComposition.justEndedComposing();
 
       // If Enter key is pressed while composing or just after composition ended,
       // don't call the user's onKeyDown (this blocks the business logic)
@@ -33,11 +35,11 @@ function Textarea({
       // Otherwise, call the user's onKeyDown
       onKeyDown?.(e);
     },
-    onCompositionStart: e => {
+    onCompositionStart: (e: React.CompositionEvent<HTMLTextAreaElement>) => {
       dialogComposition.setComposing(true);
       onCompositionStart?.(e);
     },
-    onCompositionEnd: e => {
+    onCompositionEnd: (e: React.CompositionEvent<HTMLTextAreaElement>) => {
       // Mark that composition just ended - this helps handle the Enter key that confirms input
       dialogComposition.markCompositionEnd();
       // Delay setting composing to false to handle Safari's event order

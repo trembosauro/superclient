@@ -755,10 +755,8 @@ export default function Dashboard() {
                     disableGutters
                     elevation={0}
                     sx={theme => ({
-                      border: 1,
                       borderColor: "divider",
                       borderRadius: "var(--radius-card)",
-                      backgroundColor: "background.paper",
                       overflow: "hidden",
                       "&:before": { display: "none" },
                       ...interactiveCardSx(theme),
@@ -829,7 +827,6 @@ export default function Dashboard() {
                                 alignItems: "center",
                                 justifyContent: "space-between",
                                 cursor: enabled ? "pointer" : "default",
-                                backgroundColor: "background.paper",
                                 ...interactiveCardSx(theme),
                               })}
                             >
@@ -871,7 +868,6 @@ export default function Dashboard() {
                                 alignItems: "center",
                                 justifyContent: "space-between",
                                 cursor: enabled ? "pointer" : "default",
-                                backgroundColor: "background.paper",
                                 ...interactiveCardSx(theme),
                               })}
                             >
@@ -913,7 +909,6 @@ export default function Dashboard() {
                                 alignItems: "center",
                                 justifyContent: "space-between",
                                 cursor: enabled ? "pointer" : "default",
-                                backgroundColor: "background.paper",
                                 ...interactiveCardSx(theme),
                               })}
                             >
@@ -959,7 +954,6 @@ export default function Dashboard() {
                                 alignItems: "center",
                                 justifyContent: "space-between",
                                 cursor: enabled ? "pointer" : "default",
-                                backgroundColor: "background.paper",
                                 ...interactiveCardSx(theme),
                               })}
                             >
@@ -1001,7 +995,6 @@ export default function Dashboard() {
                                 alignItems: "center",
                                 justifyContent: "space-between",
                                 cursor: enabled ? "pointer" : "default",
-                                backgroundColor: "background.paper",
                                 ...interactiveCardSx(theme),
                               })}
                             >
@@ -1047,7 +1040,6 @@ export default function Dashboard() {
                                 alignItems: "center",
                                 justifyContent: "space-between",
                                 cursor: enabled ? "pointer" : "default",
-                                backgroundColor: "background.paper",
                                 ...interactiveCardSx(theme),
                               })}
                             >
@@ -1089,7 +1081,6 @@ export default function Dashboard() {
                                 alignItems: "center",
                                 justifyContent: "space-between",
                                 cursor: enabled ? "pointer" : "default",
-                                backgroundColor: "background.paper",
                                 ...interactiveCardSx(theme),
                               })}
                             >
@@ -1127,10 +1118,8 @@ export default function Dashboard() {
                 disableGutters
                 elevation={0}
                 sx={theme => ({
-                  border: 1,
                   borderColor: "divider",
                   borderRadius: "var(--radius-card)",
-                  backgroundColor: "background.paper",
                   overflow: "hidden",
                   "&:before": { display: "none" },
                   ...interactiveCardSx(theme),
@@ -1190,7 +1179,6 @@ export default function Dashboard() {
                           alignItems: "center",
                           justifyContent: "space-between",
                           cursor: quickLinksEnabled ? "pointer" : "default",
-                          backgroundColor: "background.paper",
                           ...interactiveCardSx(theme),
                         })}
                       >

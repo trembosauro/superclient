@@ -858,9 +858,7 @@ export default function Calendar() {
         sx={theme => ({
           p: 1.5,
           borderRadius: "var(--radius-card)",
-          border: 1,
           borderColor: "divider",
-          backgroundColor: "background.paper",
           cursor: isDragging ? "grabbing" : "grab",
           opacity: isDragging ? 0.7 : 1,
           width: "100%",
@@ -1100,9 +1098,7 @@ export default function Calendar() {
       sx={theme => ({
         p: 1.5,
         borderRadius: "var(--radius-card)",
-        border: 1,
         borderColor: "divider",
-        backgroundColor: "background.paper",
         cursor: "pointer",
         display: "flex",
         alignItems: "center",
@@ -1292,6 +1288,7 @@ export default function Calendar() {
                           setAgendaPage(1);
                         }}
                         sx={theme => ({
+                          ...interactiveCardSx(theme),
                           height: 36,
                           display: "flex",
                           alignItems: "center",
@@ -1309,7 +1306,6 @@ export default function Calendar() {
                               : "text.secondary",
                           fontWeight: isToday ? 600 : 500,
                           position: "relative",
-                          ...interactiveCardSx(theme),
                         })}
                       >
                         {day ? day.getDate() : ""}
@@ -2267,6 +2263,7 @@ export default function Calendar() {
                       setDatePickerOpen(false);
                     }}
                     sx={theme => ({
+                      ...interactiveCardSx(theme),
                       height: 32,
                       display: "flex",
                       alignItems: "center",
@@ -2277,7 +2274,6 @@ export default function Calendar() {
                       cursor: day ? "pointer" : "default",
                       color: isSelected ? "primary.main" : "text.secondary",
                       fontWeight: isSelected ? 600 : 500,
-                      ...interactiveCardSx(theme),
                     })}
                   >
                     {day ? day.getDate() : ""}
@@ -2364,9 +2360,7 @@ export default function Calendar() {
                         justifyContent: "space-between",
                         p: 1.5,
                         borderRadius: "var(--radius-card)",
-                        border: 1,
                         borderColor: "divider",
-                        backgroundColor: "background.paper",
                         cursor: "pointer",
                         ...interactiveCardSx(theme),
                       })}
@@ -2689,7 +2683,7 @@ function RichTextEditor({
       return;
     }
     if (editor.getHTML() !== value) {
-      editor.commands.setContent(value || "", false);
+      editor.commands.setContent(value || "", { emitUpdate: false });
     }
   }, [editor, value]);
 
