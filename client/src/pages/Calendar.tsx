@@ -53,6 +53,8 @@ import LooksOneRoundedIcon from "@mui/icons-material/LooksOneRounded";
 import LooksTwoRoundedIcon from "@mui/icons-material/LooksTwoRounded";
 import Looks3RoundedIcon from "@mui/icons-material/Looks3Rounded";
 import BackspaceRoundedIcon from "@mui/icons-material/BackspaceRounded";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import RadioButtonUncheckedRoundedIcon from "@mui/icons-material/RadioButtonUncheckedRounded";
 import api from "../api";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import { interactiveCardSx } from "../styles/interactiveCard";
@@ -760,6 +762,8 @@ export default function Calendar() {
           cursor: isDragging ? "grabbing" : "grab",
           opacity: isDragging ? 0.7 : 1,
           transform: CSS.Transform.toString(transform),
+          touchAction: "none",
+          userSelect: "none",
           ...interactiveCardSx(theme),
         })}
       >
@@ -1395,6 +1399,51 @@ export default function Calendar() {
             </Stack>
             <Divider />
             <Stack spacing={1.5}>
+              {viewingTask ? (
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 1.5,
+                    borderRadius: "var(--radius-card)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 2,
+                    backgroundColor: "background.paper",
+                  }}
+                >
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Checkbox
+                      checked={Boolean(viewingTask.done)}
+                      onChange={(event) => {
+                        const nextDone = event.target.checked;
+                        setTasks((prev) =>
+                          prev.map((item) =>
+                            item.id === viewingTask.id ? { ...item, done: nextDone } : item
+                          )
+                        );
+                        setViewingTask((prev) => (prev ? { ...prev, done: nextDone } : prev));
+                      }}
+                    />
+                    <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 600 }}>
+                      Marcar como feita
+                    </Typography>
+                  </Stack>
+                  <Chip
+                    label={viewingTask.done ? "Feita" : "Pendente"}
+                    color={viewingTask.done ? "success" : "default"}
+                    variant={viewingTask.done ? "filled" : "outlined"}
+                    icon={
+                      viewingTask.done ? (
+                        <CheckCircleRoundedIcon fontSize="small" />
+                      ) : (
+                        <RadioButtonUncheckedRoundedIcon fontSize="small" />
+                      )
+                    }
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Paper>
+              ) : null}
               <Typography variant="body2">
                 {viewingTask?.date
                   ? parseDateKey(viewingTask.date).toLocaleDateString("pt-BR")
@@ -1439,25 +1488,6 @@ export default function Calendar() {
                   Notificação: {viewingTask?.notification || "app"}
                 </Typography>
               ) : null}
-              {viewingTask ? (
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Checkbox
-                    checked={Boolean(viewingTask.done)}
-                    onChange={(event) => {
-                      const nextDone = event.target.checked;
-                      setTasks((prev) =>
-                        prev.map((item) =>
-                          item.id === viewingTask.id ? { ...item, done: nextDone } : item
-                        )
-                      );
-                      setViewingTask((prev) => (prev ? { ...prev, done: nextDone } : prev));
-                    }}
-                  />
-                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    Marcar como feita
-                  </Typography>
-                </Stack>
-              ) : null}
               {calendarSettings.showCategories && viewingTask?.categoryIds?.length ? (
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   {viewingTask.categoryIds
@@ -1491,11 +1521,11 @@ export default function Calendar() {
               ) : null}
             </Stack>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
-              <Button variant="outlined" onClick={handleCloseView}>
-                Fechar
-              </Button>
               <Button variant="contained" onClick={handleOpenEditFromView}>
                 Editar
+              </Button>
+              <Button variant="outlined" onClick={handleCloseView}>
+                Fechar
               </Button>
             </Stack>
           </Stack>
@@ -2348,6 +2378,11 @@ function RichTextEditor({
           "& .tiptap h2": { fontSize: "1.1rem", fontWeight: 700 },
           "& .tiptap h3": { fontSize: "1rem", fontWeight: 700 },
           "& .tiptap img": { maxWidth: "100%", borderRadius: "12px" },
+          "& .tiptap img.ProseMirror-selectednode": {
+            outline: "2px solid",
+            outlineColor: "primary.main",
+            boxShadow: "0 0 0 4px rgba(34, 201, 166, 0.2)",
+          },
           "& .tiptap p.is-editor-empty:first-of-type::before": {
             content: "attr(data-placeholder)",
             color: "rgba(230, 237, 243, 0.5)",

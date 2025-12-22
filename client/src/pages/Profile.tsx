@@ -621,7 +621,21 @@ export default function Profile() {
       return;
     }
     lastLanguageRef.current = preferences.language;
+    const nextLanguage = pendingLanguage;
     setPreferences((prev) => ({ ...prev, language: pendingLanguage }));
+    setLanguageDraft(nextLanguage);
+    window.localStorage.setItem(
+      "sc_prefs",
+      JSON.stringify({
+        modulePipeline: preferences.modulePipeline,
+        moduleFinance: preferences.moduleFinance,
+        moduleContacts: preferences.moduleContacts,
+        moduleCalendar: preferences.moduleCalendar,
+        moduleNotes: preferences.moduleNotes,
+        language: nextLanguage,
+      })
+    );
+    window.dispatchEvent(new Event("prefs-change"));
     setLanguageDialogOpen(false);
     setPendingLanguage(null);
     setLanguageSnackbarOpen(true);
@@ -1596,7 +1610,7 @@ export default function Profile() {
         onClose={() => setLanguageSnackbarOpen(false)}
         message={`Idioma alterado para ${getLanguageLabel(preferences.language)}.`}
         action={
-          <Button color="inherit" size="small" onClick={handleLanguageUndo}>
+          <Button variant="text" color="inherit" size="small" onClick={handleLanguageUndo}>
             Reverter
           </Button>
         }

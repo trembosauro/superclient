@@ -9,20 +9,22 @@ type SettingsIconButtonProps = {
 };
 
 export default function SettingsIconButton({
-  title = "Configurações",
+  title = "Configura\u00e7\u00f5es",
   onClick,
   size = "small",
   disabled = false,
 }: SettingsIconButtonProps) {
+  const iconFontSize = size === "small" ? "small" : "medium";
   return (
     <Tooltip title={title} placement="bottom">
       <span>
         <IconButton
           onClick={onClick}
           disabled={disabled}
+          size={size}
           sx={{ border: 1, borderColor: "divider" }}
         >
-        <SettingsRoundedIcon fontSize={size} />
+          <SettingsRoundedIcon fontSize={iconFontSize} />
         </IconButton>
       </span>
     </Tooltip>

@@ -3972,7 +3972,7 @@ function RichTextEditor({
         sx={{
           borderRadius: "var(--radius-card)",
           border: 1,
-                      borderColor: "divider",
+          borderColor: "divider",
           backgroundColor: "background.paper",
           "& .tiptap": {
             minHeight: 180,
@@ -3983,6 +3983,11 @@ function RichTextEditor({
           "& .tiptap h2": { fontSize: "1.1rem", fontWeight: 700 },
           "& .tiptap h3": { fontSize: "1rem", fontWeight: 700 },
           "& .tiptap img": { maxWidth: "100%", borderRadius: "12px" },
+          "& .tiptap img.ProseMirror-selectednode": {
+            outline: "2px solid",
+            outlineColor: "primary.main",
+            boxShadow: "0 0 0 4px rgba(34, 201, 166, 0.2)",
+          },
           "& .tiptap p.is-editor-empty:first-of-type::before": {
             content: "attr(data-placeholder)",
             color: "rgba(230, 237, 243, 0.5)",

@@ -107,7 +107,7 @@ const defaultSubcategories: NoteSubcategory[] = [
 const defaultNotes: Note[] = [
   {
     id: "note-1",
-    title: "Proximos passos do projeto",
+    title: "Próximos passos do projeto",
     categoryIds: ["note-cat-projeto"],
     subcategoryIds: ["note-sub-fluxos"],
     contentHtml:
@@ -120,12 +120,92 @@ const defaultNotes: Note[] = [
   },
   {
     id: "note-2",
-    title: "Resumo da reuniao de status",
+    title: "Resumo da reunião de status",
     categoryIds: ["note-cat-reunioes"],
     subcategoryIds: ["note-sub-ata"],
     contentHtml:
       "<p>Principais alinhamentos:</p><ol><li>Priorizar backlog A</li><li>Revisar riscos da entrega</li></ol>",
     links: [{ id: "note-link-2", label: "Gravação", url: "https://meet.google.com" }],
+    updatedAt: new Date().toISOString(),
+    relatedNoteIds: [],
+  },
+  {
+    id: "note-3",
+    title: "Mapa de riscos",
+    categoryIds: ["note-cat-projeto"],
+    subcategoryIds: ["note-sub-fluxos"],
+    contentHtml: "<p>Listar riscos e planos de mitigação.</p>",
+    links: [],
+    updatedAt: new Date().toISOString(),
+    relatedNoteIds: [],
+  },
+  {
+    id: "note-4",
+    title: "Checklist de kickoff",
+    categoryIds: ["note-cat-reunioes"],
+    subcategoryIds: ["note-sub-followup"],
+    contentHtml: "<ul><li>Alinhar objetivos</li><li>Definir stakeholders</li></ul>",
+    links: [],
+    updatedAt: new Date().toISOString(),
+    relatedNoteIds: [],
+  },
+  {
+    id: "note-5",
+    title: "Pesquisa com usuários",
+    categoryIds: ["note-cat-aprendizado"],
+    subcategoryIds: ["note-sub-research"],
+    contentHtml: "<p>Resumo das entrevistas e principais insights.</p>",
+    links: [],
+    updatedAt: new Date().toISOString(),
+    relatedNoteIds: [],
+  },
+  {
+    id: "note-6",
+    title: "Metas do trimestre",
+    categoryIds: ["note-cat-estrategia"],
+    subcategoryIds: ["note-sub-kpis"],
+    contentHtml: "<p>OKRs e metas do time.</p>",
+    links: [],
+    updatedAt: new Date().toISOString(),
+    relatedNoteIds: [],
+  },
+  {
+    id: "note-7",
+    title: "Plano de ação semanal",
+    categoryIds: ["note-cat-estrategia"],
+    subcategoryIds: ["note-sub-plano"],
+    contentHtml: "<p>Prioridades e entregas da semana.</p>",
+    links: [],
+    updatedAt: new Date().toISOString(),
+    relatedNoteIds: [],
+  },
+  {
+    id: "note-8",
+    title: "Roadmap de produto",
+    categoryIds: ["note-cat-projeto"],
+    subcategoryIds: ["note-sub-fluxos"],
+    contentHtml: "<p>Fases, dependências e entregas.</p>",
+    links: [],
+    updatedAt: new Date().toISOString(),
+    relatedNoteIds: [],
+  },
+  {
+    id: "note-9",
+    title: "Retrospectiva",
+    categoryIds: ["note-cat-reunioes"],
+    subcategoryIds: ["note-sub-ata"],
+    contentHtml: "<p>O que funcionou e o que melhorar.</p>",
+    links: [],
+    updatedAt: new Date().toISOString(),
+    relatedNoteIds: [],
+  },
+  {
+    id: "note-10",
+    title: "Leituras recomendadas",
+    categoryIds: ["note-cat-aprendizado"],
+    subcategoryIds: ["note-sub-research"],
+    contentHtml: "<p>Links e referências para estudo.</p>",
+    links: [],
     updatedAt: new Date().toISOString(),
     relatedNoteIds: [],
   },
@@ -217,7 +297,14 @@ export default function Notes() {
             isDraft: Boolean(note.isDraft),
             relatedNoteIds: Array.isArray(note.relatedNoteIds) ? note.relatedNoteIds : [],
           }));
-          setNotes(normalized);
+          const existingIds = new Set(normalized.map((note) => note.id));
+          const merged = [...normalized];
+          defaultNotes.forEach((note) => {
+            if (!existingIds.has(note.id)) {
+              merged.push(note);
+            }
+          });
+          setNotes(merged);
         }
       } catch {
         window.localStorage.removeItem(STORAGE_NOTES);
@@ -312,11 +399,6 @@ export default function Notes() {
     !note.subcategoryIds.length;
 
   useEffect(() => {
-    const nextNotes = notes.filter((note) => !isPristineDraft(note));
-    if (nextNotes.length !== notes.length) {
-      setNotes(nextNotes);
-      return;
-    }
     window.localStorage.setItem(STORAGE_NOTES, JSON.stringify(notes));
   }, [notes]);
 
@@ -376,6 +458,7 @@ export default function Notes() {
     const next = emptyNote(activeCategory);
     setNotes((prev) => [next, ...prev]);
     setSelectedNoteId(next.id);
+    setNoteQuery("");
     setLocation(`/notas/${next.id}`);
   };
 
@@ -643,7 +726,18 @@ export default function Notes() {
                       {activeSubcategories.length ? (
                         <Stack spacing={1}>
                           {activeSubcategories.map((subcategory) => (
-                            <Chip key={subcategory.id} label={subcategory.name} size="small" />
+                            <Chip
+                              key={subcategory.id}
+                              label={subcategory.name}
+                              sx={{
+                                maxWidth: 220,
+                                "& .MuiChip-label": {
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                },
+                              }}
+                            />
                           ))}
                         </Stack>
                       ) : (
@@ -725,8 +819,15 @@ export default function Notes() {
                                   <Chip
                                     key={subcategory.id}
                                     label={subcategory.name}
-                                    size="small"
                                     variant="outlined"
+                                    sx={{
+                                      maxWidth: 200,
+                                      "& .MuiChip-label": {
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                      },
+                                    }}
                                   />
                                 ))
                               : null}
@@ -837,7 +938,7 @@ export default function Notes() {
 
                   <Stack spacing={1.5}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      Subpaginas
+                      Subpáginas
                     </Typography>
                     {notes.filter((note) => note.parentId === selectedNote.id).length ? (
                       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -855,7 +956,7 @@ export default function Notes() {
                       </Stack>
                     ) : (
                       <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                        Sem subpaginas.
+                        Sem subpáginas.
                       </Typography>
                     )}
                     <Button
@@ -863,7 +964,7 @@ export default function Notes() {
                       onClick={() => createSubpage(selectedNote)}
                       sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
                     >
-                      Criar subpagina
+                      Criar subpágina
                     </Button>
                   </Stack>
 
@@ -1182,6 +1283,7 @@ export default function Notes() {
                         onDelete={() =>
                           setConfirmRemove({ type: "subcategory", id: subcategory.id })
                         }
+                        size="small"
                       />
                     ))}
                     {!subcategories.length ? (
@@ -1236,7 +1338,7 @@ export default function Notes() {
             >
               <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  Exibicao
+                  Exibição
                 </Typography>
               </AccordionSummary>
               <AccordionDetails>
