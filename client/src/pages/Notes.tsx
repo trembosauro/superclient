@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Autocomplete,
   Box,
   Button,
@@ -26,12 +29,14 @@ import LooksOneRoundedIcon from "@mui/icons-material/LooksOneRounded";
 import LooksTwoRoundedIcon from "@mui/icons-material/LooksTwoRounded";
 import Looks3RoundedIcon from "@mui/icons-material/Looks3Rounded";
 import BackspaceRoundedIcon from "@mui/icons-material/BackspaceRounded";
+import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import SettingsIconButton from "../components/SettingsIconButton";
 import ToggleCheckbox from "../components/ToggleCheckbox";
+import { useLocation } from "wouter";
 
 type NoteCategory = {
   id: string;
@@ -60,6 +65,8 @@ type Note = {
   links: NoteLink[];
   updatedAt: string;
   isDraft?: boolean;
+  parentId?: string;
+  relatedNoteIds?: string[];
 };
 
 const STORAGE_NOTES = "notes_v1";
@@ -108,6 +115,7 @@ const defaultNotes: Note[] = [
       { id: "note-link-1", label: "Board do projeto", url: "https://trello.com" },
     ],
     updatedAt: new Date().toISOString(),
+    relatedNoteIds: [],
   },
   {
     id: "note-2",
@@ -118,6 +126,7 @@ const defaultNotes: Note[] = [
       "<p>Principais alinhamentos:</p><ol><li>Priorizar backlog A</li><li>Revisar riscos da entrega</li></ol>",
     links: [{ id: "note-link-2", label: "Gravacao", url: "https://meet.google.com" }],
     updatedAt: new Date().toISOString(),
+    relatedNoteIds: [],
   },
 ];
 
@@ -143,9 +152,11 @@ const emptyNote = (categoryId: string): Note => ({
   links: [],
   updatedAt: new Date().toISOString(),
   isDraft: true,
+  relatedNoteIds: [],
 });
 
 export default function Notes() {
+  const [location, setLocation] = useLocation();
   const [categories, setCategories] = useState<NoteCategory[]>(defaultCategories);
   const [subcategories, setSubcategories] = useState<NoteSubcategory[]>(defaultSubcategories);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -153,6 +164,7 @@ export default function Notes() {
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [categoryDraft, setCategoryDraft] = useState("");
   const [subcategoryDraft, setSubcategoryDraft] = useState("");
+  const [noteQuery, setNoteQuery] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [fieldSettings, setFieldSettings] = useState({
     showCategories: true,
@@ -160,6 +172,7 @@ export default function Notes() {
     showLinks: true,
     showUpdatedAt: true,
   });
+  const [subcategoriesExpanded, setSubcategoriesExpanded] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<{
     type: "category" | "subcategory";
     id: string;
@@ -169,7 +182,9 @@ export default function Notes() {
     const storedNotes = window.localStorage.getItem(STORAGE_NOTES);
     if (storedNotes) {
       try {
-        const parsed = JSON.parse(storedNotes) as Array<Note & { categoryId?: string; subcategoryId?: string }>;
+        const parsed = JSON.parse(storedNotes) as Array<
+          Note & { categoryId?: string; subcategoryId?: string }
+        >;
         if (Array.isArray(parsed) && parsed.length) {
           const normalized = parsed.map((note) => ({
             ...note,
@@ -184,6 +199,7 @@ export default function Notes() {
                 ? [note.subcategoryId]
                 : [],
             isDraft: Boolean(note.isDraft),
+            relatedNoteIds: Array.isArray(note.relatedNoteIds) ? note.relatedNoteIds : [],
           }));
           setNotes(normalized);
         }
@@ -250,11 +266,26 @@ export default function Notes() {
     [subcategories, activeCategory]
   );
 
-  const filteredNotes = useMemo(
-    () => notes.filter((note) => note.categoryIds.includes(activeCategory)),
-    [notes, activeCategory]
-  );
+  const stripHtml = (value: string) => value.replace(/<[^>]+>/g, " ");
 
+  const filteredNotes = useMemo(() => {
+    const term = noteQuery.trim().toLowerCase();
+    return notes.filter((note) => {
+      if (!note.categoryIds.includes(activeCategory)) {
+        return false;
+      }
+      if (!term) {
+        return true;
+      }
+      const haystack = `${note.title} ${stripHtml(note.contentHtml || "")}`.toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [notes, activeCategory, noteQuery]);
+
+  const noteIdFromRoute =
+    location.startsWith("/notas/") && location.split("/")[2]
+      ? location.split("/")[2]
+      : null;
   const selectedNote = notes.find((note) => note.id === selectedNoteId) || null;
 
   const isPristineDraft = (note: Note) =>
@@ -267,8 +298,10 @@ export default function Notes() {
   useEffect(() => {
     const nextNotes = notes.filter((note) => !isPristineDraft(note));
     if (nextNotes.length !== notes.length) {
-      window.localStorage.setItem(STORAGE_NOTES, JSON.stringify(nextNotes));
+      setNotes(nextNotes);
+      return;
     }
+    window.localStorage.setItem(STORAGE_NOTES, JSON.stringify(notes));
   }, [notes]);
 
   const discardIfPristine = (noteId: string | null) => {
@@ -282,6 +315,17 @@ export default function Notes() {
   };
 
   useEffect(() => {
+    if (noteIdFromRoute && noteIdFromRoute !== selectedNoteId) {
+      const exists = notes.some((note) => note.id === noteIdFromRoute);
+      if (exists) {
+        const match = notes.find((note) => note.id === noteIdFromRoute);
+        if (match?.categoryIds?.length) {
+          setActiveCategory(match.categoryIds[0]);
+        }
+        setSelectedNoteId(noteIdFromRoute);
+        return;
+      }
+    }
     if (!filteredNotes.length) {
       setSelectedNoteId(null);
       return;
@@ -289,11 +333,15 @@ export default function Notes() {
     if (!selectedNoteId || !filteredNotes.some((note) => note.id === selectedNoteId)) {
       setSelectedNoteId(filteredNotes[0].id);
     }
-  }, [filteredNotes, selectedNoteId]);
+  }, [filteredNotes, selectedNoteId, noteIdFromRoute, notes]);
 
   const selectNote = (note: Note) => {
     discardIfPristine(selectedNoteId);
     setSelectedNoteId(note.id);
+    if (note.categoryIds?.length) {
+      setActiveCategory(note.categoryIds[0]);
+    }
+    setLocation(`/notas/${note.id}`);
   };
 
   const updateNote = (next: Note) => {
@@ -312,6 +360,7 @@ export default function Notes() {
     const next = emptyNote(activeCategory);
     setNotes((prev) => [next, ...prev]);
     setSelectedNoteId(next.id);
+    setLocation(`/notas/${next.id}`);
   };
 
   const addCategory = () => {
@@ -410,159 +459,212 @@ export default function Notes() {
     });
   };
 
+  const updateRelatedNotes = (note: Note, relatedIds: string[]) => {
+    updateNote({
+      ...note,
+      relatedNoteIds: relatedIds,
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
+  const createSubpage = (note: Note) => {
+    const next = {
+      ...emptyNote(note.categoryIds[0] || activeCategory),
+      parentId: note.id,
+      categoryIds: note.categoryIds.length ? note.categoryIds : [activeCategory],
+      subcategoryIds: note.subcategoryIds,
+    };
+    setNotes((prev) => [next, ...prev]);
+    setSelectedNoteId(next.id);
+    setLocation(`/notas/${next.id}`);
+  };
+
+  const showSidebar = fieldSettings.showCategories || fieldSettings.showSubcategories;
+
   return (
     <Box sx={{ px: { xs: 2, md: 3 }, py: { xs: 2, md: 3 } }}>
       <Stack spacing={3}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <Typography variant="h4" sx={{ fontWeight: 700 }}>
-              Notas
-            </Typography>
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>
+            Notas
+          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Button
+              variant="outlined"
+              startIcon={<AddRoundedIcon />}
+              onClick={addNote}
+              sx={{ textTransform: "none", fontWeight: 600 }}
+            >
+              Nova nota
+            </Button>
             <SettingsIconButton onClick={() => setSettingsOpen(true)} />
           </Stack>
-          <Button
-            variant="outlined"
-            startIcon={<AddRoundedIcon />}
-            onClick={addNote}
-            sx={{ textTransform: "none", fontWeight: 600 }}
-          >
-            Nova nota
-          </Button>
         </Stack>
 
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "280px 1fr" },
+            gridTemplateColumns: showSidebar ? { xs: "1fr", md: "280px 1fr" } : "1fr",
             gap: 2.5,
           }}
         >
-          <Stack spacing={2}>
-            <Paper elevation={0} variant="outlined" sx={{ p: 2 }}>
-              <Stack spacing={2}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  Categorias
-                </Typography>
-                <Stack spacing={1}>
-                  {categories.map((category) => (
-                    <Box
-                      key={category.id}
-                      onClick={() => setActiveCategory(category.id)}
-                      sx={(theme) => ({
-                        p: 1,
-                        borderRadius: "var(--radius-card)",
-                        border: 1,
-                        borderColor:
-                          activeCategory === category.id ? "primary.main" : "divider",
-                        backgroundColor: "background.paper",
-                        cursor: "pointer",
-                        ...interactiveCardSx(theme),
-                      })}
-                    >
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        alignItems="center"
-                        justifyContent="space-between"
-                      >
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Box
-                            sx={{
-                              width: 10,
-                              height: 10,
-                              borderRadius: "50%",
-                              backgroundColor: category.color,
-                            }}
-                          />
-                          <Typography variant="body2">{category.name}</Typography>
-                        </Stack>
-                        <Tooltip title="Remover categoria" placement="top">
-                          <IconButton
-                            size="small"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setConfirmRemove({ type: "category", id: category.id });
-                            }}
-                            aria-label="Remover categoria"
+          {showSidebar ? (
+            <Stack spacing={2}>
+              {fieldSettings.showCategories ? (
+                <Paper elevation={0} variant="outlined" sx={{ p: 2 }}>
+                  <Stack spacing={2}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      Categorias
+                    </Typography>
+                    <Stack spacing={1}>
+                      {categories.map((category) => (
+                        <Box
+                          key={category.id}
+                          onClick={() => setActiveCategory(category.id)}
+                          sx={(theme) => ({
+                            p: 1,
+                            borderRadius: "var(--radius-card)",
+                            border: 1,
+                            borderColor:
+                              activeCategory === category.id ? "primary.main" : "divider",
+                            backgroundColor: "background.paper",
+                            cursor: "pointer",
+                            ...interactiveCardSx(theme),
+                          })}
+                        >
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                            justifyContent="space-between"
                           >
-                            <CloseRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </Box>
-                  ))}
-                </Stack>
-                <Stack direction="row" spacing={1}>
-                  <TextField
-                    label="Nova categoria"
-                    size="small"
-                    fullWidth
-                    value={categoryDraft}
-                    onChange={(event) => setCategoryDraft(event.target.value)}
-                  />
-                  <IconButton onClick={addCategory} aria-label="Adicionar categoria">
-                    <AddRoundedIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
-              </Stack>
-            </Paper>
-
-            <Paper elevation={0} variant="outlined" sx={{ p: 2 }}>
-              <Stack spacing={2}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  Subcategorias
-                </Typography>
-                {activeSubcategories.length ? (
-                  <Stack spacing={1}>
-                    {activeSubcategories.map((subcategory) => (
-                      <Stack
-                        key={subcategory.id}
-                        direction="row"
-                        spacing={1}
-                        alignItems="center"
-                      >
-                        <Chip label={subcategory.name} size="small" />
-                        <Tooltip title="Remover subcategoria" placement="top">
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              setConfirmRemove({ type: "subcategory", id: subcategory.id })
-                            }
-                            aria-label="Remover subcategoria"
-                          >
-                            <CloseRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    ))}
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Box
+                                sx={{
+                                  width: 10,
+                                  height: 10,
+                                  borderRadius: "50%",
+                                  backgroundColor: category.color,
+                                }}
+                              />
+                              <Typography variant="body2">{category.name}</Typography>
+                            </Stack>
+                            <Tooltip title="Remover categoria" placement="top">
+                              <IconButton
+                                size="small"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setConfirmRemove({ type: "category", id: category.id });
+                                }}
+                                aria-label="Remover categoria"
+                              >
+                                <CloseRoundedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </Box>
+                      ))}
+                    </Stack>
+                    <Stack direction="row" spacing={1}>
+                      <TextField
+                        label="Nova categoria"
+                        size="small"
+                        fullWidth
+                        value={categoryDraft}
+                        onChange={(event) => setCategoryDraft(event.target.value)}
+                      />
+                      <IconButton onClick={addCategory} aria-label="Adicionar categoria">
+                        <AddRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
                   </Stack>
-                ) : (
-                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    Sem subcategorias.
-                  </Typography>
-                )}
-                <Stack direction="row" spacing={1}>
-                  <TextField
-                    label="Nova subcategoria"
-                    size="small"
-                    fullWidth
-                    value={subcategoryDraft}
-                    onChange={(event) => setSubcategoryDraft(event.target.value)}
-                  />
-                  <IconButton onClick={addSubcategory} aria-label="Adicionar subcategoria">
-                    <AddRoundedIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
-              </Stack>
-            </Paper>
-          </Stack>
+                </Paper>
+              ) : null}
+
+              {fieldSettings.showSubcategories ? (
+                <Accordion
+                  expanded={subcategoriesExpanded}
+                  onChange={(_, isExpanded) => setSubcategoriesExpanded(isExpanded)}
+                  elevation={0}
+                >
+                  <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      Subcategorias
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Stack spacing={2}>
+                      {activeSubcategories.length ? (
+                        <Stack spacing={1}>
+                          {activeSubcategories.map((subcategory) => (
+                            <Stack
+                              key={subcategory.id}
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                            >
+                              <Chip label={subcategory.name} size="small" />
+                              <Tooltip title="Remover subcategoria" placement="top">
+                                <IconButton
+                                  size="small"
+                                  onClick={() =>
+                                    setConfirmRemove({
+                                      type: "subcategory",
+                                      id: subcategory.id,
+                                    })
+                                  }
+                                  aria-label="Remover subcategoria"
+                                >
+                                  <CloseRoundedIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </Stack>
+                          ))}
+                        </Stack>
+                      ) : (
+                        <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                          Sem subcategorias.
+                        </Typography>
+                      )}
+                      <Stack direction="row" spacing={1}>
+                        <TextField
+                          label="Nova subcategoria"
+                          size="small"
+                          fullWidth
+                          value={subcategoryDraft}
+                          onChange={(event) => setSubcategoryDraft(event.target.value)}
+                        />
+                        <IconButton onClick={addSubcategory} aria-label="Adicionar subcategoria">
+                          <AddRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
+                    </Stack>
+                  </AccordionDetails>
+                </Accordion>
+              ) : null}
+            </Stack>
+          ) : null}
 
           <Stack spacing={2.5}>
             <Paper elevation={0} variant="outlined" sx={{ p: 2 }}>
               <Stack spacing={1.5}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  Notas
-                </Typography>
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  spacing={1.5}
+                  alignItems={{ xs: "flex-start", md: "center" }}
+                  justifyContent="space-between"
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Notas
+                  </Typography>
+                  <TextField
+                    label="Buscar nota"
+                    size="small"
+                    value={noteQuery}
+                    onChange={(event) => setNoteQuery(event.target.value)}
+                    sx={{ minWidth: 220 }}
+                  />
+                </Stack>
                 {filteredNotes.length ? (
                   <Stack spacing={1.5}>
                     {filteredNotes.map((note) => {
@@ -578,7 +680,7 @@ export default function Notes() {
                           elevation={0}
                           onClick={() => selectNote(note)}
                           sx={(theme) => ({
-                            p: 1.5,
+                            p: 1,
                             borderRadius: "var(--radius-card)",
                             border: 1,
                             borderColor:
@@ -588,40 +690,38 @@ export default function Notes() {
                             ...interactiveCardSx(theme),
                           })}
                         >
-                          <Stack spacing={0.5}>
+                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                               {note.title}
                             </Typography>
-                            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                              {fieldSettings.showCategories
-                                ? noteCategories.map((category) => (
-                                    <Chip
-                                      key={category.id}
-                                      label={category.name}
-                                      size="small"
-                                      sx={{
-                                        color: "#e6edf3",
-                                        backgroundColor: darkenColor(category.color, 0.5),
-                                      }}
-                                    />
-                                  ))
-                                : null}
-                              {fieldSettings.showSubcategories
-                                ? noteSubcategories.map((subcategory) => (
-                                    <Chip
-                                      key={subcategory.id}
-                                      label={subcategory.name}
-                                      size="small"
-                                      variant="outlined"
-                                    />
-                                  ))
-                                : null}
-                              {fieldSettings.showUpdatedAt ? (
-                                <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                                  {new Date(note.updatedAt).toLocaleDateString("pt-BR")}
-                                </Typography>
-                              ) : null}
-                            </Stack>
+                            {fieldSettings.showCategories
+                              ? noteCategories.slice(0, 1).map((category) => (
+                                  <Chip
+                                    key={category.id}
+                                    label={category.name}
+                                    size="small"
+                                    sx={{
+                                      color: "#e6edf3",
+                                      backgroundColor: darkenColor(category.color, 0.5),
+                                    }}
+                                  />
+                                ))
+                              : null}
+                            {fieldSettings.showSubcategories
+                              ? noteSubcategories.slice(0, 1).map((subcategory) => (
+                                  <Chip
+                                    key={subcategory.id}
+                                    label={subcategory.name}
+                                    size="small"
+                                    variant="outlined"
+                                  />
+                                ))
+                              : null}
+                            {fieldSettings.showUpdatedAt ? (
+                              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                                {new Date(note.updatedAt).toLocaleDateString("pt-BR")}
+                              </Typography>
+                            ) : null}
                           </Stack>
                         </Paper>
                       );
@@ -638,7 +738,7 @@ export default function Notes() {
             {selectedNote ? (
               <Paper elevation={0} variant="outlined" sx={{ p: 2 }}>
                 <Stack spacing={2}>
-                  <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                  <Stack spacing={2}>
                     <TextField
                       label="Titulo"
                       value={selectedNote.title}
@@ -652,71 +752,148 @@ export default function Notes() {
                       fullWidth
                       sx={{
                         "& .MuiInputBase-input": {
-                          fontSize: "1.25rem",
-                          fontWeight: 600,
+                          fontSize: "1.35rem",
+                          fontWeight: 700,
+                          lineHeight: 1.3,
                         },
                       }}
                     />
-                    {fieldSettings.showCategories ? (
-                      <Autocomplete
-                        multiple
-                        options={categories}
-                        value={categories.filter((item) =>
-                          selectedNote.categoryIds.includes(item.id)
-                        )}
-                        onChange={(_, value) => {
-                          const nextIds = value.map((item) => item.id);
-                          updateNote({
-                            ...selectedNote,
-                            categoryIds: nextIds,
-                            updatedAt: new Date().toISOString(),
-                          });
-                          if (nextIds.length) {
-                            setActiveCategory(nextIds[0]);
+                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                      {fieldSettings.showCategories ? (
+                        <Autocomplete
+                          multiple
+                          options={categories}
+                          value={categories.filter((item) =>
+                            selectedNote.categoryIds.includes(item.id)
+                          )}
+                          onChange={(_, value) => {
+                            const nextIds = value.map((item) => item.id);
+                            updateNote({
+                              ...selectedNote,
+                              categoryIds: nextIds,
+                              updatedAt: new Date().toISOString(),
+                            });
+                            if (nextIds.length) {
+                              setActiveCategory(nextIds[0]);
+                            }
+                          }}
+                          getOptionLabel={(option) => option.name}
+                          renderOption={(props, option, { selected }) => (
+                            <li {...props}>
+                              <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
+                              {option.name}
+                            </li>
+                          )}
+                          renderInput={(params) => (
+                            <TextField {...params} label="Categorias" fullWidth />
+                          )}
+                          sx={{ minWidth: 240, flex: 1 }}
+                        />
+                      ) : null}
+                      {fieldSettings.showSubcategories ? (
+                        <Autocomplete
+                          multiple
+                          options={subcategories.filter((item) =>
+                            selectedNote.categoryIds.includes(item.categoryId)
+                          )}
+                          value={subcategories.filter((item) =>
+                            selectedNote.subcategoryIds.includes(item.id)
+                          )}
+                          onChange={(_, value) =>
+                            updateNote({
+                              ...selectedNote,
+                              subcategoryIds: value.map((item) => item.id),
+                              updatedAt: new Date().toISOString(),
+                            })
                           }
-                        }}
-                        getOptionLabel={(option) => option.name}
-                        renderOption={(props, option, { selected }) => (
-                          <li {...props}>
-                            <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
-                            {option.name}
-                          </li>
-                        )}
-                        renderInput={(params) => (
-                          <TextField {...params} label="Categorias" fullWidth />
-                        )}
-                        sx={{ minWidth: 240 }}
-                      />
-                    ) : null}
-                    {fieldSettings.showSubcategories ? (
-                      <Autocomplete
-                        multiple
-                        options={subcategories.filter((item) =>
-                          selectedNote.categoryIds.includes(item.categoryId)
-                        )}
-                        value={subcategories.filter((item) =>
-                          selectedNote.subcategoryIds.includes(item.id)
-                        )}
-                        onChange={(_, value) =>
-                          updateNote({
-                            ...selectedNote,
-                            subcategoryIds: value.map((item) => item.id),
-                            updatedAt: new Date().toISOString(),
-                          })
-                        }
-                        getOptionLabel={(option) => option.name}
-                        renderOption={(props, option, { selected }) => (
-                          <li {...props}>
-                            <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
-                            {option.name}
-                          </li>
-                        )}
-                        renderInput={(params) => (
-                          <TextField {...params} label="Subcategorias" fullWidth />
-                        )}
-                        sx={{ minWidth: 240 }}
-                      />
-                    ) : null}
+                          getOptionLabel={(option) => option.name}
+                          renderOption={(props, option, { selected }) => (
+                            <li {...props}>
+                              <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
+                              {option.name}
+                            </li>
+                          )}
+                          renderInput={(params) => (
+                            <TextField {...params} label="Subcategorias" fullWidth />
+                          )}
+                          sx={{ minWidth: 240, flex: 1 }}
+                        />
+                      ) : null}
+                    </Stack>
+                  </Stack>
+
+                  <Stack spacing={1.5}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Subpaginas
+                    </Typography>
+                    {notes.filter((note) => note.parentId === selectedNote.id).length ? (
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {notes
+                          .filter((note) => note.parentId === selectedNote.id)
+                          .map((child) => (
+                            <Chip
+                              key={child.id}
+                              label={child.title}
+                              onClick={() => selectNote(child)}
+                              size="small"
+                              variant="outlined"
+                            />
+                          ))}
+                      </Stack>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                        Sem subpaginas.
+                      </Typography>
+                    )}
+                    <Button
+                      variant="outlined"
+                      onClick={() => createSubpage(selectedNote)}
+                      sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                    >
+                      Criar subpagina
+                    </Button>
+                  </Stack>
+
+                  <Stack spacing={1.5}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Notas relacionadas
+                    </Typography>
+                    <Autocomplete
+                      multiple
+                      options={notes.filter((note) => note.id !== selectedNote.id)}
+                      value={notes.filter((note) =>
+                        (selectedNote.relatedNoteIds || []).includes(note.id)
+                      )}
+                      onChange={(_, value) =>
+                        updateRelatedNotes(
+                          selectedNote,
+                          value.map((item) => item.id)
+                        )
+                      }
+                      getOptionLabel={(option) => option.title}
+                      renderOption={(props, option, { selected }) => (
+                        <li {...props}>
+                          <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
+                          {option.title}
+                        </li>
+                      )}
+                      renderInput={(params) => (
+                        <TextField {...params} label="Vincular notas" fullWidth />
+                      )}
+                    />
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {(selectedNote.relatedNoteIds || [])
+                        .map((id) => notes.find((note) => note.id === id))
+                        .filter(Boolean)
+                        .map((note) => (
+                          <Chip
+                            key={note?.id}
+                            label={note?.title}
+                            onClick={() => note && selectNote(note)}
+                            size="small"
+                          />
+                        ))}
+                    </Stack>
                   </Stack>
 
                   {fieldSettings.showLinks ? (

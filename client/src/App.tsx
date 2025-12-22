@@ -218,7 +218,7 @@ function App() {
     if (!moduleAccess.calendar && (location === "/calendario" || location === "/calendario/concluidas")) {
       setLocation("/profile");
     }
-    if (!moduleAccess.notes && location === "/notas") {
+    if (!moduleAccess.notes && location.startsWith("/notas")) {
       setLocation("/profile");
     }
   }, [isLoggedIn, location, moduleAccess, setLocation]);
@@ -232,6 +232,9 @@ function App() {
     }
     if (href === "/pipeline") {
       return location === "/pipeline" || location === "/pipeline/dados";
+    }
+    if (href === "/notas") {
+      return location.startsWith("/notas");
     }
     return location === href;
   };
@@ -273,6 +276,62 @@ function App() {
   };
   const showBreadcrumbs = !["/", "/login", "/signup"].includes(location);
   const currentLabel = breadcrumbMap[location] ?? "Pagina";
+  const notesBreadcrumb = (() => {
+    if (!location.startsWith("/notas/")) {
+      return null;
+    }
+    const noteId = location.split("/")[2];
+    if (!noteId) {
+      return null;
+    }
+    try {
+      const stored = window.localStorage.getItem("notes_v1");
+      if (!stored) {
+        return null;
+      }
+      const parsed = JSON.parse(stored) as Array<{ id: string; title: string; parentId?: string }>;
+      const current = parsed.find((note) => note.id === noteId);
+      if (!current) {
+        return null;
+      }
+      const parent = current.parentId
+        ? parsed.find((note) => note.id === current.parentId)
+        : null;
+      const crumbs = [
+        <Link
+          key="notas"
+          component={RouterLink}
+          href="/notas"
+          underline="hover"
+          color="inherit"
+        >
+          Notas
+        </Link>,
+      ];
+      if (parent) {
+        crumbs.push(
+          <Link
+            key="nota-parent"
+            component={RouterLink}
+            href={`/notas/${parent.id}`}
+            underline="hover"
+            color="inherit"
+          >
+            {parent.title}
+          </Link>
+        );
+      }
+      crumbs.push(
+        <Typography key="nota-current" color="text.primary">
+          {current.title}
+        </Typography>
+      );
+      return crumbs;
+    } catch {
+      return null;
+    }
+  })();
+
   const breadcrumbItems =
     location === "/pipeline/dados"
       ? [
@@ -304,6 +363,8 @@ function App() {
               Tarefas feitas
             </Typography>,
           ]
+      : notesBreadcrumb
+        ? notesBreadcrumb
       : [
           <Link
             key="home"
@@ -658,6 +719,7 @@ function App() {
               <Route path="/contatos" component={Contacts} />
               <Route path="/calendario/concluidas" component={CalendarCompleted} />
               <Route path="/calendario" component={Calendar} />
+              <Route path="/notas/:noteId" component={Notes} />
               <Route path="/notas" component={Notes} />
               <Route path="/notifications" component={Notifications} />
               <Route>
