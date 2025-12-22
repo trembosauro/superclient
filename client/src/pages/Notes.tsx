@@ -731,6 +731,7 @@ export default function Notes() {
                               label={subcategory.name}
                               sx={{
                                 maxWidth: 220,
+                                minHeight: 32,
                                 "& .MuiChip-label": {
                                   overflow: "hidden",
                                   textOverflow: "ellipsis",
@@ -822,6 +823,7 @@ export default function Notes() {
                                     variant="outlined"
                                     sx={{
                                       maxWidth: 200,
+                                      minHeight: 32,
                                       "& .MuiChip-label": {
                                         overflow: "hidden",
                                         textOverflow: "ellipsis",
@@ -1283,7 +1285,15 @@ export default function Notes() {
                         onDelete={() =>
                           setConfirmRemove({ type: "subcategory", id: subcategory.id })
                         }
-                        size="small"
+                        sx={{
+                          maxWidth: 320,
+                          minHeight: 32,
+                          "& .MuiChip-label": {
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          },
+                        }}
                       />
                     ))}
                     {!subcategories.length ? (

@@ -1521,10 +1521,10 @@ export default function Calendar() {
               ) : null}
             </Stack>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
-              <Button variant="contained" onClick={handleOpenEditFromView}>
+              <Button variant="outlined" onClick={handleOpenEditFromView}>
                 Editar
               </Button>
-              <Button variant="outlined" onClick={handleCloseView}>
+              <Button variant="contained" onClick={handleCloseView}>
                 Fechar
               </Button>
             </Stack>
