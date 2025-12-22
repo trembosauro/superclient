@@ -415,7 +415,7 @@ export default function Calendar() {
   });
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [agendaPage, setAgendaPage] = useState(1);
-  const [agendaPerPage, setAgendaPerPage] = useState(4);
+  const [agendaPerPage, setAgendaPerPage] = useState(3);
   const [draftTask, setDraftTask] = useState<CalendarTask | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [viewingTask, setViewingTask] = useState<CalendarTask | null>(null);
@@ -967,19 +967,6 @@ export default function Calendar() {
     </Paper>
   );
 
-  const badgeSx = {
-    "& .MuiBadge-badge": {
-      borderRadius: "999px",
-      minWidth: 18,
-      height: 18,
-      padding: "0 6px",
-      fontSize: "0.65rem",
-      fontWeight: 600,
-      border: "2px solid",
-      borderColor: "background.paper",
-    },
-  };
-
   return (
     <Box sx={{ px: { xs: 2, md: 3 }, py: { xs: 2, md: 3 } }}>
       <Stack spacing={3}>
@@ -1026,6 +1013,33 @@ export default function Calendar() {
           }}
         >
           <Stack spacing={2.5}>
+            <Autocomplete
+              multiple
+              options={categories}
+              value={categories.filter((item) => categoryFilter.includes(item.id))}
+              onChange={(_, value) => setCategoryFilter(value.map((item) => item.id))}
+              getOptionLabel={(option) => option.name}
+              noOptionsText="Sem categorias"
+              renderOption={(props, option, { selected }) => (
+                <li {...props}>
+                  <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
+                  {option.name}
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField {...params} label="Filtrar categorias" fullWidth />
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    {...getTagProps({ index })}
+                    key={option.id}
+                    label={option.name}
+                    size="small"
+                  />
+                ))
+              }
+            />
             <Paper elevation={0} variant="outlined" sx={{ p: 2 }}>
               <Stack spacing={2}>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -1182,51 +1196,6 @@ export default function Calendar() {
                 </Stack>
               </Stack>
             </Paper>
-            <Autocomplete
-              multiple
-              options={categories}
-              value={categories.filter((item) => categoryFilter.includes(item.id))}
-              onChange={(_, value) => setCategoryFilter(value.map((item) => item.id))}
-              getOptionLabel={(option) => option.name}
-              noOptionsText="Sem categorias"
-              renderOption={(props, option, { selected }) => (
-                <li {...props}>
-                  <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
-                  {option.name}
-                </li>
-              )}
-              renderInput={(params) => (
-                <TextField {...params} label="Filtrar categorias" fullWidth />
-              )}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip
-                    {...getTagProps({ index })}
-                    key={option.id}
-                    label={option.name}
-                    size="small"
-                  />
-                ))
-              }
-            />
-            <Stack direction="row" spacing={1}>
-              <Badge
-                badgeContent={statusCounts.pending}
-                color="primary"
-                anchorOrigin={{ vertical: "top", horizontal: "right" }}
-                sx={badgeSx}
-              >
-                <Chip label="Pendentes" size="small" variant="outlined" />
-              </Badge>
-              <Badge
-                badgeContent={statusCounts.done}
-                color="success"
-                anchorOrigin={{ vertical: "top", horizontal: "right" }}
-                sx={badgeSx}
-              >
-                <Chip label="Feitas" size="small" variant="outlined" />
-              </Badge>
-            </Stack>
           </Stack>
 
           <Stack spacing={2.5}>

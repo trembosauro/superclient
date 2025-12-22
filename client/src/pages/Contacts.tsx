@@ -30,7 +30,7 @@ import CalendarTodayRoundedIcon from "@mui/icons-material/CalendarTodayRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
-import WhatsAppRoundedIcon from "@mui/icons-material/WhatsAppRounded";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import SettingsIconButton from "../components/SettingsIconButton";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import { interactiveCardSx } from "../styles/interactiveCard";
@@ -1040,7 +1040,7 @@ export default function Contacts() {
                           aria-label="Abrir WhatsApp"
                           disabled={!formatWhatsAppLink(phone)}
                         >
-                          <WhatsAppRoundedIcon fontSize="small" />
+                          <WhatsAppIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     </Stack>
