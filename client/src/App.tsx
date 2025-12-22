@@ -290,8 +290,16 @@ function App() {
     "/notas/arquivo": "Arquivo",
     "/notifications": "Notificações",
   };
-  const showBreadcrumbs = !["/", "/login", "/signup"].includes(location);
-  const currentLabel = breadcrumbMap[location] ?? "Página";
+
+  const normalizeBreadcrumbLabel = (value: string) =>
+    value.replace(/\s+/g, " ").trim();
+
+  const showBreadcrumbs = !["/", "/login", "/signup", "/home"].includes(
+    location
+  );
+  const currentLabel = normalizeBreadcrumbLabel(
+    breadcrumbMap[location] ?? "Página"
+  );
   const notesBreadcrumb = (() => {
     if (!location.startsWith("/notas/")) {
       return null;
@@ -351,13 +359,13 @@ function App() {
             underline="hover"
             color="inherit"
           >
-            {parent.title}
+            {normalizeBreadcrumbLabel(parent.title || "Nota")}
           </Link>
         );
       }
       crumbs.push(
         <Typography key="nota-current" color="text.primary">
-          {current.title}
+          {normalizeBreadcrumbLabel(current.title || "Nota")}
         </Typography>
       );
       return crumbs;
@@ -751,7 +759,7 @@ function App() {
 
           <Box component="main" sx={{ flex: 1, px: { xs: 2, md: 6 }, py: 6 }}>
             {showBreadcrumbs ? (
-              <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 3 } }}>
+              <Box sx={{ maxWidth: 1200, mx: "auto" }}>
                 <Breadcrumbs
                   aria-label="breadcrumb"
                   separator="›"

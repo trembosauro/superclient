@@ -1113,8 +1113,6 @@ export default function Calendar() {
       sx={{
         maxWidth: 1200,
         mx: "auto",
-        px: { xs: 2, md: 3 },
-        py: { xs: 2, md: 3 },
       }}
     >
       <Stack spacing={3}>

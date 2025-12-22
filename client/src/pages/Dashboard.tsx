@@ -262,7 +262,7 @@ export default function Dashboard() {
   }, [roles, modules, invites]);
 
   return (
-    <Box sx={{ maxWidth: 1100, mx: "auto" }}>
+    <Box sx={{ maxWidth: 1200, mx: "auto" }}>
       <Stack spacing={3}>
         <Stack
           direction={{ xs: "column", sm: "row" }}
