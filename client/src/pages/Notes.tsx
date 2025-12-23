@@ -34,9 +34,12 @@ import LooksTwoRoundedIcon from "@mui/icons-material/LooksTwoRounded";
 import Looks3RoundedIcon from "@mui/icons-material/Looks3Rounded";
 import UnarchiveRoundedIcon from "@mui/icons-material/UnarchiveRounded";
 import BackspaceRoundedIcon from "@mui/icons-material/BackspaceRounded";
+import FormatUnderlinedRoundedIcon from "@mui/icons-material/FormatUnderlinedRounded";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
 import { APP_RADIUS, APP_RADIUS_PX } from "../designTokens";
 import { interactiveItemSx } from "../styles/interactiveCard";
 import SettingsIconButton from "../components/SettingsIconButton";
@@ -1721,6 +1724,7 @@ export default function Notes() {
                   ) : null}
 
                   <RichTextEditor
+                    key={selectedNote.id}
                     value={selectedNote.contentHtml}
                     onChange={value =>
                       updateNote({
@@ -2352,6 +2356,14 @@ function RichTextEditor({
       Placeholder.configure({
         placeholder: "Escreva sua nota...",
       }),
+      Underline,
+      Link.configure({
+        openOnClick: true,
+        HTMLAttributes: {
+          target: "_blank",
+          rel: "noopener noreferrer",
+        },
+      }),
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -2380,110 +2392,101 @@ function RichTextEditor({
 
   return (
     <Stack spacing={1}>
-      <Stack direction="row" spacing={1} flexWrap="wrap">
-        <Tooltip title="Negrito" placement="top">
-          <IconButton
-            {...iconButtonProps}
-            onClick={() => editor?.chain().focus().toggleBold().run()}
-            color={editor?.isActive("bold") ? "primary" : "default"}
-            aria-label="Negrito"
-          >
-            <FormatBoldRoundedIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Italico" placement="top">
-          <IconButton
-            {...iconButtonProps}
-            onClick={() => editor?.chain().focus().toggleItalic().run()}
-            color={editor?.isActive("italic") ? "primary" : "default"}
-            aria-label="Italico"
-          >
-            <FormatItalicRoundedIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Titulo 1" placement="top">
-          <IconButton
-            {...iconButtonProps}
-            onClick={() =>
-              editor?.chain().focus().toggleHeading({ level: 1 }).run()
+      <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+        <IconButton
+          {...iconButtonProps}
+          onClick={() => editor?.chain().focus().toggleBold().run()}
+          color={editor?.isActive("bold") ? "primary" : "default"}
+          aria-label="Negrito"
+        >
+          <FormatBoldRoundedIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          {...iconButtonProps}
+          onClick={() => editor?.chain().focus().toggleItalic().run()}
+          color={editor?.isActive("italic") ? "primary" : "default"}
+          aria-label="Italico"
+        >
+          <FormatItalicRoundedIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          {...iconButtonProps}
+          onClick={() => editor?.chain().focus().toggleUnderline().run()}
+          color={editor?.isActive("underline") ? "primary" : "default"}
+          aria-label="Sublinhado"
+        >
+          <FormatUnderlinedRoundedIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          {...iconButtonProps}
+          onClick={() => {
+            const url = window.prompt("URL do link:");
+            if (url) {
+              editor?.chain().focus().setLink({ href: url }).run();
+            } else if (url === "") {
+              editor?.chain().focus().unsetLink().run();
             }
-            color={
-              editor?.isActive("heading", { level: 1 }) ? "primary" : "default"
-            }
-            aria-label="Titulo 1"
-          >
-            <LooksOneRoundedIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Titulo 2" placement="top">
-          <IconButton
-            {...iconButtonProps}
-            onClick={() =>
-              editor?.chain().focus().toggleHeading({ level: 2 }).run()
-            }
-            color={
-              editor?.isActive("heading", { level: 2 }) ? "primary" : "default"
-            }
-            aria-label="Titulo 2"
-          >
-            <LooksTwoRoundedIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Titulo 3" placement="top">
-          <IconButton
-            {...iconButtonProps}
-            onClick={() =>
-              editor?.chain().focus().toggleHeading({ level: 3 }).run()
-            }
-            color={
-              editor?.isActive("heading", { level: 3 }) ? "primary" : "default"
-            }
-            aria-label="Titulo 3"
-          >
-            <Looks3RoundedIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Lista" placement="top">
-          <IconButton
-            {...iconButtonProps}
-            onClick={() => editor?.chain().focus().toggleBulletList().run()}
-            color={editor?.isActive("bulletList") ? "primary" : "default"}
-            aria-label="Lista"
-          >
-            <FormatListBulletedRoundedIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Lista numerada" placement="top">
-          <IconButton
-            {...iconButtonProps}
-            onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-            color={editor?.isActive("orderedList") ? "primary" : "default"}
-            aria-label="Lista numerada"
-          >
-            <FormatListNumberedRoundedIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Citação" placement="top">
-          <IconButton
-            {...iconButtonProps}
-            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-            color={editor?.isActive("blockquote") ? "primary" : "default"}
-            aria-label="Citação"
-          >
-            <FormatQuoteRoundedIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Limpar formatação" placement="top">
-          <IconButton
-            {...iconButtonProps}
-            onClick={() =>
-              editor?.chain().focus().unsetAllMarks().clearNodes().run()
-            }
-            aria-label="Limpar formatação"
-          >
-            <BackspaceRoundedIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+          }}
+          color={editor?.isActive("link") ? "primary" : "default"}
+          aria-label="Link"
+        >
+          <LinkRoundedIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          {...iconButtonProps}
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
+          color={editor?.isActive("heading", { level: 1 }) ? "primary" : "default"}
+          aria-label="Titulo 1"
+        >
+          <LooksOneRoundedIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          {...iconButtonProps}
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+          color={editor?.isActive("heading", { level: 2 }) ? "primary" : "default"}
+          aria-label="Titulo 2"
+        >
+          <LooksTwoRoundedIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          {...iconButtonProps}
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
+          color={editor?.isActive("heading", { level: 3 }) ? "primary" : "default"}
+          aria-label="Titulo 3"
+        >
+          <Looks3RoundedIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          {...iconButtonProps}
+          onClick={() => editor?.chain().focus().toggleBulletList().run()}
+          color={editor?.isActive("bulletList") ? "primary" : "default"}
+          aria-label="Lista"
+        >
+          <FormatListBulletedRoundedIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          {...iconButtonProps}
+          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+          color={editor?.isActive("orderedList") ? "primary" : "default"}
+          aria-label="Lista numerada"
+        >
+          <FormatListNumberedRoundedIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          {...iconButtonProps}
+          onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+          color={editor?.isActive("blockquote") ? "primary" : "default"}
+          aria-label="Citação"
+        >
+          <FormatQuoteRoundedIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          {...iconButtonProps}
+          onClick={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()}
+          aria-label="Limpar formatação"
+        >
+          <BackspaceRoundedIcon fontSize="small" />
+        </IconButton>
       </Stack>
       <Box
         sx={theme => ({
@@ -2499,6 +2502,38 @@ function RichTextEditor({
           "& .tiptap h1": { fontSize: "1.25rem", fontWeight: 700 },
           "& .tiptap h2": { fontSize: "1.1rem", fontWeight: 700 },
           "& .tiptap h3": { fontSize: "1rem", fontWeight: 700 },
+          "& .tiptap em, & .tiptap i": { fontStyle: "italic !important" },
+          "& .tiptap strong, & .tiptap b": { fontWeight: "700 !important" },
+          "& .tiptap u": { textDecoration: "underline !important" },
+          "& .tiptap a": { 
+            color: "#22c9a6",
+            textDecoration: "underline",
+            cursor: "pointer",
+          },
+          "& .tiptap ul": { 
+            listStyleType: "disc", 
+            paddingLeft: "1.5rem",
+            marginTop: "0.5rem",
+            marginBottom: "0.5rem",
+          },
+          "& .tiptap ol": { 
+            listStyleType: "decimal", 
+            paddingLeft: "1.5rem",
+            marginTop: "0.5rem",
+            marginBottom: "0.5rem",
+          },
+          "& .tiptap li": { 
+            marginBottom: "0.25rem",
+          },
+          "& .tiptap blockquote": {
+            borderLeft: "3px solid",
+            borderColor: "primary.main",
+            paddingLeft: "1rem",
+            marginLeft: 0,
+            marginRight: 0,
+            fontStyle: "italic",
+            color: "text.secondary",
+          },
           "& .tiptap p.is-editor-empty:first-of-type::before": {
             content: "attr(data-placeholder)",
             color: "rgba(230, 237, 243, 0.5)",

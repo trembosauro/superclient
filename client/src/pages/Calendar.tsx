@@ -40,6 +40,8 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CalendarTodayRoundedIcon from "@mui/icons-material/CalendarTodayRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
@@ -54,6 +56,8 @@ import LooksOneRoundedIcon from "@mui/icons-material/LooksOneRounded";
 import LooksTwoRoundedIcon from "@mui/icons-material/LooksTwoRounded";
 import Looks3RoundedIcon from "@mui/icons-material/Looks3Rounded";
 import BackspaceRoundedIcon from "@mui/icons-material/BackspaceRounded";
+import FormatUnderlinedRoundedIcon from "@mui/icons-material/FormatUnderlinedRounded";
+import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import RadioButtonUncheckedRoundedIcon from "@mui/icons-material/RadioButtonUncheckedRounded";
 import api from "../api";
@@ -1833,8 +1837,15 @@ export default function Calendar() {
       <Dialog
         open={Boolean(viewingTask)}
         onClose={handleCloseView}
-        maxWidth="sm"
+        maxWidth={false}
         fullWidth
+        PaperProps={{
+          sx: {
+            width: { xs: "calc(100% - 32px)", sm: "80%", md: "80%" },
+            maxWidth: { sm: "80%", md: "80%" },
+            m: { xs: 2, sm: 3 },
+          },
+        }}
       >
         <DialogContent>
           <Stack spacing={2.5}>
@@ -2211,7 +2222,19 @@ export default function Calendar() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editOpen} onClose={handleCloseEdit} maxWidth="sm" fullWidth>
+      <Dialog
+        open={editOpen}
+        onClose={handleCloseEdit}
+        maxWidth={false}
+        fullWidth
+        PaperProps={{
+          sx: {
+            width: { xs: "calc(100% - 32px)", sm: "80%", md: "80%" },
+            maxWidth: { sm: "80%", md: "80%" },
+            m: { xs: 2, sm: 3 },
+          },
+        }}
+      >
         <DialogContent>
           <Stack spacing={2.5}>
             <Box
@@ -2996,6 +3019,14 @@ function RichTextEditor({
       Placeholder.configure({
         placeholder: "Escreva a descricao da tarefa...",
       }),
+      Underline,
+      Link.configure({
+        openOnClick: true,
+        HTMLAttributes: {
+          target: "_blank",
+          rel: "noopener noreferrer",
+        },
+      }),
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -3085,6 +3116,33 @@ function RichTextEditor({
             aria-label="Italico"
           >
             <FormatItalicRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Sublinhado" placement="top">
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => editor?.chain().focus().toggleUnderline().run()}
+            color={editor?.isActive("underline") ? "primary" : "default"}
+            aria-label="Sublinhado"
+          >
+            <FormatUnderlinedRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Link" placement="top">
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => {
+              const url = window.prompt("URL do link:");
+              if (url) {
+                editor?.chain().focus().setLink({ href: url }).run();
+              } else if (url === "") {
+                editor?.chain().focus().unsetLink().run();
+              }
+            }}
+            color={editor?.isActive("link") ? "primary" : "default"}
+            aria-label="Link"
+          >
+            <LinkRoundedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
         <Tooltip title="Titulo 1" placement="top">
@@ -3185,6 +3243,38 @@ function RichTextEditor({
           "& .tiptap h1": { fontSize: "1.25rem", fontWeight: 700 },
           "& .tiptap h2": { fontSize: "1.1rem", fontWeight: 700 },
           "& .tiptap h3": { fontSize: "1rem", fontWeight: 700 },
+          "& .tiptap em, & .tiptap i": { fontStyle: "italic !important" },
+          "& .tiptap strong, & .tiptap b": { fontWeight: "700 !important" },
+          "& .tiptap u": { textDecoration: "underline !important" },
+          "& .tiptap a": { 
+            color: "#22c9a6",
+            textDecoration: "underline",
+            cursor: "pointer",
+          },
+          "& .tiptap ul": { 
+            listStyleType: "disc", 
+            paddingLeft: "1.5rem",
+            marginTop: "0.5rem",
+            marginBottom: "0.5rem",
+          },
+          "& .tiptap ol": { 
+            listStyleType: "decimal", 
+            paddingLeft: "1.5rem",
+            marginTop: "0.5rem",
+            marginBottom: "0.5rem",
+          },
+          "& .tiptap li": { 
+            marginBottom: "0.25rem",
+          },
+          "& .tiptap blockquote": {
+            borderLeft: "3px solid",
+            borderColor: "primary.main",
+            paddingLeft: "1rem",
+            marginLeft: 0,
+            marginRight: 0,
+            fontStyle: "italic",
+            color: "text.secondary",
+          },
           "& .tiptap img": {
             maxWidth: "100%",
             borderRadius: APP_RADIUS,
