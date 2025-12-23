@@ -1468,7 +1468,11 @@ export default function Profile() {
           }
           title="Conta"
         >
-          <Stack spacing={2.5}>
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            spacing={2.5}
+            alignItems={{ xs: "stretch", md: "center" }}
+          >
             <Paper
               variant="outlined"
               onClick={() =>
@@ -1480,7 +1484,8 @@ export default function Profile() {
               sx={theme => ({
                 p: 2.5,
                 cursor: "pointer",
-                maxWidth: 420,
+                flex: 1,
+                maxWidth: { xs: "100%", md: 420 },
                 ...interactiveCardSx(theme),
               })}
             >
@@ -1512,13 +1517,18 @@ export default function Profile() {
                 </Typography>
               </Stack>
             </Paper>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+              sx={{ display: { xs: "none", md: "flex" } }}
+            >
               <Button
                 color="error"
                 variant="contained"
                 size="large"
                 onClick={handleLogout}
-                sx={{ textTransform: "none", fontWeight: 600 }}
+                sx={{ textTransform: "none", fontWeight: 600, minWidth: 160, height: 48 }}
               >
                 Sair
               </Button>
@@ -1526,11 +1536,36 @@ export default function Profile() {
                 variant="outlined"
                 size="large"
                 onClick={handleSwitchAccount}
-                sx={{ textTransform: "none", fontWeight: 600 }}
+                sx={{ textTransform: "none", fontWeight: 600, minWidth: 160, height: 48 }}
               >
                 Trocar de conta
               </Button>
             </Stack>
+          </Stack>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            sx={{ display: { xs: "flex", md: "none" }, mt: 2 }}
+          >
+            <Button
+              color="error"
+              variant="contained"
+              size="large"
+              fullWidth
+              onClick={handleLogout}
+              sx={{ textTransform: "none", fontWeight: 600 }}
+            >
+              Sair
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              fullWidth
+              onClick={handleSwitchAccount}
+              sx={{ textTransform: "none", fontWeight: 600 }}
+            >
+              Trocar de conta
+            </Button>
           </Stack>
         </AppAccordion>
       </Stack>

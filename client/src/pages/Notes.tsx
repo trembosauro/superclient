@@ -1718,10 +1718,10 @@ export default function Notes() {
                         justifyContent="flex-end"
                       >
                         <Button variant="outlined" onClick={cancelEditCategory}>
-                          Cancelar
+                          {t("common.cancel")}
                         </Button>
                         <Button variant="contained" onClick={saveCategory}>
-                          Salvar
+                          {t("common.save")}
                         </Button>
                       </Stack>
                     </Stack>
@@ -1860,10 +1860,10 @@ export default function Notes() {
                           variant="outlined"
                           onClick={cancelEditSubcategory}
                         >
-                          Cancelar
+                          {t("common.cancel")}
                         </Button>
                         <Button variant="contained" onClick={saveSubcategory}>
-                          Salvar
+                          {t("common.save")}
                         </Button>
                       </Stack>
                     </Stack>
@@ -1872,7 +1872,7 @@ export default function Notes() {
                 {!editingSubcategoryId ? (
                   <TextField
                     select
-                    label="Categoria"
+                    label={t("common.category")}
                     value={subcategoryFilter}
                     onChange={event => {
                       setSubcategoryFilter(event.target.value);
