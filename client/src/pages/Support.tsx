@@ -234,8 +234,7 @@ export default function Support() {
             Suporte
           </Typography>
           <Typography variant="body1" sx={{ color: "text.secondary" }}>
-            Respostas rápidas para você configurar, testar e começar a usar o
-            Superclient com segurança.
+            Encontre respostas para suas dúvidas sobre o Superclient.
           </Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25} sx={{ mt: 1 }}>
             <Button component={RouterLink} href="/signup" variant="contained">

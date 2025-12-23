@@ -605,12 +605,12 @@ export default function Notes() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && selectedNoteId) {
-        setSelectedNoteId(null);
+        setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedNoteId]);
+  }, [selectedNoteId, isArchiveView, setLocation]);
 
   const activeSubcategories = useMemo(
     () => subcategories.filter(item => item.categoryId === activeCategory),
@@ -1128,6 +1128,7 @@ export default function Notes() {
                               onClick={() => {
                                 setActiveCategory(category.id);
                                 setActiveSubcategory(null);
+                                setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
                               }}
                               sx={theme => ({
                                 ...interactiveItemSx(theme),
@@ -1193,6 +1194,7 @@ export default function Notes() {
                                                 ? null
                                                 : subcategory.id
                                             );
+                                            setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
                                           }}
                                           sx={theme => ({
                                             ...interactiveItemSx(theme),
@@ -1485,7 +1487,7 @@ export default function Notes() {
                             });
                             if (nextIds.length) {
                               setActiveCategory(nextIds[0]);
-                              setSelectedNoteId(null);
+                              setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
                             }
                           }}
                           label="Categorias"
@@ -1507,7 +1509,7 @@ export default function Notes() {
                             });
                             if (nextIds.length) {
                               setActiveSubcategory(nextIds[0]);
-                              setSelectedNoteId(null);
+                              setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
                             }
                           }}
                           label="Subcategorias"
