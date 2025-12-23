@@ -8,6 +8,9 @@ import "@fontsource/roboto/700.css";
 import App from "./App.tsx";
 import "./index.css";
 
+// Inicializar i18n antes de qualquer componente
+import "./i18n";
+
 import { applyDesignTokensToCssVars } from "./designTokens";
 
 const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");

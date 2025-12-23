@@ -24,6 +24,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Link as RouterLink, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { nanoid } from "nanoid";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ArchiveRoundedIcon from "@mui/icons-material/ArchiveRounded";
@@ -496,6 +497,7 @@ const defaultTaskFieldSettings = {
 };
 
 export default function Pipeline() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [columns, setColumns] = useState<Column[]>(() => defaultColumns);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);

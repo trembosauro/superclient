@@ -25,6 +25,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { Link as RouterLink } from "wouter";
+import { useTranslation } from "react-i18next";
 import {
   DragEndEvent,
   DndContext,
@@ -399,6 +400,7 @@ const getSampleTasks = (base: Date): CalendarTask[] => {
 };
 
 export default function Calendar() {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [calendarSources, setCalendarSources] =
     useState<CalendarSource[]>(defaultCalendars);
@@ -2632,13 +2634,13 @@ export default function Calendar() {
                 variant="outlined"
                 onClick={removeDraftTask}
               >
-                Remover
+                {t("common.delete")}
               </Button>
               <Button variant="outlined" onClick={handleCloseEdit}>
-                Cancelar
+                {t("common.cancel")}
               </Button>
               <Button variant="contained" onClick={saveDraftTask}>
-                Salvar
+                {t("common.save")}
               </Button>
             </Stack>
           </Stack>
@@ -2889,10 +2891,10 @@ export default function Calendar() {
                         justifyContent="flex-end"
                       >
                         <Button variant="outlined" onClick={cancelEditCategory}>
-                          Cancelar
+                          {t("common.cancel")}
                         </Button>
                         <Button variant="contained" onClick={saveCategory}>
-                          Salvar
+                          {t("common.save")}
                         </Button>
                       </Stack>
                     </Stack>

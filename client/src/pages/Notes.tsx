@@ -17,6 +17,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ArchiveRoundedIcon from "@mui/icons-material/ArchiveRounded";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
@@ -309,6 +310,7 @@ const defaultNoteFieldSettings = {
 };
 
 export default function Notes() {
+  const { t } = useTranslation();
   const [location, setLocation] = useLocation();
   const isArchiveView = location.startsWith("/notas/arquivo");
   const [categories, setCategories] =

@@ -17,11 +17,13 @@ import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import PageContainer from "../components/layout/PageContainer";
 import AppAccordion from "../components/layout/AppAccordion";
 import api from "../api";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import { interactiveCardSx } from "../styles/interactiveCard";
+import { changeLanguage } from "../i18n";
 
 type StoredAccount = {
   name: string;
@@ -180,6 +182,7 @@ const languageOptions = [
 ];
 
 export default function Profile() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [expanded, setExpanded] = useState<
     "main" | "security" | "notifications" | "modules" | "account" | false
@@ -679,6 +682,10 @@ export default function Profile() {
     }
     lastLanguageRef.current = preferences.language;
     const nextLanguage = pendingLanguage;
+    
+    // Alterar idioma no i18n
+    changeLanguage(nextLanguage);
+    
     setPreferences(prev => {
       const next = { ...prev, language: nextLanguage };
       window.localStorage.setItem(

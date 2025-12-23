@@ -20,6 +20,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
 import AutoGraphRoundedIcon from "@mui/icons-material/AutoGraphRounded";
 import { Link as RouterLink, Route, Switch, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import theme from "./theme";
 import { APP_RADIUS } from "./designTokens";
 import api from "./api";
@@ -39,17 +40,18 @@ import Calendar from "./pages/Calendar";
 import CalendarCompleted from "./pages/CalendarCompleted";
 import Notes from "./pages/Notes";
 
+// Keys para tradução - os labels serão traduzidos no render
 const navItems = [
-  { label: "Home", href: "/home" },
-  { label: "Pipeline", href: "/pipeline" },
-  { label: "Finanças", href: "/financas" },
-  { label: "Contatos", href: "/contatos" },
-  { label: "Calendário", href: "/calendario" },
-  { label: "Notas", href: "/notas" },
-  { label: "Gestão", href: "/access" },
+  { labelKey: "nav.home", href: "/home" },
+  { labelKey: "nav.pipeline", href: "/pipeline" },
+  { labelKey: "nav.finances", href: "/financas" },
+  { labelKey: "nav.contacts", href: "/contatos" },
+  { labelKey: "nav.calendar", href: "/calendario" },
+  { labelKey: "nav.notes", href: "/notas" },
 ];
 
 function App() {
+  const { t } = useTranslation();
   const [location, setLocation] = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>("");
@@ -276,25 +278,25 @@ function App() {
         return true;
       })
     : [
-        { label: "Início", href: "/" },
-        { label: "Suporte", href: "/support" },
-        { label: "Entrar", href: "/login" },
+        { labelKey: "nav.home", href: "/" },
+        { labelKey: "nav.support", href: "/support" },
+        { labelKey: "auth.login", href: "/login" },
       ];
 
   const breadcrumbMap: Record<string, string> = {
-    "/home": "Home",
-    "/profile": "Perfil",
-    "/access": "Gestão",
-    "/support": "Suporte",
-    "/pipeline": "Pipeline",
-    "/pipeline/dados": "Dados",
-    "/financas": "Finanças",
-    "/contatos": "Contatos",
-    "/calendario": "Calendário",
-    "/calendario/concluidas": "Tarefas feitas",
-    "/notas": "Notas",
-    "/notas/arquivo": "Arquivo",
-    "/notifications": "Notificações",
+    "/home": t("nav.home"),
+    "/profile": t("profile.title"),
+    "/access": t("common.actions"),
+    "/support": t("nav.support"),
+    "/pipeline": t("nav.pipeline"),
+    "/pipeline/dados": t("common.details"),
+    "/financas": t("nav.finances"),
+    "/contatos": t("nav.contacts"),
+    "/calendario": t("nav.calendar"),
+    "/calendario/concluidas": t("calendar.completedTasks"),
+    "/notas": t("nav.notes"),
+    "/notas/arquivo": t("notes.archive"),
+    "/notifications": t("nav.notifications"),
   };
 
   const normalizeBreadcrumbLabel = (value: string) =>
@@ -303,7 +305,7 @@ function App() {
   const showBreadcrumbs =
     isLoggedIn && !["/", "/login", "/signup"].includes(location);
   const currentLabel = normalizeBreadcrumbLabel(
-    breadcrumbMap[location] ?? "Página"
+    breadcrumbMap[location] ?? t("common.title")
   );
   const notesBreadcrumb = (() => {
     if (!location.startsWith("/notas/")) {
@@ -606,7 +608,7 @@ function App() {
                           },
                         }}
                       >
-                        {item.label}
+                        {t(item.labelKey)}
                       </Button>
                     </Box>
                   ))}
@@ -755,7 +757,7 @@ function App() {
                           : null),
                       }}
                     >
-                      {item.label}
+                      {t(item.labelKey)}
                     </MenuItem>
                   ))}
                   {isLoggedIn ? (
@@ -771,7 +773,7 @@ function App() {
                           : null),
                       }}
                     >
-                      Perfil
+                      {t("profile.title")}
                     </MenuItem>
                   ) : null}
                 </Menu>
@@ -893,7 +895,7 @@ function App() {
                     underline="hover"
                     color="text.secondary"
                   >
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 ))}
                 <Link
@@ -902,7 +904,7 @@ function App() {
                   underline="hover"
                   color="text.secondary"
                 >
-                  Suporte
+                  {t("nav.support")}
                 </Link>
               </Stack>
             </Stack>
