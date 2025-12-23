@@ -279,7 +279,6 @@ function App() {
     : [
         { labelKey: "nav.home", href: "/" },
         { labelKey: "nav.support", href: "/support" },
-        { labelKey: "auth.login", href: "/login" },
       ];
 
   const breadcrumbMap: Record<string, string> = {

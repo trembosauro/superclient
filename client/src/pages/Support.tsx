@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   IconButton,
   InputAdornment,
@@ -13,77 +14,189 @@ import { Link as RouterLink } from "wouter";
 import PageContainer from "../components/layout/PageContainer";
 import PageStack from "../components/layout/PageStack";
 import AppAccordion from "../components/layout/AppAccordion";
+import CardSection from "../components/layout/CardSection";
 
 const faqItems = [
+  // Autenticação e Acesso
   {
-    title: "Login e recuperação de senha",
+    title: "Criar uma conta",
     content:
-      "Faça login com email e senha. Se precisar criar um acesso novo, use Criar conta. Se a opção de recuperação estiver disponível na sua tela, siga o fluxo para receber o link no email.",
+      "Acesse a página inicial e clique em 'Criar conta'. Preencha nome, email e senha. Após criar, você já entra logado e pode começar a usar o sistema imediatamente com dados de exemplo para testar os fluxos.",
   },
   {
-    title: "Criação de conta",
+    title: "Fazer login",
     content:
-      "Crie seu workspace com nome, email e senha. Após criar, você já entra e começa com dados de exemplo para testar o fluxo (contatos, tarefas, notas e categorias).",
+      "Na página inicial, clique em 'Entrar', informe seu email e senha. Você pode marcar 'Manter conectado' para não precisar logar novamente. Se esquecer a senha, clique em 'Recuperar senha' para receber um código no email.",
   },
+  {
+    title: "Recuperar senha",
+    content:
+      "Clique em 'Recuperar senha' na tela de login, informe seu email e clique em 'Enviar código'. Você receberá um código por email. Insira o código e defina uma nova senha. O código expira em 1 hora.",
+  },
+  {
+    title: "Trocar de conta",
+    content:
+      "Em Perfil, na seção 'Conta', você verá suas contas recentes. Clique em uma conta para alternar ou use 'Entrar em outra conta' para adicionar um novo login. Você pode ter até 3 contas salvas.",
+  },
+  {
+    title: "Duração da sessão",
+    content:
+      "A sessão dura 1 semana. Se você logar em outro dispositivo, a sessão anterior pode ser encerrada por segurança. Use 'Sessão única' nas preferências para garantir que só um dispositivo fique logado por vez.",
+  },
+  // Dashboard
   {
     title: "Home (dashboard)",
     content:
-      "Mostra uma visão geral do pipeline, finanças, agenda e gestão com indicadores e atalhos para você agir rápido.",
+      "A Home é seu painel central com visão geral do pipeline (total de cards, valor total, ticket médio), finanças (gastos totais, categoria em destaque) e gestão (papéis ativos, módulos). Você pode configurar quais seções e indicadores aparecem.",
   },
   {
-    title: "Calendário",
+    title: "Configurar a Home",
     content:
-      "Organize tarefas e lembretes por dia, selecione calendários ativos e ajuste detalhes como horário, local e repetição.",
+      "Clique no ícone de engrenagem na Home. Você pode ativar/desativar seções (Pipeline, Finanças, Gestão), escolher quais indicadores mostrar em cada seção, e configurar os links rápidos para navegação.",
+  },
+  // Pipeline
+  {
+    title: "Usar o Pipeline",
+    content:
+      "O Pipeline organiza suas tarefas/oportunidades em colunas (etapas). Arraste cards entre colunas para mudar o status. Clique em um card para ver detalhes ou editar. Use o botão '+' em cada coluna para criar novas tarefas.",
   },
   {
-    title: "Pipeline",
+    title: "Criar e editar tarefas no Pipeline",
     content:
-      "Organize oportunidades/tarefas em colunas, arraste cards entre etapas e foque no próximo passo. Categorias e filtros ajudam a encontrar o que importa rápido.",
+      "Clique em '+' na coluna desejada para criar uma tarefa. Preencha título, valor, responsáveis, categorias e descrição. Para editar, clique no card e depois em 'Editar'. Você pode duplicar tarefas e definir prioridade, data de entrega, checklist e labels.",
   },
   {
-    title: "Dados da pipeline",
+    title: "Colunas e categorias no Pipeline",
     content:
-      "Painel com métricas por etapa e gráficos. As métricas de valor aparecem quando o campo de valor está ativo.",
+      "Nas configurações do Pipeline, você pode criar novas colunas, renomear, reordenar (arrastando) e arquivar. Cada tarefa pode ter múltiplas categorias com cores. Crie categorias personalizadas nas configurações.",
   },
   {
-    title: "Finanças",
+    title: "Sprints e Backlog",
     content:
-      "Registre entradas e saídas, filtre por categorias e visualize gráficos. Ao clicar em um item, você abre os detalhes e pode editar.",
+      "Ative Sprints nas configurações para organizar trabalho em ciclos. Tarefas no backlog aguardam uma sprint. Inicie uma sprint para mover tarefas para o board. Ao finalizar, o histórico fica salvo e você pode reabrir sprints anteriores.",
   },
   {
-    title: "Categorias (pipeline, financas e contatos)",
+    title: "Métricas do Pipeline",
     content:
-      "Cada área tem suas próprias categorias (incluindo o calendário). Você pode criar, editar cor/nome e remover categorias.",
+      "Acesse Pipeline > Dados. Veja gráficos de distribuição por etapa, evolução ao longo do tempo e métricas de valor. Ative o campo 'valor' nas configurações da tarefa para ver métricas financeiras.",
+  },
+  // Finanças
+  {
+    title: "Registrar gastos",
+    content:
+      "Em Finanças, clique em 'Adicionar gasto'. Preencha título, valor, categoria e comentário. Você também pode associar contatos ao gasto. Para editar, clique em um item na tabela.",
   },
   {
-    title: "Contatos",
+    title: "Relatórios financeiros",
     content:
-      "Cadastre pessoas com múltiplos telefones, emails, endereços e comentários. Copie dados com um clique e organize por categorias.",
+      "A página de Finanças mostra gráficos de gastos por categoria (pizza) e evolução mensal (barras). Use os filtros de busca e categoria para refinar a visualização. Configure quais colunas aparecem na tabela.",
   },
+  {
+    title: "Categorias financeiras",
+    content:
+      "Nas configurações de Finanças, você pode criar, editar e remover categorias. Cada categoria tem nome e cor. As categorias são independentes das categorias de Pipeline e Contatos.",
+  },
+  // Calendário
+  {
+    title: "Criar tarefas no Calendário",
+    content:
+      "Clique em um dia no calendário ou use 'Nova tarefa'. Defina nome, data, horário (início e fim), local, lembrete, repetição e visibilidade. Você pode marcar como 'Dia inteiro' e adicionar descrição rica com formatação.",
+  },
+  {
+    title: "Múltiplos calendários",
+    content:
+      "Crie calendários separados (Pessoal, Trabalho, Equipe, Finanças) nas configurações. Cada calendário tem uma cor. Ative/desative calendários no painel lateral para filtrar a visualização.",
+  },
+  {
+    title: "Lembretes e repetições",
+    content:
+      "Cada tarefa pode ter um lembrete (sem, 5min, 15min, 30min, 1h, 1 dia antes). A repetição pode ser: não repetir, diária, semanal, mensal ou anual. Tarefas repetidas aparecem automaticamente nas datas futuras.",
+  },
+  {
+    title: "Ver tarefas concluídas",
+    content:
+      "Acesse Calendário > Concluídas. Veja o histórico de todas as tarefas marcadas como feitas, organizadas por data. Use filtros de busca e categoria para encontrar tarefas específicas.",
+  },
+  // Contatos
+  {
+    title: "Cadastrar contatos",
+    content:
+      "Em Contatos, clique em 'Adicionar contato'. Preencha nome, data de nascimento, telefones (múltiplos), emails (múltiplos), endereços e comentários. Associe categorias para organizar.",
+  },
+  {
+    title: "Organizar contatos por categorias",
+    content:
+      "Crie categorias como Cliente, Fornecedor, Família, VIP nas configurações. Cada contato pode ter múltiplas categorias. Use o filtro para ver apenas contatos de categorias específicas.",
+  },
+  {
+    title: "Ações rápidas em contatos",
+    content:
+      "Na lista ou detalhes do contato, clique no ícone de telefone para abrir WhatsApp, no envelope para enviar email. Use o ícone de cópia para copiar qualquer informação para a área de transferência.",
+  },
+  // Notas
+  {
+    title: "Criar e organizar notas",
+    content:
+      "Em Notas, clique em 'Nova nota'. Use o editor rico para formatar texto (negrito, itálico, listas, títulos). Organize notas por categorias e use a busca para encontrar rapidamente.",
+  },
+  {
+    title: "Arquivar notas",
+    content:
+      "Clique em uma nota e use a opção 'Arquivar'. Notas arquivadas vão para Notas > Arquivo. Você pode restaurar notas arquivadas a qualquer momento.",
+  },
+  // Gestão e Configurações
+  {
+    title: "Papéis e permissões",
+    content:
+      "Em Gestão de Acessos, crie papéis (Administrador, Gestor, Analista, Leitor). Configure permissões específicas para cada papel: visualizar/editar pipeline, visualizar/editar finanças, gerenciar acessos.",
+  },
+  {
+    title: "Módulos pagos",
+    content:
+      "Em Gestão de Acessos > Módulos, ative ou desative módulos conforme seu plano. Módulos desativados ficam ocultos na navegação. Alguns módulos podem exigir upgrade de plano.",
+  },
+  {
+    title: "Convidar membros",
+    content:
+      "Em Gestão de Acessos > Convites, adicione o email do novo membro e selecione o papel. O convite fica pendente até ser aceito. Você pode cancelar convites pendentes.",
+  },
+  // Perfil e Preferências
+  {
+    title: "Editar perfil",
+    content:
+      "Em Perfil, atualize seu nome e adicione emails secundários para login. Configure preferências como tema, idioma e módulos ativos. Use 'Sair' para fazer logout ou 'Trocar de conta' para alternar entre contas.",
+  },
+  {
+    title: "Mudar idioma",
+    content:
+      "Em Perfil > Preferências, selecione o idioma desejado (Português, English, Español). A mudança é aplicada imediatamente. Você pode desfazer a alteração se mudar por engano.",
+  },
+  {
+    title: "Tema escuro",
+    content:
+      "O Superclient usa tema escuro por padrão para reduzir cansaço visual. As cores foram otimizadas para boa legibilidade e contraste em ambientes com pouca luz.",
+  },
+  // Notificações
   {
     title: "Notificações",
     content:
-      "Mostra alertas (ex.: aniversários próximos) e permite marcar como visto. O sino indica quando há novidades.",
+      "O sino no menu mostra notificações como aniversários próximos de contatos, lembretes de tarefas e alertas do sistema. Clique em uma notificação para ir direto ao item relacionado.",
+  },
+  // Dúvidas Gerais
+  {
+    title: "Salvamento automático",
+    content:
+      "Sim, todas as alterações são salvas automaticamente em tempo real. Você não precisa clicar em 'Salvar' - basta fazer a alteração e ela já está persistida.",
   },
   {
-    title: "Idiomas",
+    title: "Acesso em vários dispositivos",
     content:
-      "Altere o idioma em Perfil. O app confirma a troca e permite desfazer a alteração.",
+      "Sim, acesse de qualquer navegador. Seus dados são sincronizados. Por segurança, ao logar em um novo dispositivo, sessões anteriores podem ser encerradas (configurável em Preferências).",
   },
   {
-    title: "Gestão de acessos",
+    title: "Busca global",
     content:
-      "Controle papéis, permissões e módulos pagos. Edite permissões por papel e ative/desative módulos.",
-  },
-  {
-    title: "Perfil",
-    content:
-      "Atualize dados pessoais, emails de login adicionais, preferências e idioma. Em trocar de conta, selecione contas recentes ou faça login em outra.",
-  },
-  {
-    title: "Sessão e segurança",
-    content:
-      "A sessão dura 1 semana. Ao logar em outro dispositivo, sessões anteriores podem ser encerradas por segurança.",
+      "Use o campo de busca em cada módulo para filtrar itens. A busca considera título, descrição, categorias e outros campos relevantes. Combine com filtros de categoria para refinar resultados.",
   },
 ];
 
@@ -98,7 +211,6 @@ const supportCategories = [
 
 export default function Support() {
   const [query, setQuery] = useState("");
-  const [expanded, setExpanded] = useState<string | false>(false);
   const [contactExpanded, setContactExpanded] = useState(false);
   const [supportEmail, setSupportEmail] = useState("");
   const [supportCategory, setSupportCategory] = useState("duvidas");
@@ -117,7 +229,7 @@ export default function Support() {
   return (
     <PageContainer>
       <PageStack maxWidth={1200}>
-        <Stack spacing={1}>
+        <Stack spacing={2}>
           <Typography variant="h4" sx={{ fontWeight: 700 }}>
             Suporte
           </Typography>
@@ -125,7 +237,7 @@ export default function Support() {
             Respostas rápidas para você configurar, testar e começar a usar o
             Superclient com segurança.
           </Typography>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25} sx={{ mt: 1 }}>
             <Button component={RouterLink} href="/signup" variant="contained">
               Criar conta
             </Button>
@@ -156,33 +268,41 @@ export default function Support() {
           }}
         />
 
-        <Stack spacing={1.5}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2, 1fr)",
+              md: "repeat(3, 1fr)",
+            },
+            gap: 2,
+          }}
+        >
           {filteredItems.length ? (
             filteredItems.map(item => (
-              <AppAccordion
-                key={item.title}
-                expanded={expanded === item.title}
-                onChange={(_, isExpanded) =>
-                  setExpanded(isExpanded ? item.title : false)
-                }
-                title={item.title}
-              >
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  {item.content}
-                </Typography>
-              </AppAccordion>
+              <CardSection key={item.title} size="xs" sx={{ height: "100%" }}>
+                <Stack spacing={1}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {item.title}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    {item.content}
+                  </Typography>
+                </Stack>
+              </CardSection>
             ))
           ) : (
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
               Nenhum artigo encontrado.
             </Typography>
           )}
+        </Box>
 
-          <AppAccordion
+        <AppAccordion
             expanded={contactExpanded}
             onChange={(_, isExpanded) => setContactExpanded(isExpanded)}
             title="Fale com o suporte"
-            subtitle="Descreva o objetivo, o que você tentou e o que aconteceu."
           >
             <Stack spacing={1.5}>
               <TextField
@@ -217,7 +337,6 @@ export default function Support() {
               </Stack>
             </Stack>
           </AppAccordion>
-        </Stack>
       </PageStack>
     </PageContainer>
   );

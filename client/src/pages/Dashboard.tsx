@@ -471,7 +471,7 @@ export default function Dashboard() {
         </Stack>
 
         {visibleQuickLinks.length ? (
-          <AppCard sx={{ p: { xs: 2, md: 2.5 } }}>
+          <AppCard sx={{ p: { xs: 2, md: 2.5 }, display: { xs: "block", md: "none" } }}>
             <Stack
               direction="row"
               spacing={1}

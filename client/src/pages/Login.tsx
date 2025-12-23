@@ -7,6 +7,8 @@ import {
   Dialog,
   DialogContent,
   FormControlLabel,
+  IconButton,
+  InputAdornment,
   Paper,
   Stack,
   Tab,
@@ -14,6 +16,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
+import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 import { useLocation } from "wouter";
 import api from "../api";
 
@@ -76,6 +80,11 @@ export default function Login() {
   const [recoveryConfirm, setRecoveryConfirm] = useState("");
   const [recoveryError, setRecoveryError] = useState("");
   const [recoveryNotice, setRecoveryNotice] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirm, setShowSignupConfirm] = useState(false);
+  const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
+  const [showRecoveryConfirm, setShowRecoveryConfirm] = useState(false);
 
   const persistUser = (
     user?: { name?: string | null; email?: string },
@@ -420,11 +429,28 @@ export default function Login() {
                 />
                 <TextField
                   label="Senha"
-                  type="password"
+                  type={showLoginPassword ? "text" : "password"}
                   fullWidth
                   variant="outlined"
                   value={loginPassword}
                   onChange={event => setLoginPassword(event.target.value)}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          onClick={() => setShowLoginPassword(prev => !prev)}
+                          edge="end"
+                        >
+                          {showLoginPassword ? (
+                            <VisibilityOffRoundedIcon fontSize="small" />
+                          ) : (
+                            <VisibilityRoundedIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
                 <Stack
                   direction="row"
@@ -509,17 +535,51 @@ export default function Login() {
                 />
                 <TextField
                   label="Senha"
-                  type="password"
+                  type={showSignupPassword ? "text" : "password"}
                   fullWidth
                   value={signupPassword}
                   onChange={event => setSignupPassword(event.target.value)}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          onClick={() => setShowSignupPassword(prev => !prev)}
+                          edge="end"
+                        >
+                          {showSignupPassword ? (
+                            <VisibilityOffRoundedIcon fontSize="small" />
+                          ) : (
+                            <VisibilityRoundedIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
                 <TextField
                   label="Confirmar senha"
-                  type="password"
+                  type={showSignupConfirm ? "text" : "password"}
                   fullWidth
                   value={signupConfirm}
                   onChange={event => setSignupConfirm(event.target.value)}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          onClick={() => setShowSignupConfirm(prev => !prev)}
+                          edge="end"
+                        >
+                          {showSignupConfirm ? (
+                            <VisibilityOffRoundedIcon fontSize="small" />
+                          ) : (
+                            <VisibilityRoundedIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Stack>
 
@@ -632,17 +692,51 @@ export default function Login() {
                 />
                 <TextField
                   label="Nova senha"
-                  type="password"
+                  type={showRecoveryPassword ? "text" : "password"}
                   fullWidth
                   value={recoveryPassword}
                   onChange={event => setRecoveryPassword(event.target.value)}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          onClick={() => setShowRecoveryPassword(prev => !prev)}
+                          edge="end"
+                        >
+                          {showRecoveryPassword ? (
+                            <VisibilityOffRoundedIcon fontSize="small" />
+                          ) : (
+                            <VisibilityRoundedIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
                 <TextField
                   label="Confirmar senha"
-                  type="password"
+                  type={showRecoveryConfirm ? "text" : "password"}
                   fullWidth
                   value={recoveryConfirm}
                   onChange={event => setRecoveryConfirm(event.target.value)}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          onClick={() => setShowRecoveryConfirm(prev => !prev)}
+                          edge="end"
+                        >
+                          {showRecoveryConfirm ? (
+                            <VisibilityOffRoundedIcon fontSize="small" />
+                          ) : (
+                            <VisibilityRoundedIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
                 {recoveryError ? (
                   <Typography variant="caption" color="error">

@@ -37,7 +37,7 @@ import BackspaceRoundedIcon from "@mui/icons-material/BackspaceRounded";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
-import { APP_RADIUS_PX } from "../designTokens";
+import { APP_RADIUS, APP_RADIUS_PX } from "../designTokens";
 import { interactiveItemSx } from "../styles/interactiveCard";
 import SettingsIconButton from "../components/SettingsIconButton";
 import ToggleCheckbox from "../components/ToggleCheckbox";
@@ -2352,7 +2352,7 @@ function RichTextEditor({
       </Stack>
       <Box
         sx={theme => ({
-          borderRadius: APP_RADIUS_PX,
+          borderRadius: APP_RADIUS,
           border: 1,
           borderColor: "divider",
           backgroundColor: "background.paper",

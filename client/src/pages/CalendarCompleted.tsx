@@ -14,6 +14,7 @@ import { Link as RouterLink } from "wouter";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import CardSection from "../components/layout/CardSection";
 import PageContainer from "../components/layout/PageContainer";
+import { CategoryChip } from "../components/CategoryChip";
 
 type Category = {
   id: string;
@@ -268,7 +269,8 @@ export default function CalendarCompleted() {
                 setCalendarFilter(value.map(item => item.id))
               }
               getOptionLabel={option => option.name}
-              noOptionsText="Sem calendarios"
+              disableCloseOnSelect
+              ListboxProps={{ style: { maxHeight: 240 } }}
               renderOption={(props, option, { selected }) => (
                 <li {...props}>
                   <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
@@ -278,17 +280,39 @@ export default function CalendarCompleted() {
               renderInput={params => (
                 <TextField {...params} label="Filtrar calendarios" fullWidth />
               )}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip
-                    {...getTagProps({ index })}
-                    key={option.id}
-                    label={option.name}
-                    size="small"
-                  />
-                ))
-              }
-              sx={{ flex: 1, minWidth: 260 }}
+              renderTags={(value, getTagProps) => {
+                const visible = value.slice(0, 2);
+                const hiddenCount = value.length - visible.length;
+                return (
+                  <>
+                    {visible.map((option, index) => (
+                      <CategoryChip
+                        {...getTagProps({ index })}
+                        key={option.id}
+                        label={option.name}
+                        categoryColor={option.color}
+                        maxWidth={120}
+                      />
+                    ))}
+                    {hiddenCount > 0 ? (
+                      <Chip
+                        label={`+${hiddenCount}`}
+                        size="small"
+                        sx={{
+                          color: "text.secondary",
+                          border: 1,
+                          borderColor: "divider",
+                        }}
+                      />
+                    ) : null}
+                  </>
+                );
+              }}
+              sx={{
+                flex: 1,
+                minWidth: 260,
+                "& .MuiAutocomplete-inputRoot": { minHeight: 44 },
+              }}
             />
             <Autocomplete
               multiple
@@ -300,7 +324,8 @@ export default function CalendarCompleted() {
                 setCategoryFilter(value.map(item => item.id))
               }
               getOptionLabel={option => option.name}
-              noOptionsText="Sem categorias"
+              disableCloseOnSelect
+              ListboxProps={{ style: { maxHeight: 240 } }}
               renderOption={(props, option, { selected }) => (
                 <li {...props}>
                   <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
@@ -310,17 +335,39 @@ export default function CalendarCompleted() {
               renderInput={params => (
                 <TextField {...params} label="Filtrar categorias" fullWidth />
               )}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip
-                    {...getTagProps({ index })}
-                    key={option.id}
-                    label={option.name}
-                    size="small"
-                  />
-                ))
-              }
-              sx={{ flex: 1, minWidth: 260 }}
+              renderTags={(value, getTagProps) => {
+                const visible = value.slice(0, 2);
+                const hiddenCount = value.length - visible.length;
+                return (
+                  <>
+                    {visible.map((option, index) => (
+                      <CategoryChip
+                        {...getTagProps({ index })}
+                        key={option.id}
+                        label={option.name}
+                        categoryColor={option.color}
+                        maxWidth={120}
+                      />
+                    ))}
+                    {hiddenCount > 0 ? (
+                      <Chip
+                        label={`+${hiddenCount}`}
+                        size="small"
+                        sx={{
+                          color: "text.secondary",
+                          border: 1,
+                          borderColor: "divider",
+                        }}
+                      />
+                    ) : null}
+                  </>
+                );
+              }}
+              sx={{
+                flex: 1,
+                minWidth: 260,
+                "& .MuiAutocomplete-inputRoot": { minHeight: 44 },
+              }}
             />
           </Stack>
         </CardSection>
