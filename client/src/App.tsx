@@ -21,6 +21,7 @@ import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneR
 import AutoGraphRoundedIcon from "@mui/icons-material/AutoGraphRounded";
 import { Link as RouterLink, Route, Switch, useLocation } from "wouter";
 import theme from "./theme";
+import { APP_RADIUS } from "./designTokens";
 import api from "./api";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
@@ -657,7 +658,7 @@ function App() {
                     sx={theme => ({
                       minWidth: 0,
                       p: 0,
-                      borderRadius: theme.shape.borderRadius,
+                      borderRadius: APP_RADIUS,
                       border: isActive("/profile")
                         ? "1px solid rgba(34, 201, 166, 0.6)"
                         : "1px solid transparent",

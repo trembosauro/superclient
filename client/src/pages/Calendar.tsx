@@ -56,7 +56,7 @@ import BackspaceRoundedIcon from "@mui/icons-material/BackspaceRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import RadioButtonUncheckedRoundedIcon from "@mui/icons-material/RadioButtonUncheckedRounded";
 import api from "../api";
-import { APP_RADIUS_PX } from "../designTokens";
+import { APP_RADIUS } from "../designTokens";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import {
   clickableCardSx,
@@ -1033,7 +1033,7 @@ export default function Calendar() {
           transform: CSS.Transform.toString(stableTransform),
           touchAction: "none",
           userSelect: "none",
-          borderRadius: APP_RADIUS_PX,
+          borderRadius: APP_RADIUS,
         })}
       >
         {children}
@@ -1062,7 +1062,7 @@ export default function Calendar() {
           borderColor: isOver ? "primary.main" : "divider",
           backgroundColor: isOver ? "action.hover" : "background.paper",
           transition: "border-color 0.2s ease, background-color 0.2s ease",
-          borderRadius: APP_RADIUS_PX,
+          borderRadius: APP_RADIUS,
         })}
       >
         {children}
@@ -1271,7 +1271,7 @@ export default function Calendar() {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        borderRadius: APP_RADIUS_PX,
+        borderRadius: APP_RADIUS,
       })}
     >
       <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -2872,7 +2872,7 @@ export default function Calendar() {
                             sx={{
                               width: 28,
                               height: 28,
-                              borderRadius: APP_RADIUS_PX,
+                              borderRadius: APP_RADIUS,
                               backgroundColor: color,
                               borderStyle: "solid",
                               borderWidth:
@@ -2939,7 +2939,7 @@ export default function Calendar() {
                             sx={{
                               width: 28,
                               height: 28,
-                              borderRadius: APP_RADIUS_PX,
+                              borderRadius: APP_RADIUS,
                               backgroundColor: color,
                               borderStyle: "solid",
                               borderWidth: newCategoryColor === color ? 2 : 1,
@@ -3220,7 +3220,7 @@ function RichTextEditor({
       </Stack>
       <Box
         sx={theme => ({
-          borderRadius: APP_RADIUS_PX,
+          borderRadius: APP_RADIUS,
           border: 1,
           borderColor: "divider",
           backgroundColor: "background.paper",
@@ -3234,7 +3234,7 @@ function RichTextEditor({
           "& .tiptap h3": { fontSize: "1rem", fontWeight: 700 },
           "& .tiptap img": {
             maxWidth: "100%",
-            borderRadius: APP_RADIUS_PX,
+            borderRadius: APP_RADIUS,
           },
           "& .tiptap img.ProseMirror-selectednode": {
             outline: "2px solid",

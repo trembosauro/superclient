@@ -1,5 +1,6 @@
 import { IconButton, Tooltip } from "@mui/material";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import { APP_RADIUS } from "../designTokens";
 
 type SettingsIconButtonProps = {
   title?: string;
@@ -26,7 +27,7 @@ export default function SettingsIconButton({
           disabled={disabled}
           size={size}
           sx={theme => ({
-            borderRadius: theme.shape.borderRadius,
+            borderRadius: APP_RADIUS,
             border: 1,
             borderColor: disabled
               ? theme.palette.action.disabled

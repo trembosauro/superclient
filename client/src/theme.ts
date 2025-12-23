@@ -1,6 +1,6 @@
 import { createTheme } from "@mui/material/styles";
 
-import { APP_RADIUS_PX } from "./designTokens";
+import { APP_RADIUS, APP_RADIUS_PX } from "./designTokens";
 
 const theme = createTheme({
   shape: {
@@ -27,6 +27,7 @@ const theme = createTheme({
     MuiDialog: {
       styleOverrides: {
         paper: ({ theme }) => ({
+          borderRadius: APP_RADIUS,
           [theme.breakpoints.down("sm")]: {
             margin: theme.spacing(2),
             width: `calc(100% - ${theme.spacing(4)})`,
@@ -44,15 +45,15 @@ const theme = createTheme({
         root: ({ theme }) => ({
           textTransform: "none",
           fontWeight: 600,
-          borderRadius: theme.shape.borderRadius,
+          borderRadius: APP_RADIUS,
           paddingInline: theme.spacing(2.5),
         }),
       },
     },
     MuiIconButton: {
       styleOverrides: {
-        root: ({ theme }) => ({
-          borderRadius: theme.shape.borderRadius,
+        root: () => ({
+          borderRadius: APP_RADIUS,
         }),
       },
     },
@@ -62,9 +63,9 @@ const theme = createTheme({
         elevation: 0,
       },
       styleOverrides: {
-        root: ({ theme }) => ({
+        root: () => ({
           backgroundImage: "none",
-          borderRadius: theme.shape.borderRadius,
+          borderRadius: APP_RADIUS,
         }),
         outlined: ({ theme }) => ({
           borderColor: theme.palette.divider,
@@ -77,6 +78,7 @@ const theme = createTheme({
       },
       styleOverrides: {
         root: ({ theme }) => ({
+          borderRadius: APP_RADIUS,
           borderColor: theme.palette.divider,
         }),
       },
@@ -87,7 +89,7 @@ const theme = createTheme({
       },
       styleOverrides: {
         root: ({ theme }) => ({
-          borderRadius: theme.shape.borderRadius,
+          borderRadius: APP_RADIUS,
           border: `1px solid ${theme.palette.divider}`,
           backgroundColor: theme.palette.background.paper,
           boxShadow: "none",
@@ -123,7 +125,7 @@ const theme = createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: ({ theme }) => ({
-          borderRadius: theme.shape.borderRadius,
+          borderRadius: APP_RADIUS,
           backgroundColor: theme.palette.background.paper,
         }),
         notchedOutline: ({ theme }) => ({
@@ -138,15 +140,15 @@ const theme = createTheme({
     },
     MuiMenuItem: {
       styleOverrides: {
-        root: ({ theme }) => ({
-          borderRadius: theme.shape.borderRadius,
+        root: () => ({
+          borderRadius: APP_RADIUS,
         }),
       },
     },
     MuiChip: {
       styleOverrides: {
-        root: ({ theme }) => ({
-          borderRadius: theme.shape.borderRadius,
+        root: () => ({
+          borderRadius: APP_RADIUS,
         }),
       },
     },

@@ -2,6 +2,7 @@
 // Update values here to propagate globally.
 
 export const APP_RADIUS_PX = 16;
+export const APP_RADIUS = `${APP_RADIUS_PX}px`;
 
 export const applyDesignTokensToCssVars = () => {
   // Keep Tailwind/shadcn radius variables in sync with the app radius token.
