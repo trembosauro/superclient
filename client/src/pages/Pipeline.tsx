@@ -509,6 +509,8 @@ export default function Pipeline() {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [viewingDeal, setViewingDeal] = useState<Deal | null>(null);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
+  const [editCameFromView, setEditCameFromView] = useState(false);
+  const [editSourceDealId, setEditSourceDealId] = useState<string | null>(null);
   const [lastRemoved, setLastRemoved] = useState<{
     deal: Deal;
     columnId: string;
@@ -555,6 +557,8 @@ export default function Pipeline() {
   );
   const [taskQuery, setTaskQuery] = useState("");
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+  const [viewingChecklistDraftText, setViewingChecklistDraftText] = useState("");
+  const viewingChecklistDraftInputRef = useRef<HTMLInputElement | null>(null);
   const [sprintState, setSprintState] = useState<SprintState>({
     enabled: false,
     duration: "2w",
@@ -564,6 +568,10 @@ export default function Pipeline() {
   });
   const [newDealId, setNewDealId] = useState<string | null>(null);
   const [removeDealOpen, setRemoveDealOpen] = useState(false);
+  const [duplicateDealOpen, setDuplicateDealOpen] = useState(false);
+  const [duplicateDealTarget, setDuplicateDealTarget] = useState<Deal | null>(
+    null
+  );
   const [removeColumnOpen, setRemoveColumnOpen] = useState(false);
   const [removeColumnTarget, setRemoveColumnTarget] = useState<Column | null>(
     null
@@ -908,6 +916,29 @@ export default function Pipeline() {
   const findDealInBacklog = (cardId: string) =>
     sprintState.backlog.some(deal => deal.id === cardId);
 
+  const findDealAnywhere = (dealId: string) => {
+    const inColumns = findDeal(dealId);
+    if (inColumns) {
+      return inColumns;
+    }
+    const inBacklog = sprintState.backlog.find(deal => deal.id === dealId) || null;
+    return inBacklog;
+  };
+
+  const formatDealDateLabel = (deal?: Deal | null) => {
+    if (!deal?.dueDate) {
+      return "";
+    }
+    const raw = deal.dueDate;
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(raw)
+      ? new Date(`${raw}T00:00:00`)
+      : new Date(raw);
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+    return date.toLocaleDateString("pt-BR");
+  };
+
   const getSprintLabel = (deal?: Deal | null) => {
     if (!deal || !sprintState.enabled) {
       return "";
@@ -933,6 +964,24 @@ export default function Pipeline() {
       document.execCommand("copy");
       document.body.removeChild(fallback);
     }
+  };
+
+  const handleRequestDuplicateDeal = (deal: Deal) => {
+    setDuplicateDealTarget(deal);
+    setDuplicateDealOpen(true);
+  };
+
+  const handleCloseDuplicateDeal = () => {
+    setDuplicateDealOpen(false);
+    setDuplicateDealTarget(null);
+  };
+
+  const handleConfirmDuplicateDeal = () => {
+    if (!duplicateDealTarget) {
+      return;
+    }
+    handleDuplicateDeal(duplicateDealTarget);
+    handleCloseDuplicateDeal();
   };
 
   const handleDuplicateDeal = (deal: Deal) => {
@@ -1108,6 +1157,16 @@ export default function Pipeline() {
     setNewDealId(null);
   };
 
+  const handleOpenEditFromView = () => {
+    if (!viewingDeal) {
+      return;
+    }
+    setEditCameFromView(true);
+    setEditSourceDealId(viewingDeal.id);
+    handleEditOpen(viewingDeal);
+    setViewingDeal(null);
+  };
+
   const handleEditClose = () => {
     if (editingDeal && newDealId && editingDeal.id === newDealId) {
       const trimmedName = editName.trim();
@@ -1140,6 +1199,21 @@ export default function Pipeline() {
     }
     setEditingDeal(null);
     setNewDealId(null);
+    setEditCameFromView(false);
+    setEditSourceDealId(null);
+  };
+
+  const handleBackToViewFromEdit = () => {
+    if (!editCameFromView || !editSourceDealId) {
+      handleEditClose();
+      return;
+    }
+    const nextDeal = findDealAnywhere(editSourceDealId);
+    setEditingDeal(null);
+    setNewDealId(null);
+    setEditCameFromView(false);
+    setEditSourceDealId(null);
+    setViewingDeal(nextDeal);
   };
 
   const handleViewOpen = (deal: Deal) => {
@@ -1149,6 +1223,165 @@ export default function Pipeline() {
   const handleViewClose = () => {
     setViewingDeal(null);
     setRemoveDealOpen(false);
+    setDuplicateDealOpen(false);
+    setDuplicateDealTarget(null);
+    setViewingChecklistDraftText("");
+  };
+
+  const handleUpdateViewingDealName = (nextName: string) => {
+    if (!viewingDeal) {
+      return;
+    }
+    const dealId = viewingDeal.id;
+
+    if (sprintState.enabled && !findDealInColumns(dealId) && findDealInBacklog(dealId)) {
+      setSprintState(prev => ({
+        ...prev,
+        backlog: prev.backlog.map(deal =>
+          deal.id === dealId ? { ...deal, name: nextName } : deal
+        ),
+      }));
+      setViewingDeal(prev => (prev ? { ...prev, name: nextName } : prev));
+      return;
+    }
+
+    setColumns(prev =>
+      prev.map(column => ({
+        ...column,
+        deals: column.deals.map(deal =>
+          deal.id === dealId ? { ...deal, name: nextName } : deal
+        ),
+      }))
+    );
+    setViewingDeal(prev => (prev ? { ...prev, name: nextName } : prev));
+  };
+
+  const handleAddViewingChecklistItem = (text?: string) => {
+    if (!viewingDeal) {
+      return;
+    }
+    const dealId = viewingDeal.id;
+    const nextText = (text ?? viewingChecklistDraftText).trim();
+    if (!nextText) {
+      return;
+    }
+    const nextItem: ChecklistItem = {
+      id: `chk-${Date.now()}`,
+      text: nextText,
+      done: false,
+    };
+
+    const apply = (deal: Deal) => ({
+      ...deal,
+      checklist: [...(deal.checklist || []), nextItem],
+    });
+
+    if (sprintState.enabled && !findDealInColumns(dealId) && findDealInBacklog(dealId)) {
+      setSprintState(prev => ({
+        ...prev,
+        backlog: prev.backlog.map(deal => (deal.id === dealId ? apply(deal) : deal)),
+      }));
+      setViewingDeal(prev => (prev ? apply(prev) : prev));
+    } else {
+      setColumns(prev =>
+        prev.map(column => ({
+          ...column,
+          deals: column.deals.map(deal => (deal.id === dealId ? apply(deal) : deal)),
+        }))
+      );
+      setViewingDeal(prev => (prev ? apply(prev) : prev));
+    }
+
+    setViewingChecklistDraftText("");
+    queueMicrotask(() => viewingChecklistDraftInputRef.current?.focus());
+  };
+
+  const handleToggleViewingChecklistDone = (itemId: string, nextDone: boolean) => {
+    if (!viewingDeal) {
+      return;
+    }
+    const dealId = viewingDeal.id;
+    const apply = (deal: Deal) => ({
+      ...deal,
+      checklist: (deal.checklist || []).map(item =>
+        item.id === itemId ? { ...item, done: nextDone } : item
+      ),
+    });
+
+    if (sprintState.enabled && !findDealInColumns(dealId) && findDealInBacklog(dealId)) {
+      setSprintState(prev => ({
+        ...prev,
+        backlog: prev.backlog.map(deal => (deal.id === dealId ? apply(deal) : deal)),
+      }));
+      setViewingDeal(prev => (prev ? apply(prev) : prev));
+      return;
+    }
+
+    setColumns(prev =>
+      prev.map(column => ({
+        ...column,
+        deals: column.deals.map(deal => (deal.id === dealId ? apply(deal) : deal)),
+      }))
+    );
+    setViewingDeal(prev => (prev ? apply(prev) : prev));
+  };
+
+  const handleUpdateViewingChecklistText = (itemId: string, nextText: string) => {
+    if (!viewingDeal) {
+      return;
+    }
+    const dealId = viewingDeal.id;
+    const apply = (deal: Deal) => ({
+      ...deal,
+      checklist: (deal.checklist || []).map(item =>
+        item.id === itemId ? { ...item, text: nextText } : item
+      ),
+    });
+
+    if (sprintState.enabled && !findDealInColumns(dealId) && findDealInBacklog(dealId)) {
+      setSprintState(prev => ({
+        ...prev,
+        backlog: prev.backlog.map(deal => (deal.id === dealId ? apply(deal) : deal)),
+      }));
+      setViewingDeal(prev => (prev ? apply(prev) : prev));
+      return;
+    }
+
+    setColumns(prev =>
+      prev.map(column => ({
+        ...column,
+        deals: column.deals.map(deal => (deal.id === dealId ? apply(deal) : deal)),
+      }))
+    );
+    setViewingDeal(prev => (prev ? apply(prev) : prev));
+  };
+
+  const handleRemoveViewingChecklistItem = (itemId: string) => {
+    if (!viewingDeal) {
+      return;
+    }
+    const dealId = viewingDeal.id;
+    const apply = (deal: Deal) => ({
+      ...deal,
+      checklist: (deal.checklist || []).filter(item => item.id !== itemId),
+    });
+
+    if (sprintState.enabled && !findDealInColumns(dealId) && findDealInBacklog(dealId)) {
+      setSprintState(prev => ({
+        ...prev,
+        backlog: prev.backlog.map(deal => (deal.id === dealId ? apply(deal) : deal)),
+      }));
+      setViewingDeal(prev => (prev ? apply(prev) : prev));
+      return;
+    }
+
+    setColumns(prev =>
+      prev.map(column => ({
+        ...column,
+        deals: column.deals.map(deal => (deal.id === dealId ? apply(deal) : deal)),
+      }))
+    );
+    setViewingDeal(prev => (prev ? apply(prev) : prev));
   };
 
   const handleEditSave = () => {
@@ -1181,7 +1414,9 @@ export default function Pipeline() {
                 categoryIds: editCategoryIds,
                 priority: editPriority,
                 dueDate: editDueDate,
-                checklist: editChecklist,
+                checklist: taskFieldSettings.checklist
+                  ? editChecklist
+                  : deal.checklist,
                 labels: editLabels,
                 estimate: editEstimate,
                 timeSpent: editTimeSpent,
@@ -1216,7 +1451,9 @@ export default function Pipeline() {
                 categoryIds: editCategoryIds,
                 priority: editPriority,
                 dueDate: editDueDate,
-                checklist: editChecklist,
+                checklist: taskFieldSettings.checklist
+                  ? editChecklist
+                  : deal.checklist,
                 labels: editLabels,
                 estimate: editEstimate,
                 timeSpent: editTimeSpent,
@@ -2570,8 +2807,8 @@ export default function Pipeline() {
           PaperProps={{
             sx: {
               m: { xs: 2, sm: 3 },
-              width: { xs: "calc(100% - 32px)", sm: "80%", md: "80%" },
-              maxWidth: { sm: "80%", md: "80%" },
+              width: { xs: "calc(100% - 32px)", sm: "80%", md: "70%" },
+              maxWidth: { sm: "80%", md: "70%", xl: 960 },
             },
           }}
         >
@@ -2584,10 +2821,31 @@ export default function Pipeline() {
                   justifyContent: "space-between",
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Typography variant="h6">
-                    {viewingDeal?.name || "-"}
-                  </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, flex: 1, minWidth: 0 }}>
+                  <TextField
+                    value={viewingDeal?.name || ""}
+                    onChange={event => handleUpdateViewingDealName(event.target.value)}
+                    size="small"
+                    placeholder="Título"
+                    inputProps={{
+                      "aria-label": "Título da tarefa",
+                      size: Math.min(48, Math.max(6, (viewingDeal?.name || "").length || 6)),
+                    }}
+                    sx={{
+                      width: "auto",
+                      flex: "0 1 auto",
+                      minWidth: 0,
+                      maxWidth: { xs: "60vw", sm: "62vw", md: "65%" },
+                      "& .MuiOutlinedInput-notchedOutline": { border: 0 },
+                      "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": { border: 0 },
+                      "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": { border: 0 },
+                      "& .MuiInputBase-input": {
+                        typography: "h6",
+                        fontWeight: 700,
+                        whiteSpace: "nowrap",
+                      },
+                    }}
+                  />
                   {viewingDeal ? (
                     <Tooltip title="Copiar link" placement="top">
                       <IconButton
@@ -2604,12 +2862,20 @@ export default function Pipeline() {
                     </Tooltip>
                   ) : null}
                 </Box>
-                <IconButton
-                  onClick={handleViewClose}
-                  sx={{ color: "text.secondary" }}
-                >
-                  <CloseRoundedIcon fontSize="small" />
-                </IconButton>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ pl: 1 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "text.secondary", whiteSpace: "nowrap" }}
+                  >
+                    {formatDealDateLabel(viewingDeal)}
+                  </Typography>
+                  <IconButton
+                    onClick={handleViewClose}
+                    sx={{ color: "text.secondary" }}
+                  >
+                    <CloseRoundedIcon fontSize="small" />
+                  </IconButton>
+                </Stack>
               </Box>
               {taskFieldSettings.value ? (
                 <Stack spacing={0.5}>
@@ -2720,6 +2986,105 @@ export default function Pipeline() {
                   }}
                 />
               </Stack>
+
+              {taskFieldSettings.checklist ? (
+                <CardSection size="xs">
+                  <Stack spacing={1.25}>
+                    <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+                      Subtarefas
+                    </Typography>
+
+                    <Stack spacing={0.5}>
+                      {(viewingDeal?.checklist || []).map(item => (
+                        <Stack
+                          key={item.id}
+                          direction={{ xs: "column", sm: "row" }}
+                          spacing={0.75}
+                          alignItems={{ xs: "stretch", sm: "center" }}
+                          sx={{ width: "100%", borderRadius: APP_RADIUS, p: 0.5 }}
+                        >
+                          <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+                            <Checkbox
+                              checked={item.done}
+                              onChange={event =>
+                                handleToggleViewingChecklistDone(
+                                  item.id,
+                                  event.target.checked
+                                )
+                              }
+                              size="small"
+                              sx={{ p: 0.5 }}
+                            />
+                            <TextField
+                              value={item.text}
+                              onChange={event =>
+                                handleUpdateViewingChecklistText(
+                                  item.id,
+                                  event.target.value
+                                )
+                              }
+                              fullWidth
+                              size="small"
+                              placeholder="Subtarefa"
+                              sx={{
+                                "& .MuiOutlinedInput-notchedOutline": { border: 0 },
+                                "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": { border: 0 },
+                                "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": { border: 0 },
+                              }}
+                            />
+                          </Stack>
+                          <IconButton
+                            onClick={() => handleRemoveViewingChecklistItem(item.id)}
+                            size="small"
+                            sx={{ color: "text.secondary", p: 0.5, alignSelf: { xs: "flex-end", sm: "center" } }}
+                            aria-label="Remover subtarefa"
+                          >
+                            <CloseRoundedIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      ))}
+
+                      <Stack
+                        direction={{ xs: "column", sm: "row" }}
+                        spacing={0.75}
+                        alignItems={{ xs: "stretch", sm: "center" }}
+                        sx={{ width: "100%", borderRadius: APP_RADIUS, p: 0.5 }}
+                      >
+                        <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+                          <Checkbox size="small" disabled sx={{ visibility: "hidden", p: 0.5 }} />
+                          <TextField
+                            inputRef={viewingChecklistDraftInputRef}
+                            value={viewingChecklistDraftText}
+                            onChange={event => setViewingChecklistDraftText(event.target.value)}
+                            onKeyDown={event => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                handleAddViewingChecklistItem();
+                              }
+                            }}
+                            fullWidth
+                            size="small"
+                            placeholder="Escreva uma subtarefa e aperte Enter"
+                            sx={{
+                              "& .MuiOutlinedInput-notchedOutline": { border: 0 },
+                              "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": { border: 0 },
+                              "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": { border: 0 },
+                            }}
+                          />
+                        </Stack>
+                        <IconButton
+                          onClick={() => handleAddViewingChecklistItem()}
+                          size="small"
+                          sx={{ p: 0.5, alignSelf: { xs: "flex-end", sm: "center" } }}
+                          aria-label="Adicionar subtarefa"
+                        >
+                          <AddRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
+                    </Stack>
+                  </Stack>
+                </CardSection>
+              ) : null}
               <Stack
                 direction={{ xs: "column", sm: "row" }}
                 spacing={1.5}
@@ -2743,7 +3108,7 @@ export default function Pipeline() {
                       if (!viewingDeal) {
                         return;
                       }
-                      handleDuplicateDeal(viewingDeal);
+                      handleRequestDuplicateDeal(viewingDeal);
                     }}
                     startIcon={<FileCopyRoundedIcon fontSize="small" />}
                     sx={{ width: { xs: "100%", sm: "auto" } }}
@@ -2755,11 +3120,7 @@ export default function Pipeline() {
                   <Button
                     variant="outlined"
                     onClick={() => {
-                      if (!viewingDeal) {
-                        return;
-                      }
-                      handleEditOpen(viewingDeal);
-                      setViewingDeal(null);
+                      handleOpenEditFromView();
                     }}
                     sx={{ width: { xs: "100%", sm: "auto" } }}
                   >
@@ -3310,6 +3671,62 @@ export default function Pipeline() {
           </DialogContent>
         </Dialog>
         <Dialog
+          open={duplicateDealOpen}
+          onClose={handleCloseDuplicateDeal}
+          maxWidth="xs"
+          fullWidth
+          PaperProps={{
+            sx: {
+              m: { xs: 2, sm: 3 },
+              width: { xs: "calc(100% - 32px)", sm: "auto" },
+            },
+          }}
+        >
+          <DialogContent>
+            <Stack spacing={2}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Typography variant="h6">Duplicar tarefa</Typography>
+                <IconButton
+                  onClick={handleCloseDuplicateDeal}
+                  sx={{ color: "text.secondary" }}
+                >
+                  <CloseRoundedIcon fontSize="small" />
+                </IconButton>
+              </Box>
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                Você confirma a duplicação desta tarefa?
+              </Typography>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={1.5}
+                alignItems={{ xs: "stretch", sm: "center" }}
+                justifyContent="flex-end"
+              >
+                <Button
+                  variant="outlined"
+                  onClick={handleCloseDuplicateDeal}
+                  sx={{ width: { xs: "100%", sm: "auto" } }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleConfirmDuplicateDeal}
+                  sx={{ width: { xs: "100%", sm: "auto" } }}
+                >
+                  Duplicar
+                </Button>
+              </Stack>
+            </Stack>
+          </DialogContent>
+        </Dialog>
+        <Dialog
           open={removeColumnOpen}
           onClose={() => {
             setRemoveColumnOpen(false);
@@ -3385,15 +3802,18 @@ export default function Pipeline() {
           PaperProps={{
             sx: {
               m: { xs: 2, sm: 3 },
-              width: { xs: "calc(100% - 32px)", sm: "80%", md: "80%" },
-              maxWidth: { sm: "80%", md: "80%" },
+              width: { xs: "calc(100% - 32px)", sm: "80%", md: "70%" },
+              maxWidth: { sm: "80%", md: "70%", xl: 960 },
             },
           }}
         >
           <DialogContent>
             <Stack spacing={2.5}>
-              <Box>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <Typography variant="h6">Editar tarefa</Typography>
+                <IconButton onClick={handleEditClose} sx={{ color: "text.secondary" }}>
+                  <CloseRoundedIcon fontSize="small" />
+                </IconButton>
               </Box>
               <TextField
                 label="Titulo"
@@ -3520,8 +3940,8 @@ export default function Pipeline() {
                 >
                   Remover
                 </Button>
-                <Button variant="outlined" onClick={handleEditClose}>
-                  Cancelar
+                <Button variant="outlined" onClick={handleBackToViewFromEdit}>
+                  Voltar
                 </Button>
                 <Button
                   variant="contained"

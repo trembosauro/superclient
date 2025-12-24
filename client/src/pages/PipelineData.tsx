@@ -453,8 +453,19 @@ export default function PipelineData() {
       <Dialog
         open={Boolean(editingDeal)}
         onClose={() => setEditingDeal(null)}
-        maxWidth="sm"
+        maxWidth={false}
         fullWidth
+        PaperProps={{
+          sx: {
+            m: { xs: 2, sm: 3 },
+            width: { xs: "calc(100% - 32px)", sm: "80%", md: "80%" },
+            maxWidth: { sm: "80%", md: "80%" },
+            "@media (min-width:1080px)": {
+              width: "70vw",
+              maxWidth: "70vw",
+            },
+          },
+        }}
       >
         <DialogContent>
           <Stack spacing={2.5}>
