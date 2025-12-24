@@ -11,7 +11,7 @@ export default function Header() {
           <span className="hidden sm:inline">Kahuê</span>
         </Link>
         
-        <ul className="hidden md:flex items-center gap-8">
+        <ul className="hidden md:flex items-center gap-0">
           <li>
             <a href="#about" className="text-foreground/70 hover:text-accent transition-colors text-sm font-medium">
               About
