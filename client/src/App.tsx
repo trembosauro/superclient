@@ -316,13 +316,15 @@ function App() {
       return null;
     }
     try {
-      const stored = window.localStorage.getItem("notes_v1");
+      const stored =
+        window.localStorage.getItem("notes_v2") ||
+        window.localStorage.getItem("notes_v1");
       if (!stored) {
         return null;
       }
       const parsed = JSON.parse(stored) as Array<{
         id: string;
-        title: string;
+        title?: string;
         parentId?: string;
       }>;
       const current = parsed.find(note => note.id === noteId);
