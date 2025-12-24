@@ -125,6 +125,17 @@ const DEFAULT_COLORS = [
 
 type NoteEmoji = { emoji: string; label: string };
 
+const hexcodeToEmoji = (hexcode: string) => {
+  try {
+    return hexcode
+      .split("-")
+      .map(part => String.fromCodePoint(Number.parseInt(part, 16)))
+      .join("");
+  } catch {
+    return "";
+  }
+};
+
 const BASE_NOTE_EMOJIS: NoteEmoji[] = [
   // Escrita e documentos
   { emoji: "📝", label: "memo nota escrita" },
@@ -241,14 +252,30 @@ const NOTE_EMOJIS: NoteEmoji[] = (() => {
   const seen = new Set<string>();
   const combined: NoteEmoji[] = [
     ...BASE_NOTE_EMOJIS,
-    ...(emojibasePtData as Array<{ emoji?: string; label?: string }>).flatMap(item => {
-      if (!item?.emoji) {
+    ...(emojibasePtData as unknown as Array<Record<string, unknown>>).flatMap(item => {
+      const emojiRaw = typeof item?.emoji === "string" ? item.emoji : "";
+      const hexcode = typeof item?.hexcode === "string" ? item.hexcode : "";
+      const emoji = emojiRaw || (hexcode ? hexcodeToEmoji(hexcode) : "");
+      if (!emoji) {
         return [];
       }
+
+      const label =
+        (typeof item?.label === "string" && item.label) ||
+        (typeof item?.annotation === "string" && item.annotation) ||
+        (typeof item?.name === "string" && item.name) ||
+        "";
+      const tags = Array.isArray(item?.tags)
+        ? (item.tags as unknown[])
+            .filter(tag => typeof tag === "string")
+            .join(" ")
+        : "";
+      const combinedLabel = [label, tags].filter(Boolean).join(" ");
+
       return [
         {
-          emoji: item.emoji,
-          label: typeof item.label === "string" ? item.label : "",
+          emoji,
+          label: combinedLabel,
         },
       ];
     }),
@@ -480,6 +507,9 @@ export default function Notes() {
   const isArchiveView = location.startsWith("/notas/arquivo");
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [editorAutoFocusNoteId, setEditorAutoFocusNoteId] = useState<
+    string | null
+  >(null);
   const [mobileNotesExpanded, setMobileNotesExpanded] = useState(false);
   const [noteQuery, setNoteQuery] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -494,10 +524,35 @@ export default function Notes() {
     id: string;
   } | null>(null);
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
-  const [emojiPickerAnchor, setEmojiPickerAnchor] = useState<HTMLElement | null>(null);
+  type EmojiPickerAnchor = HTMLElement | { getBoundingClientRect: () => DOMRect };
+  const [emojiPickerAnchor, setEmojiPickerAnchor] = useState<EmojiPickerAnchor | null>(
+    null
+  );
+  const [emojiPickerMode, setEmojiPickerMode] = useState<"note" | "editor">(
+    "note"
+  );
+  const emojiPickerOnPickRef = useRef<((emoji: string) => void) | null>(null);
   const [emojiSearch, setEmojiSearch] = useState("");
   const deferredEmojiSearch = useDeferredValue(emojiSearch);
   const [emojiVisibleCount, setEmojiVisibleCount] = useState(420);
+
+  const openEmojiPicker = (
+    anchor: HTMLElement | DOMRect,
+    opts?: {
+      mode?: "note" | "editor";
+      onPick?: (emoji: string) => void;
+    }
+  ) => {
+    setEmojiPickerMode(opts?.mode ?? "note");
+    emojiPickerOnPickRef.current = opts?.onPick ?? null;
+    if (anchor instanceof HTMLElement) {
+      setEmojiPickerAnchor(anchor);
+      return;
+    }
+    setEmojiPickerAnchor({
+      getBoundingClientRect: () => anchor,
+    });
+  };
 
   useEffect(() => {
     if (!emojiPickerAnchor) {
@@ -730,6 +785,12 @@ export default function Notes() {
   })();
   const selectedNote = notes.find(note => note.id === selectedNoteId) || null;
 
+  useEffect(() => {
+    if (selectedNoteId && editorAutoFocusNoteId === selectedNoteId) {
+      setEditorAutoFocusNoteId(null);
+    }
+  }, [editorAutoFocusNoteId, selectedNoteId]);
+
   const isPristineDraft = useCallback(
     (note: Note) =>
       note.isDraft &&
@@ -813,6 +874,7 @@ export default function Notes() {
     const next = emptyNote();
     setNotes(prev => [next, ...prev]);
     setSelectedNoteId(next.id);
+    setEditorAutoFocusNoteId(next.id);
     setNoteQuery("");
     setLocation(`/notas/${next.id}`);
   }, [discardIfPristine, selectedNoteId, setLocation]);
@@ -895,9 +957,10 @@ export default function Notes() {
 
   const createChildNote = (parent: Note): Note => {
     const next = emptyNote();
-    next.title = "Nova página";
+    next.title = "Página";
     next.parentId = parent.id;
     setNotes(prev => [next, ...prev]);
+    setEditorAutoFocusNoteId(next.id);
     return next;
   };
 
@@ -1144,7 +1207,7 @@ export default function Notes() {
 
   return (
     <PageContainer>
-      <Stack spacing={3}>
+      <Stack spacing={3} sx={{ flex: 1, minHeight: 0 }}>
         <Stack spacing={1.5}>
           <Stack
             direction="row"
@@ -1263,6 +1326,8 @@ export default function Notes() {
               ? { xs: "1fr", md: "280px 1fr" }
               : "1fr",
             gap: 2.5,
+            flex: 1,
+            minHeight: 0,
           }}
         >
           {showSidebar ? (
@@ -1288,7 +1353,7 @@ export default function Notes() {
             </Stack>
           ) : null}
 
-          <Stack spacing={2.5}>
+          <Stack spacing={2.5} sx={{ flex: 1, minHeight: 0 }}>
             {!selectedNote ? (
               <CardSection size="xs">
                 <Stack spacing={1.5}>
@@ -1396,13 +1461,16 @@ export default function Notes() {
             ) : null}
 
             {selectedNote ? (
-              <CardSection size="xs">
-                <Stack spacing={2}>
+              <CardSection
+                size="xs"
+                sx={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}
+              >
+                <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
                   <Stack spacing={2}>
-                    <Stack direction="row" spacing={1} alignItems="flex-start">
+                    <Stack direction="row" spacing={1} alignItems="center">
                       <Button
                         variant="outlined"
-                        onClick={e => setEmojiPickerAnchor(e.currentTarget)}
+                        onClick={e => openEmojiPicker(e.currentTarget, { mode: "note" })}
                         sx={{
                           minWidth: 56,
                           width: 56,
@@ -1455,26 +1523,28 @@ export default function Notes() {
                                 autoFocus
                                 fullWidth
                               />
-                              <Tooltip title="Emoji aleatório" placement="top">
-                                <IconButton
-                                  aria-label="Emoji aleatório"
-                                  size="small"
-                                  onClick={() => {
-                                    updateNote({
-                                      ...selectedNote,
-                                      emoji: getRandomEmoji(),
-                                      updatedAt: new Date().toISOString(),
-                                    });
-                                  }}
-                                  sx={{
-                                    border: "1px solid",
-                                    borderColor: "divider",
-                                    borderRadius: 1.5,
-                                  }}
-                                >
-                                  <ShuffleRoundedIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
+                              {emojiPickerMode === "note" ? (
+                                <Tooltip title="Emoji aleatório" placement="top">
+                                  <IconButton
+                                    aria-label="Emoji aleatório"
+                                    size="small"
+                                    onClick={() => {
+                                      updateNote({
+                                        ...selectedNote,
+                                        emoji: getRandomEmoji(),
+                                        updatedAt: new Date().toISOString(),
+                                      });
+                                    }}
+                                    sx={{
+                                      border: "1px solid",
+                                      borderColor: "divider",
+                                      borderRadius: 1.5,
+                                    }}
+                                  >
+                                    <ShuffleRoundedIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              ) : null}
                             </Stack>
                             <Box
                               sx={{
@@ -1508,18 +1578,27 @@ export default function Notes() {
                                   item.label.toLowerCase().includes(term)
                                 );
                               })
-                                .slice(0, emojiVisibleCount)
+                                .slice(
+                                  0,
+                                  deferredEmojiSearch.trim()
+                                    ? NOTE_EMOJIS.length
+                                    : emojiVisibleCount
+                                )
                                 .map(item => (
                                 <Button
                                   key={item.emoji}
                                   variant="text"
                                   color="inherit"
                                   onClick={() => {
-                                    updateNote({
-                                      ...selectedNote,
-                                      emoji: item.emoji,
-                                      updatedAt: new Date().toISOString(),
-                                    });
+                                    if (emojiPickerMode === "note") {
+                                      updateNote({
+                                        ...selectedNote,
+                                        emoji: item.emoji,
+                                        updatedAt: new Date().toISOString(),
+                                      });
+                                    } else {
+                                      emojiPickerOnPickRef.current?.(item.emoji);
+                                    }
                                     setEmojiPickerAnchor(null);
                                     setEmojiSearch("");
                                   }}
@@ -1562,22 +1641,7 @@ export default function Notes() {
                           },
                         }}
                       />
-                      <Stack spacing={0.75} alignItems="center">
-                        <Tooltip title="Fechar nota" placement="top">
-                          <IconButton
-                            onClick={e => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              setSelectedNoteId(null);
-                              setExpandedNoteId(null);
-                              setLocation(
-                                isArchiveView ? "/notas/arquivo" : "/notas"
-                              );
-                            }}
-                          >
-                            <CloseRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                      <Stack direction="row" alignItems="center">
                         <Tooltip
                           title={`Criada em ${new Date(selectedNote.createdAt).toLocaleString(
                             "pt-BR"
@@ -1741,37 +1805,74 @@ export default function Notes() {
                     }
                     onNavigate={href => setLocation(href)}
                     onCreateChildPage={() => createChildNote(selectedNote)}
+                    noteEmoji={"😊"}
+                    onOpenEmojiPicker={(anchor, opts) => openEmojiPicker(anchor, opts)}
+                    autoFocus={editorAutoFocusNoteId === selectedNote.id}
                   />
 
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      startIcon={<DeleteRoundedIcon />}
-                      onClick={() => requestNoteAction(selectedNote, "delete")}
-                      sx={{ textTransform: "none", fontWeight: 600 }}
+                    <Tooltip title="Remover" placement="top">
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        aria-label="Remover"
+                        onClick={() => requestNoteAction(selectedNote, "delete")}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 600,
+                          minWidth: 0,
+                          px: 1.25,
+                        }}
+                      >
+                        <DeleteRoundedIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip
+                      title={selectedNote.archived ? "Restaurar" : "Arquivar"}
+                      placement="top"
                     >
-                      Remover
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={
-                        selectedNote.archived ? (
-                          <UnarchiveRoundedIcon />
+                      <Button
+                        variant="outlined"
+                        aria-label={selectedNote.archived ? "Restaurar" : "Arquivar"}
+                        onClick={() =>
+                          requestNoteAction(
+                            selectedNote,
+                            selectedNote.archived ? "restore" : "archive"
+                          )
+                        }
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 600,
+                          minWidth: 0,
+                          px: 1.25,
+                        }}
+                      >
+                        {selectedNote.archived ? (
+                          <UnarchiveRoundedIcon fontSize="small" />
                         ) : (
-                          <ArchiveRoundedIcon />
-                        )
-                      }
-                      onClick={() =>
-                        requestNoteAction(
-                          selectedNote,
-                          selectedNote.archived ? "restore" : "archive"
-                        )
-                      }
-                      sx={{ textTransform: "none", fontWeight: 600 }}
-                    >
-                      {selectedNote.archived ? "Restaurar" : "Arquivar"}
-                    </Button>
+                          <ArchiveRoundedIcon fontSize="small" />
+                        )}
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title="Fechar nota" placement="top">
+                      <Button
+                        variant="outlined"
+                        aria-label="Fechar nota"
+                        onClick={() => {
+                          setSelectedNoteId(null);
+                          setExpandedNoteId(null);
+                          setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
+                        }}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 600,
+                          minWidth: 0,
+                          px: 1.25,
+                        }}
+                      >
+                        <CloseRoundedIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
                   </Stack>
                 </Stack>
               </CardSection>
@@ -1950,11 +2051,23 @@ function RichTextEditor({
   onChange,
   onNavigate,
   onCreateChildPage,
+  noteEmoji,
+  onOpenEmojiPicker,
+  autoFocus,
 }: {
   value: string;
   onChange: (nextValue: string) => void;
   onNavigate: (href: string) => void;
   onCreateChildPage: () => Note;
+  noteEmoji: string;
+  onOpenEmojiPicker: (
+    anchor: HTMLElement | DOMRect,
+    opts?: {
+      mode?: "note" | "editor";
+      onPick?: (emoji: string) => void;
+    }
+  ) => void;
+  autoFocus?: boolean;
 }) {
   type SlashItem = {
     id: string;
@@ -1970,6 +2083,7 @@ function RichTextEditor({
   const slashCommandRef = useRef<((item: SlashItem) => void) | null>(null);
   const slashIndexRef = useRef(0);
   const slashItemsRef = useRef<SlashItem[]>([]);
+  const slashAnchorRectRef = useRef<DOMRect | null>(null);
 
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkHref, setLinkHref] = useState("");
@@ -1991,7 +2105,12 @@ function RichTextEditor({
     slashItemsRef.current = slashItems;
   }, [slashItems]);
 
+  useEffect(() => {
+    slashAnchorRectRef.current = slashAnchorRect;
+  }, [slashAnchorRect]);
+
   const editor = useEditor({
+    autofocus: autoFocus ? "end" : false,
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
@@ -2013,6 +2132,23 @@ function RichTextEditor({
           const getItems = (query: string): SlashItem[] => {
             const q = query.trim().toLowerCase();
             const all: SlashItem[] = [
+              {
+                id: "note-emoji",
+                label: "Emoji",
+                keywords: "emoji emoticon icone",
+                run: () => {
+                  const anchor =
+                    slashAnchorRectRef.current ||
+                    editor?.view?.dom?.getBoundingClientRect?.() ||
+                    new DOMRect(0, 0, 0, 0);
+                  onOpenEmojiPicker(anchor, {
+                    mode: "editor",
+                    onPick: emoji => {
+                      editor?.chain().focus().insertContent(emoji).run();
+                    },
+                  });
+                },
+              },
               {
                 id: "bold",
                 label: "Negrito",
@@ -2084,12 +2220,12 @@ function RichTextEditor({
               },
               {
                 id: "new-page",
-                label: "Nova página",
+                label: "Página",
                 keywords: "nova pagina page subpage",
                 run: ({ editor }) => {
                   const child = onCreateChildPage();
                   const href = `/notas/${child.id}`;
-                  const label = child.title || "Nova página";
+                  const label = `${child.emoji} ${child.title || "Página"}`.trim();
                   const safeLabel = label.replace(/[&<>]/g, char => {
                     if (char === "&") return "&amp;";
                     if (char === "<") return "&lt;";
@@ -2199,6 +2335,19 @@ function RichTextEditor({
       onChange(editor.getHTML());
     },
   });
+
+  useEffect(() => {
+    if (!autoFocus) {
+      return;
+    }
+    if (!editor) {
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      editor.commands.focus("end");
+    }, 0);
+    return () => window.clearTimeout(handle);
+  }, [autoFocus, editor]);
 
   const openLinkDialogFromSelection = () => {
     if (!editor) {
@@ -2333,13 +2482,42 @@ function RichTextEditor({
       border: 1,
       borderColor: "divider",
       backgroundColor: "background.paper",
+      width: 40,
+      height: 40,
+      borderRadius: 9999,
+      p: 0,
       "&:hover": { backgroundColor: "action.hover" },
     },
   };
 
   return (
-    <Stack spacing={1}>
+    <Stack spacing={1} sx={{ flex: 1, minHeight: 0 }}>
       <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+        <Button
+          variant="outlined"
+          onClick={event =>
+            onOpenEmojiPicker(event.currentTarget, {
+              mode: "editor",
+              onPick: emoji => {
+                editor?.chain().focus().insertContent(emoji).run();
+              },
+            })
+          }
+          aria-label="Emoji"
+          sx={{
+            minWidth: 40,
+            width: 40,
+            height: 40,
+            minHeight: 40,
+            fontSize: "1.25rem",
+            lineHeight: 1,
+            p: 0,
+            borderColor: "divider",
+            "&:hover": { borderColor: "primary.main" },
+          }}
+        >
+          {noteEmoji}
+        </Button>
         <IconButton
           {...iconButtonProps}
           onClick={() => editor?.chain().focus().toggleBold().run()}
@@ -2436,8 +2614,15 @@ function RichTextEditor({
           border: 1,
           borderColor: "divider",
           backgroundColor: "background.paper",
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          cursor: "text",
           "& .tiptap": {
-            minHeight: 200,
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
             outline: "none",
             padding: "16px",
           },
@@ -2491,6 +2676,11 @@ function RichTextEditor({
           const target = event.target as HTMLElement | null;
           const anchor = target?.closest?.("a") as HTMLAnchorElement | null;
           if (!anchor) {
+            const insideEditor = Boolean(target?.closest?.(".tiptap"));
+            if (!insideEditor) {
+              event.preventDefault();
+              editor?.chain().focus("end").run();
+            }
             return;
           }
           const href = anchor.getAttribute("href") || "";
