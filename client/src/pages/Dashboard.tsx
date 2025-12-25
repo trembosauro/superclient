@@ -14,6 +14,7 @@ import {
 import { alpha } from "@mui/material/styles";
 import { Link as RouterLink, useLocation } from "wouter";
 import api from "../api";
+import { saveUserStorage } from "../userStorage";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
@@ -404,10 +405,18 @@ export default function Dashboard() {
       DASHBOARD_SECTIONS_KEY,
       JSON.stringify(sections)
     );
+    const timeoutId = setTimeout(() => {
+      void saveUserStorage(DASHBOARD_SECTIONS_KEY, sections);
+    }, 600);
+    return () => clearTimeout(timeoutId);
   }, [sections]);
 
   useEffect(() => {
     window.localStorage.setItem(DASHBOARD_ITEMS_KEY, JSON.stringify(items));
+    const timeoutId = setTimeout(() => {
+      void saveUserStorage(DASHBOARD_ITEMS_KEY, items);
+    }, 600);
+    return () => clearTimeout(timeoutId);
   }, [items]);
 
   useEffect(() => {
@@ -436,6 +445,10 @@ export default function Dashboard() {
       DASHBOARD_QUICK_LINKS_KEY,
       JSON.stringify({ enabled: quickLinksEnabled, visible: quickLinksVisible })
     );
+    const timeoutId = setTimeout(() => {
+      void saveUserStorage(DASHBOARD_QUICK_LINKS_KEY, { enabled: quickLinksEnabled, visible: quickLinksVisible });
+    }, 600);
+    return () => clearTimeout(timeoutId);
   }, [quickLinksEnabled, quickLinksVisible]);
 
   const visibleQuickLinks = useMemo(() => {

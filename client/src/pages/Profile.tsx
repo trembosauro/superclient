@@ -226,6 +226,13 @@ export default function Profile() {
   const [languageSnackbarOpen, setLanguageSnackbarOpen] = useState(false);
   const lastLanguageRef = useRef<string | null>(null);
   const [accessModules, setAccessModules] = useState<AccessModule[]>([]);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordSnackbar, setPasswordSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error",
+  });
 
   const formatBRL = (amount: number) =>
     new Intl.NumberFormat("pt-BR", {
@@ -295,6 +302,48 @@ export default function Profile() {
       reader.readAsDataURL(file);
     } catch {
       // ignore error
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!currentPassword || !newPassword) {
+      setPasswordSnackbar({
+        open: true,
+        message: "Preencha os dois campos de senha",
+        severity: "error",
+      });
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      setPasswordSnackbar({
+        open: true,
+        message: "A nova senha deve ter pelo menos 6 caracteres",
+        severity: "error",
+      });
+      return;
+    }
+
+    try {
+      await api.post("/api/auth/change-password", {
+        currentPassword,
+        newPassword,
+      });
+      
+      setPasswordSnackbar({
+        open: true,
+        message: "Senha atualizada com sucesso",
+        severity: "success",
+      });
+      
+      setCurrentPassword("");
+      setNewPassword("");
+    } catch (error: any) {
+      setPasswordSnackbar({
+        open: true,
+        message: error?.response?.data?.message || "Erro ao atualizar senha",
+        severity: "error",
+      });
     }
   };
 
@@ -1623,13 +1672,26 @@ export default function Profile() {
                 gap: 2,
               }}
             >
-              <TextField label="Senha atual" type="password" fullWidth />
-              <TextField label="Nova senha" type="password" fullWidth />
+              <TextField 
+                label="Senha atual" 
+                type="password" 
+                fullWidth 
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+              <TextField 
+                label="Nova senha" 
+                type="password" 
+                fullWidth 
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
             </Box>
             <Button
               variant="outlined"
               size="large"
               sx={{ alignSelf: "flex-start" }}
+              onClick={handlePasswordChange}
             >
               Atualizar senha
             </Button>
@@ -2053,6 +2115,18 @@ export default function Profile() {
             Reverter
           </Button>
         }
+      />
+
+      <Snackbar
+        open={passwordSnackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setPasswordSnackbar({ ...passwordSnackbar, open: false })}
+        message={passwordSnackbar.message}
+        ContentProps={{
+          sx: {
+            backgroundColor: passwordSnackbar.severity === "error" ? "error.main" : "success.main",
+          },
+        }}
       />
     </PageContainer>
   );

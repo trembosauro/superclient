@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Box, Button, Stack, Typography, useMediaQuery } from "@mui/material";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import AssignmentTurnedInRoundedIcon from "@mui/icons-material/AssignmentTurnedInRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import CakeRoundedIcon from "@mui/icons-material/CakeRounded";
 import PageContainer from "../components/layout/PageContainer";
 import CardSection from "../components/layout/CardSection";
-import { loadUserStorage } from "../userStorage";
+import { loadUserStorage, saveUserStorage } from "../userStorage";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import { useLocation } from "wouter";
 
@@ -63,79 +64,42 @@ export default function Notifications() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [completedTasks, setCompletedTasks] = useState<CompletedTaskNotification[]>([]);
 
-  const loadCompletedTasks = useCallback(() => {
+  const loadCompletedTasks = useCallback(async () => {
+    // Tentar carregar do banco de dados primeiro
+    const dbTasks = await loadUserStorage<CompletedTaskNotification[]>(COMPLETED_TASKS_KEY);
+    if (dbTasks && Array.isArray(dbTasks) && dbTasks.length > 0) {
+      // Filtrar notificações demo (ids começam com "demo-")
+      const realTasks = dbTasks.filter(task => !task.id.startsWith('demo-'));
+      setCompletedTasks(realTasks);
+      window.localStorage.setItem(COMPLETED_TASKS_KEY, JSON.stringify(realTasks));
+      // Se limpou demos, salvar a versão limpa no banco
+      if (realTasks.length !== dbTasks.length) {
+        void saveUserStorage(COMPLETED_TASKS_KEY, realTasks);
+      }
+      return;
+    }
+
+    // Se não houver no banco, tentar localStorage
     const stored = window.localStorage.getItem(COMPLETED_TASKS_KEY);
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as CompletedTaskNotification[];
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setCompletedTasks(parsed);
+          // Filtrar notificações demo
+          const realTasks = parsed.filter(task => !task.id.startsWith('demo-'));
+          setCompletedTasks(realTasks);
+          // Salvar versão limpa
+          window.localStorage.setItem(COMPLETED_TASKS_KEY, JSON.stringify(realTasks));
+          void saveUserStorage(COMPLETED_TASKS_KEY, realTasks);
           return;
         }
       } catch {
-        // fall through to create demo data
+        // Sem notificações
       }
     }
-    // Criar dados demo para visualização
-    const now = new Date();
-    const demoTasks: CompletedTaskNotification[] = [
-      {
-        id: "demo-1",
-        taskId: "task-1",
-        taskName: "Revisar proposta comercial",
-        completedAt: new Date(now.getTime() - 5 * 60000).toISOString(), // 5 min atrás
-      },
-      {
-        id: "demo-2",
-        taskId: "task-2",
-        taskName: "Reunião com cliente ABC",
-        completedAt: new Date(now.getTime() - 2 * 3600000).toISOString(), // 2h atrás
-      },
-      {
-        id: "demo-3",
-        taskId: "task-3",
-        taskName: "Enviar relatório mensal",
-        completedAt: new Date(now.getTime() - 5 * 3600000).toISOString(), // 5h atrás
-      },
-      {
-        id: "demo-4",
-        taskId: "task-4",
-        taskName: "Atualizar documentação do projeto",
-        completedAt: new Date(now.getTime() - 24 * 3600000).toISOString(), // 1 dia atrás
-      },
-      {
-        id: "demo-5",
-        taskId: "task-5",
-        taskName: "Planejar sprint semanal",
-        completedAt: new Date(now.getTime() - 48 * 3600000).toISOString(), // 2 dias atrás
-      },
-      {
-        id: "demo-6",
-        taskId: "task-6",
-        taskName: "Fazer backup dos arquivos",
-        completedAt: new Date(now.getTime() - 72 * 3600000).toISOString(), // 3 dias atrás
-      },
-      {
-        id: "demo-7",
-        taskId: "task-7",
-        taskName: "Organizar tarefas da semana",
-        completedAt: new Date(now.getTime() - 96 * 3600000).toISOString(), // 4 dias atrás
-      },
-      {
-        id: "demo-8",
-        taskId: "task-8",
-        taskName: "Responder emails pendentes",
-        completedAt: new Date(now.getTime() - 120 * 3600000).toISOString(), // 5 dias atrás
-      },
-      {
-        id: "demo-9",
-        taskId: "task-9",
-        taskName: "Finalizar apresentação",
-        completedAt: new Date(now.getTime() - 144 * 3600000).toISOString(), // 6 dias atrás
-      },
-    ];
-    window.localStorage.setItem(COMPLETED_TASKS_KEY, JSON.stringify(demoTasks));
-    setCompletedTasks(demoTasks);
+
+    // Sem notificações - mostrar lista vazia
+    setCompletedTasks([]);
   }, []);
 
   useEffect(() => {
@@ -171,16 +135,21 @@ export default function Notifications() {
   const upcoming = useMemo(() => getUpcomingBirthdays(contacts), [contacts]);
 
   const markAsSeen = () => {
-    window.localStorage.setItem(SEEN_KEY, new Date().toISOString());
+    const timestamp = new Date().toISOString();
+    window.localStorage.setItem(SEEN_KEY, timestamp);
+    void saveUserStorage(SEEN_KEY, timestamp);
     window.dispatchEvent(new Event("contacts-change"));
   };
 
   const markTasksAsSeen = () => {
-    window.localStorage.setItem(TASK_SEEN_KEY, new Date().toISOString());
+    const timestamp = new Date().toISOString();
+    window.localStorage.setItem(TASK_SEEN_KEY, timestamp);
+    void saveUserStorage(TASK_SEEN_KEY, timestamp);
   };
 
   const clearCompletedTasks = () => {
     window.localStorage.removeItem(COMPLETED_TASKS_KEY);
+    void saveUserStorage(COMPLETED_TASKS_KEY, null);
     setCompletedTasks([]);
   };
 
@@ -209,28 +178,67 @@ export default function Notifications() {
     setLocation(`/calendario?task=${taskId}`);
   };
 
+  // Combinar todas as notificações
+  type Notification = {
+    id: string;
+    type: 'task' | 'birthday';
+    title: string;
+    subtitle: string;
+    icon: 'task' | 'birthday';
+    onClick?: () => void;
+  };
+
+  const allNotifications = useMemo(() => {
+    const notifications: Notification[] = [];
+
+    // Adicionar tarefas concluídas
+    completedTasks.forEach(task => {
+      notifications.push({
+        id: task.id,
+        type: 'task',
+        title: task.taskName,
+        subtitle: `Concluída · ${formatTimeAgo(task.completedAt)}`,
+        icon: 'task',
+        onClick: () => handleTaskClick(task.taskId),
+      });
+    });
+
+    // Adicionar aniversários
+    upcoming.forEach(item => {
+      notifications.push({
+        id: item.contact.id,
+        type: 'birthday',
+        title: item.contact.name || "Contato sem nome",
+        subtitle: `${item.next.toLocaleDateString("pt-BR")} · em ${item.diffDays} dia(s)`,
+        icon: 'birthday',
+      });
+    });
+
+    return notifications;
+  }, [completedTasks, upcoming]);
+
+  const hasAnyNotification = allNotifications.length > 0;
+
   return (
     <PageContainer>
       <Stack spacing={3}>
         <CardSection>
           <Stack spacing={2}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <CheckCircleRoundedIcon sx={{ color: 'text.secondary' }} />
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Tarefas concluídas
-              </Typography>
-              <Box sx={{ flex: 1 }} />
-              {completedTasks.length > 0 ? (
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    size="small"
-                    variant="text"
-                    onClick={markTasksAsSeen}
-                    startIcon={<CheckRoundedIcon fontSize="small" />}
-                    sx={{ textTransform: "none", fontWeight: 600 }}
-                  >
-                    Marcar como visto
-                  </Button>
+            {hasAnyNotification && (
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end">
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={() => {
+                    markTasksAsSeen();
+                    markAsSeen();
+                  }}
+                  startIcon={<CheckRoundedIcon fontSize="small" />}
+                  sx={{ textTransform: "none", fontWeight: 600 }}
+                >
+                  Marcar como visto
+                </Button>
+                {completedTasks.length > 0 && (
                   <Button
                     size="small"
                     variant="text"
@@ -241,13 +249,13 @@ export default function Notifications() {
                   >
                     Limpar
                   </Button>
-                </Stack>
-              ) : null}
-            </Stack>
+                )}
+              </Stack>
+            )}
 
-            {completedTasks.length === 0 ? (
+            {!hasAnyNotification ? (
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                Nenhuma tarefa concluída recentemente.
+                Nenhuma notificação recente.
               </Typography>
             ) : (
               <Box
@@ -264,73 +272,46 @@ export default function Notifications() {
                   },
                 }}
               >
-                {completedTasks.map(task => (
+                {allNotifications.map(notification => (
                   <CardSection
                     size="xs"
-                    key={task.id}
-                    onClick={() => handleTaskClick(task.taskId)}
+                    key={notification.id}
+                    onClick={notification.onClick}
                     sx={theme => ({
-                      cursor: "pointer",
+                      cursor: notification.onClick ? "pointer" : "default",
                       minHeight: 64,
-                      ...interactiveCardSx(theme),
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      ...(notification.onClick ? interactiveCardSx(theme) : {}),
                     })}
                   >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      {task.taskName}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{ color: "text.secondary" }}
+                    <Box
+                      sx={{
+                        mt: 0.5,
+                        color: notification.icon === 'task' ? 'text.secondary' : 'primary.main',
+                      }}
                     >
-                      Concluída · {formatTimeAgo(task.completedAt)}
-                    </Typography>
+                      {notification.icon === 'task' ? (
+                        <AssignmentTurnedInRoundedIcon fontSize="small" />
+                      ) : (
+                        <CakeRoundedIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <Stack sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {notification.title}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "text.secondary" }}
+                      >
+                        {notification.subtitle}
+                      </Typography>
+                    </Stack>
                   </CardSection>
                 ))}
               </Box>
-            )}
-          </Stack>
-        </CardSection>
-
-        <CardSection>
-          <Stack spacing={2}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Aniversários
-              </Typography>
-              <Box sx={{ flex: 1 }} />
-              {upcoming.length > 0 ? (
-                <Button
-                  size="small"
-                  onClick={markAsSeen}
-                  startIcon={<CheckRoundedIcon fontSize="small" />}
-                  sx={{ textTransform: "none", fontWeight: 600 }}
-                >
-                  Marcar como visto
-                </Button>
-              ) : null}
-            </Stack>
-
-            {upcoming.length === 0 ? (
-              <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                Nenhum aniversario nos proximos dias.
-              </Typography>
-            ) : (
-              <Stack spacing={1.5}>
-                {upcoming.map(item => (
-                  <CardSection size="xs" key={item.contact.id}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      {item.contact.name || "Contato sem nome"}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{ color: "text.secondary" }}
-                    >
-                      {item.next.toLocaleDateString("pt-BR")} · em{" "}
-                      {item.diffDays} dia(s)
-                    </Typography>
-                  </CardSection>
-                ))}
-              </Stack>
             )}
           </Stack>
         </CardSection>

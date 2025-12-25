@@ -34,6 +34,7 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import SettingsIconButton from "../components/SettingsIconButton";
 import RichTextEditor from "../components/RichTextEditor";
 import api from "../api";
+import { saveUserStorage } from "../userStorage";
 import { usePageActions } from "../hooks/usePageActions";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import PageContainer from "../components/layout/PageContainer";
@@ -774,6 +775,10 @@ export default function Pipeline() {
       JSON.stringify(taskFieldSettings)
     );
     window.dispatchEvent(new Event("task-fields-change"));
+    const timeoutId = setTimeout(() => {
+      void saveUserStorage("sc_task_fields", taskFieldSettings);
+    }, 600);
+    return () => clearTimeout(timeoutId);
   }, [taskFieldSettings]);
 
   useEffect(() => {

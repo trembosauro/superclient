@@ -605,6 +605,10 @@ export default function Financas() {
 
   useEffect(() => {
     window.localStorage.setItem(TABLE_FIELDS_KEY, JSON.stringify(tableFields));
+    const timeoutId = setTimeout(() => {
+      void saveUserStorage(TABLE_FIELDS_KEY, tableFields);
+    }, 600);
+    return () => clearTimeout(timeoutId);
   }, [tableFields]);
 
   useEffect(() => {
@@ -632,6 +636,10 @@ export default function Financas() {
       TABLE_LAYOUT_KEY,
       JSON.stringify({ tablePosition })
     );
+    const timeoutId = setTimeout(() => {
+      void saveUserStorage(TABLE_LAYOUT_KEY, { tablePosition });
+    }, 600);
+    return () => clearTimeout(timeoutId);
   }, [tablePosition]);
 
   useEffect(() => {

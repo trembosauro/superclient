@@ -1490,6 +1490,7 @@ export default function Calendar() {
     // Manter apenas as últimas 50 notificações
     notifications = notifications.slice(0, 50);
     window.localStorage.setItem(COMPLETED_TASKS_KEY, JSON.stringify(notifications));
+    void saveUserStorage(COMPLETED_TASKS_KEY, notifications);
     window.dispatchEvent(new Event("task-completed"));
   };
 

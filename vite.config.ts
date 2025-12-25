@@ -1,10 +1,11 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin";
 import fs from "node:fs";
 import path from "path";
 import { defineConfig, loadEnv } from "vite";
 
-const plugins = [react(), tailwindcss()];
+const plugins = [vanillaExtractPlugin(), react(), tailwindcss()];
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, path.resolve(import.meta.dirname), "");

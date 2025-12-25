@@ -24,6 +24,9 @@ import { useTranslation } from "react-i18next";
 import theme from "./theme";
 import { APP_RADIUS } from "./designTokens";
 import api from "./api";
+import { brandRoot } from "./ui/Brand/brand.css";
+import { AppBar } from "./ui/AppBar";
+import { NavItem } from "./ui/NavItem";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import AccessManagement from "./pages/AccessManagement";
@@ -572,95 +575,31 @@ function App() {
               minHeight: "100vh",
             }}
           >
-          <Box
-            component="header"
-            sx={{
-              position: "sticky",
-              top: 0,
-              zIndex: 10,
-              borderBottom: "1px solid rgba(255,255,255,0.08)",
-              backdropFilter: "blur(16px)",
-              backgroundColor: "rgba(7, 9, 13, 0.75)",
-            }}
-          >
-            <Box
-              sx={{
-                px: { xs: 2, md: 6 },
-                py: 2,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 2,
-              }}
-            >
-              <Button
-                component={RouterLink}
-                href={isLoggedIn ? "/home" : "/"}
-                variant="text"
-                color="inherit"
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  px: 0,
-                  minWidth: "auto",
-                  color: "text.primary",
-                  "&:hover": {
-                    backgroundColor: "transparent",
-                    color: "primary.main",
-                  },
-                }}
+          <AppBar
+            brandSlot={
+              <button
+                onClick={() => setLocation(isLoggedIn ? "/home" : "/")}
+                className={brandRoot}
               >
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <AutoGraphRoundedIcon fontSize="small" />
-                  <Box component="span">Superclient</Box>
-                </Stack>
-              </Button>
-              <Box
-                sx={{
-                  flex: 1,
-                  display: { xs: "none", md: "flex" },
-                  justifyContent: "center",
-                }}
-              >
-                <Stack direction="row" spacing={0} sx={{ flexWrap: "wrap" }}>
-                  {visibleNavItems.map(item => (
-                    <Box
-                      key={item.href}
-                      sx={{ display: "flex", alignItems: "center" }}
-                    >
-                      <Button
-                        component={RouterLink}
-                        href={item.href}
-                        variant="text"
-                        color="inherit"
-                        sx={{
-                          textTransform: "none",
-                          fontWeight: 600,
-                          color: isActive(item.href)
-                            ? "primary.main"
-                            : "text.secondary",
-                          backgroundColor: isActive(item.href)
-                            ? "rgba(34, 201, 166, 0.12)"
-                            : "transparent",
-                          "&:hover": {
-                            color: "primary.main",
-                            backgroundColor: "rgba(34, 201, 166, 0.08)",
-                          },
-                        }}
-                      >
-                        {t(item.labelKey)}
-                      </Button>
-                    </Box>
-                  ))}
-                </Stack>
-              </Box>
-              <Stack
-                direction="row"
-                spacing={1}
-                alignItems="center"
-                sx={{ display: { xs: "none", md: "flex" } }}
-              >
-                {isLoggedIn ? (
+                <AutoGraphRoundedIcon fontSize="small" />
+                <span>Superclient</span>
+              </button>
+            }
+            navSlot={
+              <Stack direction="row" spacing={0} sx={{ flexWrap: "wrap" }}>
+                {visibleNavItems.map(item => (
+                  <NavItem
+                    key={item.href}
+                    label={t(item.labelKey)}
+                    href={item.href}
+                    active={isActive(item.href)}
+                  />
+                ))}
+              </Stack>
+            }
+            actionsSlot={
+              <>
+                {isLoggedIn && (
                   <IconButton
                     component={RouterLink}
                     href="/notifications"
@@ -690,8 +629,8 @@ function App() {
                       <NotificationsNoneRoundedIcon />
                     </Badge>
                   </IconButton>
-                ) : null}
-                {isLoggedIn ? (
+                )}
+                {isLoggedIn && (
                   <Button
                     component={RouterLink}
                     href="/profile"
@@ -722,16 +661,17 @@ function App() {
                       {avatarInitial}
                     </Avatar>
                   </Button>
-                ) : null}
-              </Stack>
-              <Box sx={{ display: { xs: "flex", md: "none" } }}>
-                {isLoggedIn ? (
+                )}
+              </>
+            }
+            mobileActionsSlot={
+              <>
+                {isLoggedIn && (
                   <IconButton
                     component={RouterLink}
                     href="/notifications"
                     sx={{
                       color: "rgba(34, 201, 166, 0.7)",
-                      mr: 1,
                       border: isActive("/notifications")
                         ? "1px solid rgba(34, 201, 166, 0.6)"
                         : "1px solid transparent",
@@ -756,71 +696,58 @@ function App() {
                       <NotificationsNoneRoundedIcon />
                     </Badge>
                   </IconButton>
-                ) : null}
-                <IconButton
-                  aria-label="Abrir menu"
-                  onClick={handleMobileMenuOpen}
-                  sx={{
-                    color: "text.primary",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    backgroundColor: "rgba(7, 9, 13, 0.45)",
-                    "&:hover": {
-                      backgroundColor: "rgba(7, 9, 13, 0.6)",
-                    },
-                  }}
-                >
-                  <MenuIcon fontSize="small" />
-                </IconButton>
-                <Menu
-                  anchorEl={mobileAnchorEl}
-                  open={mobileMenuOpen}
-                  onClose={handleMobileMenuClose}
-                  PaperProps={{
-                    sx: {
-                      mt: 1,
-                      minWidth: 200,
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      backgroundColor: "rgba(12, 18, 26, 0.98)",
-                    },
-                  }}
-                >
-                  {visibleNavItems.map(item => (
-                    <MenuItem
-                      key={item.href}
-                      onClick={() => {
-                        setLocation(item.href);
-                        handleMobileMenuClose();
-                      }}
-                      sx={{
-                        fontWeight: 600,
-                        ...(isActive(item.href)
-                          ? { backgroundColor: "action.selected" }
-                          : null),
-                      }}
-                    >
-                      {t(item.labelKey)}
-                    </MenuItem>
-                  ))}
-                  {isLoggedIn ? (
-                    <MenuItem
-                      onClick={() => {
-                        setLocation("/profile");
-                        handleMobileMenuClose();
-                      }}
-                      sx={{
-                        fontWeight: 600,
-                        ...(isActive("/profile")
-                          ? { backgroundColor: "action.selected" }
-                          : null),
-                      }}
-                    >
-                      {t("profile.title")}
-                    </MenuItem>
-                  ) : null}
-                </Menu>
-              </Box>
-            </Box>
-          </Box>
+                )}
+              </>
+            }
+            onMenuClick={handleMobileMenuOpen}
+          />
+          <Menu
+            anchorEl={mobileAnchorEl}
+            open={mobileMenuOpen}
+            onClose={handleMobileMenuClose}
+            PaperProps={{
+              sx: {
+                mt: 1,
+                minWidth: 200,
+                border: "1px solid rgba(255,255,255,0.12)",
+                backgroundColor: "rgba(12, 18, 26, 0.98)",
+              },
+            }}
+          >
+            {visibleNavItems.map(item => (
+              <MenuItem
+                key={item.href}
+                onClick={() => {
+                  setLocation(item.href);
+                  handleMobileMenuClose();
+                }}
+                sx={{
+                  fontWeight: 600,
+                  ...(isActive(item.href)
+                    ? { backgroundColor: "action.selected" }
+                    : null),
+                }}
+              >
+                {t(item.labelKey)}
+              </MenuItem>
+            ))}
+            {isLoggedIn ? (
+              <MenuItem
+                onClick={() => {
+                  setLocation("/profile");
+                  handleMobileMenuClose();
+                }}
+                sx={{
+                  fontWeight: 600,
+                  ...(isActive("/profile")
+                    ? { backgroundColor: "action.selected" }
+                    : null),
+                }}
+              >
+                {t("profile.title")}
+              </MenuItem>
+            ) : null}
+          </Menu>
 
           <Box
             component="main"

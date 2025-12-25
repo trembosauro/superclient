@@ -721,6 +721,10 @@ export default function Notes() {
       STORAGE_NOTE_FIELDS,
       JSON.stringify(fieldSettings)
     );
+    const timeoutId = setTimeout(() => {
+      void saveUserStorage(STORAGE_NOTE_FIELDS, fieldSettings);
+    }, 500);
+    return () => clearTimeout(timeoutId);
   }, [fieldSettings]);
 
   useEffect(() => {
@@ -1298,12 +1302,12 @@ export default function Notes() {
               <Typography
                 variant="body2"
                 sx={{
-                  fontWeight: depth > 0 ? 500 : 600,
+                  fontWeight: depth > 0 ? 400 : 500,
                   minWidth: 0,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
-                  color: "text.primary",
+                  color: "text.secondary",
                   flex: 1,
                 }}
               >
@@ -1315,7 +1319,7 @@ export default function Notes() {
                     flex: "0 0 auto",
                     display: "inline-flex",
                     alignItems: "center",
-                    color: "text.primary",
+                    color: "text.secondary",
                   }}
                   aria-label="Nota favorita"
                 >
