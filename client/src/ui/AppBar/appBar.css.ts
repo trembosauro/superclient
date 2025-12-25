@@ -44,15 +44,9 @@ export const navSlot = style({
 });
 
 export const actionsSlot = style({
-  display: 'none',
+  display: 'flex',
   alignItems: 'center',
   gap: 'var(--sc-header-actions-gap, 8px)',
-  
-  '@media': {
-    '(min-width: 960px)': {
-      display: 'flex',
-    },
-  },
 });
 
 export const mobileActions = style({

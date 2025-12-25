@@ -601,20 +601,20 @@ function App() {
                     component={RouterLink}
                     href="/notifications"
                     sx={{
-                      color: "rgba(34, 201, 166, 0.7)",
+                      color: "color-mix(in srgb, var(--md-sys-color-primary) 70%, transparent)",
                       border: isActive("/notifications")
-                        ? "1px solid rgba(34, 201, 166, 0.6)"
+                        ? "1px solid color-mix(in srgb, var(--md-sys-color-primary) 60%, transparent)"
                         : "1px solid transparent",
                       backgroundColor: isActive("/notifications")
-                        ? "rgba(34, 201, 166, 0.12)"
+                        ? "color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent)"
                         : "transparent",
                       p: 0.5,
                       "&:hover": {
-                        backgroundColor: "rgba(34, 201, 166, 0.12)",
+                        backgroundColor: "color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent)",
                       },
                       "&:active": {
-                        backgroundColor: "rgba(34, 201, 166, 0.28)",
-                        color: "rgba(34, 201, 166, 0.9)",
+                        backgroundColor: "color-mix(in srgb, var(--md-sys-color-primary) 28%, transparent)",
+                        color: "var(--md-sys-color-primary)",
                       },
                     }}
                   >
@@ -638,11 +638,12 @@ function App() {
                       p: 0,
                       borderRadius: APP_RADIUS,
                       border: isActive("/profile")
-                        ? "1px solid rgba(34, 201, 166, 0.6)"
+                        ? "1px solid color-mix(in srgb, var(--md-sys-color-primary) 60%, transparent)"
                         : "1px solid transparent",
                       backgroundColor: isActive("/profile")
-                        ? "rgba(34, 201, 166, 0.12)"
+                        ? "color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent)"
                         : "transparent",
+                      display: { xs: "none", md: "block" },
                     }}
                   >
                     <Avatar
@@ -651,7 +652,7 @@ function App() {
                         width: 32,
                         height: 32,
                         fontSize: 14,
-                        bgcolor: "rgba(34, 201, 166, 0.18)",
+                        bgcolor: "color-mix(in srgb, var(--md-sys-color-primary) 18%, transparent)",
                         color: "text.primary",
                       }}
                     >
@@ -664,37 +665,6 @@ function App() {
             mobileActionsSlot={
               <>
                 {isLoggedIn && (
-                  <IconButton
-                    component={RouterLink}
-                    href="/notifications"
-                    sx={{
-                      color: "rgba(34, 201, 166, 0.7)",
-                      border: isActive("/notifications")
-                        ? "1px solid rgba(34, 201, 166, 0.6)"
-                        : "1px solid transparent",
-                      backgroundColor: isActive("/notifications")
-                        ? "rgba(34, 201, 166, 0.12)"
-                        : "transparent",
-                      p: 0.5,
-                      "&:hover": {
-                        backgroundColor: "rgba(34, 201, 166, 0.12)",
-                      },
-                      "&:active": {
-                        backgroundColor: "rgba(34, 201, 166, 0.28)",
-                        color: "rgba(34, 201, 166, 0.9)",
-                      },
-                    }}
-                  >
-                    <Badge
-                      variant="dot"
-                      color="error"
-                      invisible={!hasNotifications}
-                    >
-                      <NotificationsNoneRoundedIcon />
-                    </Badge>
-                  </IconButton>
-                )}
-                {isLoggedIn && (
                   <Button
                     component={RouterLink}
                     href="/profile"
@@ -705,11 +675,12 @@ function App() {
                       p: 0,
                       borderRadius: APP_RADIUS,
                       border: isActive("/profile")
-                        ? "1px solid rgba(34, 201, 166, 0.6)"
+                        ? "1px solid color-mix(in srgb, var(--md-sys-color-primary) 60%, transparent)"
                         : "1px solid transparent",
                       backgroundColor: isActive("/profile")
-                        ? "rgba(34, 201, 166, 0.12)"
+                        ? "color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent)"
                         : "transparent",
+                      display: { xs: "block", md: "none" },
                     }}
                   >
                     <Avatar
@@ -718,7 +689,7 @@ function App() {
                         width: 32,
                         height: 32,
                         fontSize: 14,
-                        bgcolor: "rgba(34, 201, 166, 0.18)",
+                        bgcolor: "color-mix(in srgb, var(--md-sys-color-primary) 18%, transparent)",
                         color: "text.primary",
                       }}
                     >
