@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { style, globalStyle } from '@vanilla-extract/css';
 
 export const pageContainer = style({
   maxWidth: 'var(--sc-page-max-width, 1200px)',
@@ -22,11 +22,9 @@ export const pageContent = style({
   minHeight: 0,
   display: 'flex',
   flexDirection: 'column',
-  
-  // Ensure first child has no extra margin for perfect alignment with topRow/titleRow
-  selectors: {
-    '& > *:first-child': {
-      marginTop: 0,
-    },
-  },
+});
+
+// Ensure first child has no extra margin for perfect alignment with topRow/titleRow
+globalStyle(`${pageContent} > *:first-child`, {
+  marginTop: 0,
 });
