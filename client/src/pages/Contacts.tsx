@@ -471,7 +471,10 @@ export default function Contacts() {
 
   useEffect(() => {
     window.localStorage.setItem(CARD_FIELDS_KEY, JSON.stringify(cardFields));
-    void saveUserStorage(CARD_FIELDS_KEY, cardFields);
+    const timeoutId = setTimeout(() => {
+      void saveUserStorage(CARD_FIELDS_KEY, cardFields);
+    }, 500);
+    return () => clearTimeout(timeoutId);
   }, [cardFields]);
 
   useEffect(() => {
@@ -502,7 +505,10 @@ export default function Contacts() {
       DETAIL_FIELDS_KEY,
       JSON.stringify(detailFields)
     );
-    void saveUserStorage(DETAIL_FIELDS_KEY, detailFields);
+    const timeoutId = setTimeout(() => {
+      void saveUserStorage(DETAIL_FIELDS_KEY, detailFields);
+    }, 500);
+    return () => clearTimeout(timeoutId);
   }, [detailFields]);
 
   const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
