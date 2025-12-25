@@ -276,6 +276,19 @@ export default function Profile() {
       reader.onload = () => {
         const dataUrl = reader.result as string;
         setProfilePhoto(dataUrl);
+        
+        // Update localStorage immediately
+        const stored = window.localStorage.getItem("sc_user");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored) as { name?: string; email?: string };
+            const updated = { ...parsed, profilePhoto: dataUrl };
+            window.localStorage.setItem("sc_user", JSON.stringify(updated));
+          } catch {
+            // ignore
+          }
+        }
+        
         // Trigger photo change event to update navbar
         window.dispatchEvent(new Event("profile-photo-change"));
       };
@@ -593,9 +606,10 @@ export default function Profile() {
           const userData = {
             name: user.name || "",
             email: user.email,
-            profilePhoto: (user as { profilePhoto?: string }).profilePhoto || ""
+            profilePhoto: profilePhoto
           };
           window.localStorage.setItem("sc_user", JSON.stringify(userData));
+          window.dispatchEvent(new Event("profile-photo-change"));
         }
       })
       .catch(() => {
@@ -913,6 +927,19 @@ export default function Profile() {
                   size="small"
                   onClick={() => {
                     setProfilePhoto("");
+                    
+                    // Update localStorage immediately
+                    const stored = window.localStorage.getItem("sc_user");
+                    if (stored) {
+                      try {
+                        const parsed = JSON.parse(stored) as { name?: string; email?: string };
+                        const updated = { ...parsed, profilePhoto: "" };
+                        window.localStorage.setItem("sc_user", JSON.stringify(updated));
+                      } catch {
+                        // ignore
+                      }
+                    }
+                    
                     window.dispatchEvent(new Event("profile-photo-change"));
                   }}
                   sx={{ textTransform: "none" }}
@@ -1127,15 +1154,6 @@ export default function Profile() {
                 Adicionar comentario
               </Button>
             </Stack>
-
-            <Button
-              variant="outlined"
-              size="large"
-              onClick={saveProfile}
-              sx={{ alignSelf: "flex-start" }}
-            >
-              Salvar alterações
-            </Button>
           </Stack>
         </AppAccordion>
 
