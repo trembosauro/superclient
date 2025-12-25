@@ -3,7 +3,6 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
   IconButton,
   MenuItem,
   Snackbar,
@@ -12,6 +11,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { Link as RouterLink, useLocation } from "wouter";
 import api from "../api";
 import ToggleCheckbox from "../components/ToggleCheckbox";
@@ -555,34 +555,39 @@ export default function Dashboard() {
               sx={{ alignItems: "center" }}
             >
               {visibleQuickLinks.map(link => (
-                <Chip
+                <Button
                   key={link.href}
                   component={RouterLink}
                   href={link.href}
-                  clickable
-                  label={link.label}
-                  variant="outlined"
+                  variant="text"
+                  color="inherit"
+                  size="small"
                   sx={theme => ({
+                    minWidth: 0,
                     fontWeight: 600,
                     borderRadius: theme.shape.borderRadius,
                     minHeight: 36,
-                    "& .MuiChip-label": {
-                      paddingLeft: theme.spacing(1.25),
-                      paddingRight: theme.spacing(1.25),
-                      paddingTop: theme.spacing(0.75),
-                      paddingBottom: theme.spacing(0.75),
-                    },
-                    ...(location === link.href
-                      ? { backgroundColor: theme.palette.action.selected }
-                      : null),
+                    px: 1.25,
+                    py: 0.75,
+                    color:
+                      location === link.href
+                        ? theme.palette.primary.main
+                        : theme.palette.text.secondary,
+                    backgroundColor:
+                      location === link.href
+                        ? alpha(theme.palette.primary.main, 0.12)
+                        : "transparent",
                     "&:hover": {
-                      backgroundColor: theme.palette.action.hover,
+                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                      color: theme.palette.primary.main,
                     },
                     "&:active": {
-                      backgroundColor: theme.palette.action.selected,
+                      backgroundColor: alpha(theme.palette.primary.main, 0.18),
                     },
                   })}
-                />
+                >
+                  {link.label}
+                </Button>
               ))}
             </Stack>
           </AppCard>

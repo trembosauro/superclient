@@ -49,6 +49,8 @@ import UnarchiveRoundedIcon from "@mui/icons-material/UnarchiveRounded";
 import BackspaceRoundedIcon from "@mui/icons-material/BackspaceRounded";
 import FormatUnderlinedRoundedIcon from "@mui/icons-material/FormatUnderlinedRounded";
 import ShuffleRoundedIcon from "@mui/icons-material/ShuffleRounded";
+import StarBorderRoundedIcon from "@mui/icons-material/StarBorderRounded";
+import StarRoundedIcon from "@mui/icons-material/StarRounded";
 import { APP_RADIUS, APP_RADIUS_PX } from "../designTokens";
 import { interactiveItemSx, interactiveCardSx } from "../styles/interactiveCard";
 import SettingsIconButton from "../components/SettingsIconButton";
@@ -83,6 +85,7 @@ type Note = {
   id: string;
   title: string;
   emoji: string;
+  favorite?: boolean;
   contentHtml: string;
   links: NoteLink[];
   attachments: NoteAttachment[];
@@ -481,6 +484,7 @@ const emptyNote = (): Note => ({
   id: `note-${Date.now()}`,
   title: "Nova nota",
   emoji: getRandomEmoji(),
+  favorite: false,
   contentHtml: "",
   links: [],
   attachments: [],
@@ -599,6 +603,7 @@ export default function Notes() {
           : `note-${Date.now()}`,
       title: typeof raw.title === "string" ? raw.title : "",
       emoji: typeof raw.emoji === "string" && raw.emoji ? raw.emoji : getRandomEmoji(),
+      favorite: Boolean((raw as any).favorite),
       contentHtml: typeof raw.contentHtml === "string" ? raw.contentHtml : "",
       links: Array.isArray(raw.links)
         ? (raw.links
@@ -764,6 +769,26 @@ export default function Notes() {
       return haystack.includes(term);
     });
   }, [notes, noteQuery, isArchiveView]);
+
+  const sortedFilteredNotes = useMemo(() => {
+    const collator = new Intl.Collator("pt-BR", { sensitivity: "base" });
+    const titleKey = (note: Note) =>
+      (note.title || "Sem título").trim() || "Sem título";
+
+    const list = [...filteredNotes];
+    list.sort((a, b) => {
+      const af = Boolean(a.favorite);
+      const bf = Boolean(b.favorite);
+      if (af !== bf) {
+        return af ? -1 : 1;
+      }
+      if (af && bf) {
+        return collator.compare(titleKey(a), titleKey(b));
+      }
+      return (b.updatedAt || "").localeCompare(a.updatedAt || "");
+    });
+    return list;
+  }, [filteredNotes]);
 
   const noteIdFromRoute = (() => {
     if (location.startsWith("/notas/arquivo/")) {
@@ -994,6 +1019,14 @@ export default function Notes() {
     setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
   };
 
+  const toggleFavorite = (noteId: string) => {
+    setNotes(prev =>
+      prev.map(note =>
+        note.id === noteId ? { ...note, favorite: !note.favorite } : note
+      )
+    );
+  };
+
   const showSidebar = true;
   const showBackButton = Boolean(noteIdFromRoute);
   const archiveLink = isArchiveView
@@ -1032,8 +1065,22 @@ export default function Notes() {
       }
     }
 
+    const collator = new Intl.Collator("pt-BR", { sensitivity: "base" });
+    const titleKey = (note: Note) =>
+      (note.title || "Sem título").trim() || "Sem título";
+
     const sortNotes = (items: Note[]) =>
-      items.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+      items.sort((a, b) => {
+        const af = Boolean(a.favorite);
+        const bf = Boolean(b.favorite);
+        if (af !== bf) {
+          return af ? -1 : 1;
+        }
+        if (af && bf) {
+          return collator.compare(titleKey(a), titleKey(b));
+        }
+        return (b.updatedAt || "").localeCompare(a.updatedAt || "");
+      });
 
     sortNotes(roots);
     Array.from(childrenByParentId.values()).forEach(list => sortNotes(list));
@@ -1129,19 +1176,45 @@ export default function Notes() {
                 </IconButton>
               ) : null}
             </Box>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: depth > 0 ? 500 : 600,
-                minWidth: 0,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                color: "text.primary",
-              }}
+            <Stack
+              direction="row"
+              spacing={0.75}
+              alignItems="center"
+              sx={{ minWidth: 0, flex: 1 }}
             >
-              {note.emoji} {note.title || "Sem título"}
-            </Typography>
+              <IconButton
+                size="small"
+                onClick={event => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  toggleFavorite(note.id);
+                }}
+                sx={{
+                  p: 0.25,
+                  color: note.favorite ? "text.primary" : "text.secondary",
+                }}
+                aria-label={note.favorite ? "Remover favorito" : "Marcar favorito"}
+              >
+                {note.favorite ? (
+                  <StarRoundedIcon fontSize="small" />
+                ) : (
+                  <StarBorderRoundedIcon fontSize="small" />
+                )}
+              </IconButton>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: depth > 0 ? 500 : 600,
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  color: "text.primary",
+                }}
+              >
+                {note.emoji} {note.title || "Sem título"}
+              </Typography>
+            </Stack>
           </Stack>
         </Box>
       );
@@ -1298,7 +1371,7 @@ export default function Notes() {
               onChange={(_, expanded) => setMobileNotesExpanded(expanded)}
               title="Notas"
             >
-              <Stack spacing={1}>
+              <Stack spacing={0}>
                 {renderSidebarItems({
                   onSelect: note => selectNote(note),
                   onAfterSelect: () => setMobileNotesExpanded(false),
@@ -1331,7 +1404,7 @@ export default function Notes() {
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                     Notas
                   </Typography>
-                  <Stack spacing={1}>
+                  <Stack spacing={0}>
                     {renderSidebarItems({ onSelect: note => selectNote(note) })}
                     {!sidebarTree.roots.length ? (
                       <Typography
@@ -1373,10 +1446,10 @@ export default function Notes() {
                       }}
                     >
                       {(expandedNoteId
-                        ? filteredNotes.filter(
+                        ? sortedFilteredNotes.filter(
                             note => note.id === expandedNoteId
                           )
-                        : filteredNotes
+                        : sortedFilteredNotes
                       ).map(note => {
                         const isExpanded = note.id === expandedNoteId;
                         const preview = stripHtml(
@@ -1411,19 +1484,57 @@ export default function Notes() {
                                 sx={{
                                   display: "flex",
                                   alignItems: "center",
-                                  justifyContent: "flex-start",
+                                  justifyContent: "space-between",
                                   gap: 1,
                                   width: "100%",
                                 }}
                               >
-                                <Typography
-                                  variant={
-                                    isExpanded ? "subtitle1" : "subtitle2"
-                                  }
-                                  sx={{ fontWeight: 600 }}
+                                <Stack
+                                  direction="row"
+                                  spacing={0.75}
+                                  alignItems="center"
+                                  sx={{ minWidth: 0, flex: 1 }}
                                 >
-                                  {note.emoji} {note.title}
-                                </Typography>
+                                  <IconButton
+                                    size="small"
+                                    onClick={event => {
+                                      event.preventDefault();
+                                      event.stopPropagation();
+                                      toggleFavorite(note.id);
+                                    }}
+                                    sx={{
+                                      p: 0.25,
+                                      color: note.favorite
+                                        ? "text.primary"
+                                        : "text.secondary",
+                                    }}
+                                    aria-label={
+                                      note.favorite
+                                        ? "Remover favorito"
+                                        : "Marcar favorito"
+                                    }
+                                  >
+                                    {note.favorite ? (
+                                      <StarRoundedIcon fontSize="small" />
+                                    ) : (
+                                      <StarBorderRoundedIcon fontSize="small" />
+                                    )}
+                                  </IconButton>
+                                  <Typography
+                                    variant={
+                                      isExpanded ? "subtitle1" : "subtitle2"
+                                    }
+                                    sx={{
+                                      fontWeight: 600,
+                                      minWidth: 0,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {note.emoji} {note.title}
+                                  </Typography>
+                                </Stack>
                               </Box>
                               {isExpanded && preview ? (
                                 <Typography

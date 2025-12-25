@@ -14,7 +14,13 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { EditorContent, useEditor } from "@tiptap/react";
+import {
+  EditorContent,
+  ReactNodeViewRenderer,
+  NodeViewWrapper,
+  type NodeViewProps,
+  useEditor,
+} from "@tiptap/react";
 import { Extension } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
@@ -37,6 +43,178 @@ import LooksTwoRoundedIcon from "@mui/icons-material/LooksTwoRounded";
 
 import { APP_RADIUS } from "../designTokens";
 import AppCard from "./layout/AppCard";
+
+function ResizableImageNodeView({ node, selected, updateAttributes }: NodeViewProps) {
+  const wrapperRef = useRef<HTMLSpanElement | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const dragRef = useRef<
+    | {
+        startX: number;
+        startWidth: number;
+        containerWidth: number;
+        dir: "e" | "w";
+        pointerId: number;
+      }
+    | null
+  >(null);
+
+  const startResize = (event: React.PointerEvent, dir: "e" | "w") => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const img = imgRef.current;
+    const wrapper = wrapperRef.current;
+    if (!img || !wrapper) {
+      return;
+    }
+
+    const rect = img.getBoundingClientRect();
+    const parentRect = wrapper.parentElement?.getBoundingClientRect();
+
+    dragRef.current = {
+      startX: event.clientX,
+      startWidth: rect.width,
+      containerWidth: parentRect?.width || rect.width,
+      dir,
+      pointerId: event.pointerId,
+    };
+
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  };
+
+  const onResizeMove = (event: React.PointerEvent) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const delta = event.clientX - drag.startX;
+    const signedDelta = drag.dir === "e" ? delta : -delta;
+    const minWidth = 96;
+    const maxWidth = Math.max(minWidth, drag.containerWidth);
+    const nextWidth = Math.max(
+      minWidth,
+      Math.min(maxWidth, drag.startWidth + signedDelta)
+    );
+
+    updateAttributes({ width: String(Math.round(nextWidth)) });
+  };
+
+  const endResize = (event: React.PointerEvent) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return;
+    }
+    dragRef.current = null;
+  };
+
+  const handleSx = {
+    position: "absolute" as const,
+    top: 0,
+    bottom: 0,
+    width: 14,
+    cursor: "ew-resize",
+    zIndex: 2,
+    borderRadius: APP_RADIUS,
+    backgroundColor: "transparent",
+    touchAction: "none" as const,
+  };
+
+  return (
+    <NodeViewWrapper
+      as="span"
+      ref={wrapperRef}
+      style={{
+        display: "inline-block",
+        position: "relative",
+        maxWidth: "100%",
+        borderRadius: APP_RADIUS,
+        overflow: "hidden",
+      }}
+    >
+      <img
+        ref={imgRef}
+        src={String((node.attrs as any).src || "")}
+        alt={String((node.attrs as any).alt || "")}
+        title={String((node.attrs as any).title || "")}
+        className={selected ? "ProseMirror-selectednode" : undefined}
+        width={
+          typeof (node.attrs as any).width === "string" && (node.attrs as any).width
+            ? (node.attrs as any).width
+            : undefined
+        }
+        style={{
+          display: "block",
+          maxWidth: "100%",
+          height: "auto",
+          borderRadius: APP_RADIUS,
+          touchAction: "none",
+        }}
+        draggable={false}
+      />
+
+      {selected ? (
+        <>
+          <Box
+            onPointerDown={event => startResize(event, "w")}
+            onPointerMove={onResizeMove}
+            onPointerUp={endResize}
+            onPointerCancel={endResize}
+            sx={{
+              ...handleSx,
+              left: 0,
+            }}
+          />
+          <Box
+            onPointerDown={event => startResize(event, "e")}
+            onPointerMove={onResizeMove}
+            onPointerUp={endResize}
+            onPointerCancel={endResize}
+            sx={{
+              ...handleSx,
+              right: 0,
+            }}
+          />
+        </>
+      ) : null}
+    </NodeViewWrapper>
+  );
+}
+
+const ResizableImage = Image.extend({
+  addAttributes() {
+    return {
+      ...(this.parent?.() || {}),
+      width: {
+        default: null,
+        parseHTML: element => {
+          const raw =
+            element.getAttribute("width") ||
+            (element as HTMLElement).style?.width ||
+            null;
+          if (!raw) {
+            return null;
+          }
+          const numeric = String(raw).replace("px", "").trim();
+          const value = Number(numeric);
+          if (!Number.isFinite(value) || value <= 0) {
+            return null;
+          }
+          return String(Math.round(value));
+        },
+        renderHTML: attributes => {
+          if (!attributes.width) {
+            return {};
+          }
+          return { width: attributes.width };
+        },
+      },
+    };
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableImageNodeView);
+  },
+});
 
 type EmojiPickerOpts = {
   mode?: "note" | "editor";
@@ -140,7 +318,7 @@ export default function RichTextEditor({
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
       }),
-      Image,
+      ResizableImage,
       Placeholder.configure({
         placeholder: placeholder || "Escreva...",
       }),

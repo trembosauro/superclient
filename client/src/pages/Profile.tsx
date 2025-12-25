@@ -62,10 +62,13 @@ type ModuleDialog =
 
 const ACCOUNT_STORAGE_KEY = "sc_accounts";
 
+const CORE_MODULE_PRICE_BRL = 10;
+const CORE_MODULE_BUNDLE_TOTAL_BRL = 25;
+
 const coreModuleLabels = {
   modulePipeline: {
     title: "Pipeline",
-    price: "R$ 89/mes",
+    price: "R$ 10/mês",
     description: "Gestão de oportunidades e tasks.",
     features: [
       "Quadro kanban com etapas personalizadas",
@@ -76,7 +79,7 @@ const coreModuleLabels = {
   },
   moduleFinance: {
     title: "Finanças",
-    price: "R$ 79/mes",
+    price: "R$ 10/mês",
     description: "Controle de gastos e categorias.",
     features: [
       "Lancamentos e categorias personalizadas",
@@ -87,7 +90,7 @@ const coreModuleLabels = {
   },
   moduleContacts: {
     title: "Contatos",
-    price: "R$ 39/mes",
+    price: "R$ 10/mês",
     description: "Gestão de contatos e categorias.",
     features: [
       "Campos e categorias personalizadas",
@@ -98,7 +101,7 @@ const coreModuleLabels = {
   },
   moduleCalendar: {
     title: "Calendário",
-    price: "R$ 49/mes",
+    price: "R$ 10/mês",
     description: "Agenda visual e lembretes de tarefas.",
     features: [
       "Lista diaria de tarefas e lembretes",
@@ -109,7 +112,7 @@ const coreModuleLabels = {
   },
   moduleNotes: {
     title: "Notas",
-    price: "R$ 29/mes",
+    price: "R$ 10/mês",
     description: "Notas com editor rico e categorias.",
     features: [
       "Editor com rich text",
@@ -220,6 +223,13 @@ export default function Profile() {
   const [languageSnackbarOpen, setLanguageSnackbarOpen] = useState(false);
   const lastLanguageRef = useRef<string | null>(null);
   const [accessModules, setAccessModules] = useState<AccessModule[]>([]);
+
+  const formatBRL = (amount: number) =>
+    new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      maximumFractionDigits: 0,
+    }).format(amount);
   const [moduleDialog, setModuleDialog] = useState<ModuleDialog | null>(null);
   const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
   const [switchAccounts, setSwitchAccounts] = useState<StoredAccount[]>([]);
@@ -233,6 +243,22 @@ export default function Profile() {
     ? accessModules
     : fallbackAccessModules;
   const canToggleAccessModules = accessModules.length > 0;
+
+  const coreModuleKeys = Object.keys(coreModuleLabels) as Array<
+    | "modulePipeline"
+    | "moduleFinance"
+    | "moduleContacts"
+    | "moduleCalendar"
+    | "moduleNotes"
+  >;
+  const enabledCoreModulesCount = coreModuleKeys.filter(
+    key => preferences[key]
+  ).length;
+  const allCoreModulesEnabled = enabledCoreModulesCount === coreModuleKeys.length;
+  const bundleBaseTotal = coreModuleKeys.length * CORE_MODULE_PRICE_BRL;
+  const coreModulesTotal = allCoreModulesEnabled
+    ? CORE_MODULE_BUNDLE_TOTAL_BRL
+    : enabledCoreModulesCount * CORE_MODULE_PRICE_BRL;
 
   const loadAccounts = () => {
     const stored = window.localStorage.getItem(ACCOUNT_STORAGE_KEY);
@@ -1331,6 +1357,25 @@ export default function Profile() {
           title="Modulos"
         >
           <Stack spacing={2.5}>
+            <AppCard variant="outlined" sx={{ p: 2.5 }}>
+              <Stack spacing={0.75}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Total dos módulos
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  {formatBRL(coreModulesTotal)}/mês
+                </Typography>
+                {allCoreModulesEnabled ? (
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Todos os módulos pagos: de {formatBRL(bundleBaseTotal)}/mês por {formatBRL(CORE_MODULE_BUNDLE_TOTAL_BRL)}/mês (R$ 5 por módulo).
+                  </Typography>
+                ) : (
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    {formatBRL(CORE_MODULE_PRICE_BRL)}/mês por módulo pago. Módulos administrativos são grátis.
+                  </Typography>
+                )}
+              </Stack>
+            </AppCard>
             <Box
               sx={{
                 display: "grid",
