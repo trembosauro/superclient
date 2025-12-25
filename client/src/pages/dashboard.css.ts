@@ -33,6 +33,7 @@ export const notificationsContainer = style({
 
 export const notificationItem = style({
   display: 'flex',
+  flexDirection: 'row',
   alignItems: 'center',
   gap: '12px',
   minWidth: '200px',
@@ -50,7 +51,9 @@ export const notificationItem = style({
 
 export const notificationIcon = style({
   color: 'var(--md-sys-color-on-surface)',
-  flexShrink: 0,
+  flex: '0 0 auto',
+  width: '20px',
+  height: '20px',
 });
 
 export const notificationContent = style({
@@ -59,6 +62,7 @@ export const notificationContent = style({
   display: 'flex',
   flexDirection: 'column',
   gap: '4px',
+  textAlign: 'left',
 });
 
 export const notificationTitle = style({
