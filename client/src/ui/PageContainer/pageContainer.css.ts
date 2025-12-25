@@ -22,4 +22,11 @@ export const pageContent = style({
   minHeight: 0,
   display: 'flex',
   flexDirection: 'column',
+  
+  // Ensure first child has no extra margin for perfect alignment with topRow/titleRow
+  selectors: {
+    '& > *:first-child': {
+      marginTop: 0,
+    },
+  },
 });

@@ -1684,14 +1684,13 @@ export default function Calendar() {
 
   return (
     <PageContainer actionsSlot={pageActions}>
-      <Stack spacing={{ xs: 2.5, md: 3 }}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "280px 1fr" },
-            gap: 2.5,
-          }}
-        >
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "280px 1fr" },
+          gap: 2.5,
+        }}
+      >
           <Stack
             spacing={2.5}
             sx={{
@@ -2213,7 +2212,6 @@ export default function Calendar() {
             </Stack>
           </Stack>
         </Box>
-      </Stack>
 
       <Dialog
         open={Boolean(viewingTask)}
