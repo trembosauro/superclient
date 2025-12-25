@@ -135,6 +135,19 @@ export const DESIGN_TOKENS = {
     gap: '16px',
     actionsGap: '8px',
   },
+  card: {
+    bg: '#0f1720', // background.paper do MUI theme
+    border: 'rgba(255, 255, 255, 0.12)', // divider do MUI dark mode
+    radius: '16px', // APP_RADIUS
+    shadow: 'none',
+    headerPadding: '20px 24px',
+    contentPaddingDesktop: '24px',
+    contentPaddingMobile: '20px',
+  },
+  cardSection: {
+    paddingCompact: '12px',
+    paddingDefault: '16px',
+  },
 };
 
 export const applyDesignTokensToCssVars = () => {
@@ -261,6 +274,19 @@ export const applyDesignTokensToCssVars = () => {
   root.style.setProperty('--sc-page-subtitle-color', DESIGN_TOKENS.pageHeader.subtitleColor);
   root.style.setProperty('--sc-page-header-gap', DESIGN_TOKENS.pageHeader.gap);
   root.style.setProperty('--sc-page-actions-gap', DESIGN_TOKENS.pageHeader.actionsGap);
+  
+  // Apply card tokens
+  root.style.setProperty('--sc-card-bg', DESIGN_TOKENS.card.bg);
+  root.style.setProperty('--sc-card-border', DESIGN_TOKENS.card.border);
+  root.style.setProperty('--sc-card-radius', DESIGN_TOKENS.card.radius);
+  root.style.setProperty('--sc-card-shadow', DESIGN_TOKENS.card.shadow);
+  root.style.setProperty('--sc-card-header-padding', DESIGN_TOKENS.card.headerPadding);
+  root.style.setProperty('--sc-card-content-padding-desktop', DESIGN_TOKENS.card.contentPaddingDesktop);
+  root.style.setProperty('--sc-card-content-padding-mobile', DESIGN_TOKENS.card.contentPaddingMobile);
+  
+  // Apply cardSection tokens
+  root.style.setProperty('--sc-card-section-padding-compact', DESIGN_TOKENS.cardSection.paddingCompact);
+  root.style.setProperty('--sc-card-section-padding-default', DESIGN_TOKENS.cardSection.paddingDefault);
   
   // Keep legacy radius variables in sync
   const radius = `${APP_RADIUS_PX}px`;

@@ -1,9 +1,10 @@
 import { style } from '@vanilla-extract/css';
 
 export const card = style({
-  backgroundColor: 'var(--md-sys-color-surface)',
-  borderRadius: 'var(--md-sys-shape-corner-large, 16px)',
-  border: '1px solid var(--md-sys-color-outline-variant)',
+  backgroundColor: 'var(--sc-card-bg)',
+  borderRadius: 'var(--sc-card-radius)',
+  border: '1px solid var(--sc-card-border)',
+  boxShadow: 'var(--sc-card-shadow)',
   overflow: 'hidden',
   display: 'flex',
   flexDirection: 'column',
@@ -14,8 +15,8 @@ export const cardHeader = style({
   alignItems: 'center',
   justifyContent: 'space-between',
   gap: '16px',
-  padding: '20px 24px',
-  borderBottom: '1px solid var(--md-sys-color-outline-variant)',
+  padding: 'var(--sc-card-header-padding)',
+  borderBottom: '1px solid var(--sc-card-border)',
 });
 
 export const cardHeaderContent = style({
@@ -49,13 +50,13 @@ export const cardActions = style({
 });
 
 export const cardContent = style({
-  padding: '24px',
+  padding: 'var(--sc-card-content-padding-desktop)',
   flex: 1,
   minHeight: 0,
   
   '@media': {
     '(max-width: 959px)': {
-      padding: '20px',
+      padding: 'var(--sc-card-content-padding-mobile)',
     },
   },
 });
