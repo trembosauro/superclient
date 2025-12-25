@@ -28,19 +28,37 @@ export const appBarInner = style({
 export const brandSlot = style({
   display: 'flex',
   alignItems: 'center',
-  flex: 1,
+  flex: '0 0 auto',
 });
 
 export const navSlot = style({
-  flex: 1,
+  flex: '1 1 auto',
   display: 'none',
   justifyContent: 'center',
   gap: 'var(--sc-header-nav-gap, 6px)',
+  minWidth: 0,
   
   '@media': {
     '(min-width: 960px)': {
       display: 'flex',
+      flexWrap: 'nowrap',
+      overflowX: 'auto',
+      whiteSpace: 'nowrap',
+      scrollbarWidth: 'thin',
     },
+  },
+  
+  '::-webkit-scrollbar': {
+    height: '4px',
+  },
+  
+  '::-webkit-scrollbar-track': {
+    backgroundColor: 'transparent',
+  },
+  
+  '::-webkit-scrollbar-thumb': {
+    backgroundColor: 'color-mix(in srgb, var(--md-sys-color-on-surface) 20%, transparent)',
+    borderRadius: '2px',
   },
 });
 
@@ -48,6 +66,7 @@ export const actionsSlot = style({
   display: 'flex',
   alignItems: 'center',
   gap: '8px',
+  flex: '0 0 auto',
 });
 
 export const mobileRightGroup = style({
