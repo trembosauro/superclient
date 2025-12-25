@@ -143,6 +143,9 @@ export const DESIGN_TOKENS = {
     headerPadding: '20px 24px',
     contentPaddingDesktop: '24px',
     contentPaddingMobile: '20px',
+    hoverBg: 'rgba(255, 255, 255, 0.04)', // subtle background on hover
+    hoverBorder: 'rgba(255, 255, 255, 0.16)', // subtle border reinforcement
+    pressedBg: 'rgba(255, 255, 255, 0.08)', // slightly stronger pressed state
   },
   cardSection: {
     paddingCompact: '12px',
@@ -283,6 +286,9 @@ export const applyDesignTokensToCssVars = () => {
   root.style.setProperty('--sc-card-header-padding', DESIGN_TOKENS.card.headerPadding);
   root.style.setProperty('--sc-card-content-padding-desktop', DESIGN_TOKENS.card.contentPaddingDesktop);
   root.style.setProperty('--sc-card-content-padding-mobile', DESIGN_TOKENS.card.contentPaddingMobile);
+  root.style.setProperty('--sc-card-hover-bg', DESIGN_TOKENS.card.hoverBg);
+  root.style.setProperty('--sc-card-hover-border', DESIGN_TOKENS.card.hoverBorder);
+  root.style.setProperty('--sc-card-pressed-bg', DESIGN_TOKENS.card.pressedBg);
   
   // Apply cardSection tokens
   root.style.setProperty('--sc-card-section-padding-compact', DESIGN_TOKENS.cardSection.paddingCompact);

@@ -13,15 +13,20 @@ export const cardSection = style({
 
 export const cardSectionInteractive = style({
   cursor: 'pointer',
-  transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+  transition: 'background-color 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1)',
   
   ':hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.16)',
+    backgroundColor: 'var(--sc-card-hover-bg)',
+    borderColor: 'var(--sc-card-hover-border)',
   },
   
   ':active': {
-    transform: 'translateY(0)',
+    backgroundColor: 'var(--sc-card-pressed-bg)',
+  },
+  
+  ':focus-visible': {
+    outline: '2px solid var(--md-sys-color-primary)',
+    outlineOffset: '2px',
   },
 });
 
