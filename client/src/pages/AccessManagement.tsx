@@ -20,6 +20,7 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AppAccordion from "../components/layout/AppAccordion";
 import CardSection from "../components/layout/CardSection";
 import SettingsIconButton from "../components/SettingsIconButton";
+import { SearchField } from "../ui/SearchField/SearchField";
 
 type RolePermissionKey =
   | "pipeline_view"
@@ -661,24 +662,13 @@ export default function AccessManagement() {
           title="Usuários e cargos"
         >
           <Stack spacing={2.5}>
-            <TextField
-              label="Buscar usuário"
+            <SearchField
+              placeholder="Buscar usuário"
               fullWidth
               value={userFilter}
-              onChange={event => setUserFilter(event.target.value)}
-              InputProps={{
-                endAdornment: userFilter ? (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() => setUserFilter("")}
-                      aria-label="Limpar busca"
-                    >
-                      <CloseRoundedIcon fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ) : null,
-              }}
+              onChange={e => setUserFilter(e.target.value)}
+              onClear={() => setUserFilter("")}
+              ariaLabel="Buscar usuário"
             />
             {filteredUsers.length === 0 ? (
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
