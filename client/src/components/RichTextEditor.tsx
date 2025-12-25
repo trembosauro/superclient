@@ -113,13 +113,14 @@ function ResizableImageNodeView({
     if (!img) return;
 
     const rect = img.getBoundingClientRect();
-    const parentWidth = img.parentElement?.clientWidth || rect.width;
+    const container = img.closest(".tiptap") as HTMLElement | null;
+    const maxW = container?.clientWidth || window.innerWidth;
 
     dragRef.current = {
       side,
       startX: e.clientX,
       startWidth: rect.width,
-      maxWidth: Math.max(rect.width, parentWidth),
+      maxWidth: maxW,
     };
     setDragging(true);
   };
@@ -130,10 +131,7 @@ function ResizableImageNodeView({
     bottom: 0,
     width: 16,
     cursor: "ew-resize",
-    backgroundColor: "rgba(128,128,128,0.25)",
-    borderRadius: APP_RADIUS,
-    opacity: selected || dragging ? 1 : 0,
-    transition: "opacity 0.15s",
+    backgroundColor: "transparent",
     zIndex: 2,
   };
 
