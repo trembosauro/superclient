@@ -1182,25 +1182,6 @@ export default function Notes() {
               alignItems="center"
               sx={{ minWidth: 0, flex: 1 }}
             >
-              <IconButton
-                size="small"
-                onClick={event => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  toggleFavorite(note.id);
-                }}
-                sx={{
-                  p: 0.25,
-                  color: note.favorite ? "text.primary" : "text.secondary",
-                }}
-                aria-label={note.favorite ? "Remover favorito" : "Marcar favorito"}
-              >
-                {note.favorite ? (
-                  <StarRoundedIcon fontSize="small" />
-                ) : (
-                  <StarBorderRoundedIcon fontSize="small" />
-                )}
-              </IconButton>
               <Typography
                 variant="body2"
                 sx={{
@@ -1210,10 +1191,24 @@ export default function Notes() {
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
                   color: "text.primary",
+                  flex: 1,
                 }}
               >
                 {note.emoji} {note.title || "Sem título"}
               </Typography>
+              {note.favorite ? (
+                <Box
+                  sx={{
+                    flex: "0 0 auto",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    color: "text.primary",
+                  }}
+                  aria-label="Nota favorita"
+                >
+                  <StarRoundedIcon fontSize="small" />
+                </Box>
+              ) : null}
             </Stack>
           </Stack>
         </Box>
@@ -1429,19 +1424,19 @@ export default function Notes() {
                     size="small"
                     value={noteQuery}
                     onChange={event => setNoteQuery(event.target.value)}
-                    sx={{ minWidth: 220 }}
+                    fullWidth
+                    sx={{ minWidth: 0 }}
                   />
                   {filteredNotes.length ? (
                     <Box
                       sx={{
                         display: "grid",
                         gap: 2,
+                        width: "100%",
+                        minWidth: 0,
                         gridTemplateColumns: {
                           xs: "1fr",
-                          sm: "1fr 1fr",
-                          md: "1fr 1fr 1fr",
-                          lg: "1fr 1fr 1fr",
-                          xl: "1fr 1fr 1fr 1fr",
+                          sm: "repeat(auto-fit, minmax(260px, 1fr))",
                         },
                       }}
                     >
@@ -1489,52 +1484,34 @@ export default function Notes() {
                                   width: "100%",
                                 }}
                               >
-                                <Stack
-                                  direction="row"
-                                  spacing={0.75}
-                                  alignItems="center"
-                                  sx={{ minWidth: 0, flex: 1 }}
+                                <Typography
+                                  variant={
+                                    isExpanded ? "subtitle1" : "subtitle2"
+                                  }
+                                  sx={{
+                                    fontWeight: 600,
+                                    minWidth: 0,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                    flex: 1,
+                                  }}
                                 >
-                                  <IconButton
-                                    size="small"
-                                    onClick={event => {
-                                      event.preventDefault();
-                                      event.stopPropagation();
-                                      toggleFavorite(note.id);
-                                    }}
+                                  {note.emoji} {note.title}
+                                </Typography>
+                                {note.favorite ? (
+                                  <Box
                                     sx={{
-                                      p: 0.25,
-                                      color: note.favorite
-                                        ? "text.primary"
-                                        : "text.secondary",
+                                      flex: "0 0 auto",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      color: "text.primary",
                                     }}
-                                    aria-label={
-                                      note.favorite
-                                        ? "Remover favorito"
-                                        : "Marcar favorito"
-                                    }
+                                    aria-label="Nota favorita"
                                   >
-                                    {note.favorite ? (
-                                      <StarRoundedIcon fontSize="small" />
-                                    ) : (
-                                      <StarBorderRoundedIcon fontSize="small" />
-                                    )}
-                                  </IconButton>
-                                  <Typography
-                                    variant={
-                                      isExpanded ? "subtitle1" : "subtitle2"
-                                    }
-                                    sx={{
-                                      fontWeight: 600,
-                                      minWidth: 0,
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                      whiteSpace: "nowrap",
-                                    }}
-                                  >
-                                    {note.emoji} {note.title}
-                                  </Typography>
-                                </Stack>
+                                    <StarRoundedIcon fontSize="small" />
+                                  </Box>
+                                ) : null}
                               </Box>
                               {isExpanded && preview ? (
                                 <Typography
@@ -1747,6 +1724,35 @@ export default function Notes() {
                         }}
                       />
                       <Stack direction="row" alignItems="center">
+                        <Tooltip
+                          title={
+                            selectedNote.favorite
+                              ? "Remover dos favoritos"
+                              : "Marcar como favorito"
+                          }
+                          placement="top"
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={() => toggleFavorite(selectedNote.id)}
+                            sx={{
+                              color: selectedNote.favorite
+                                ? "text.primary"
+                                : "text.secondary",
+                            }}
+                            aria-label={
+                              selectedNote.favorite
+                                ? "Remover favorito"
+                                : "Marcar favorito"
+                            }
+                          >
+                            {selectedNote.favorite ? (
+                              <StarRoundedIcon fontSize="small" />
+                            ) : (
+                              <StarBorderRoundedIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip
                           title={`Criada em ${new Date(selectedNote.createdAt).toLocaleString(
                             "pt-BR"
