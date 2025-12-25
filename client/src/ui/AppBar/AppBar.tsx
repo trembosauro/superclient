@@ -1,21 +1,28 @@
 import { ReactNode } from 'react';
 import MenuIcon from '@mui/icons-material/Menu';
 import { IconButton as MuiIconButton } from '@mui/material';
-import { appBar, appBarInner, brandSlot, navSlot, actionsSlot, mobileActions } from './appBar.css';
+import { 
+  appBar, 
+  appBarInner, 
+  brandSlot as brandSlotClass, 
+  navSlot as navSlotClass, 
+  actionsSlot as actionsSlotClass, 
+  mobileActions 
+} from './appBar.css';
 
 export interface AppBarProps {
   brandSlot: ReactNode;
   navSlot?: ReactNode;
   actionsSlot?: ReactNode;
   showMobileMenuButton?: boolean;
-  onMenuClick?: () => void;
+  onMenuClick?: (event: React.MouseEvent<HTMLElement>) => void;
   mobileActionsSlot?: ReactNode;
 }
 
 export function AppBar({
-  brandSlot,
-  navSlot,
-  actionsSlot,
+  brandSlot: brandSlotProp,
+  navSlot: navSlotProp,
+  actionsSlot: actionsSlotProp,
   showMobileMenuButton = true,
   onMenuClick,
   mobileActionsSlot,
@@ -23,19 +30,19 @@ export function AppBar({
   return (
     <header className={appBar}>
       <div className={appBarInner}>
-        <div className={brandSlot}>
-          {brandSlot}
+        <div className={brandSlotClass}>
+          {brandSlotProp}
         </div>
-        
-        {navSlot && (
-          <nav className={navSlot}>
-            {navSlot}
+
+        {navSlotProp && (
+          <nav className={navSlotClass}>
+            {navSlotProp}
           </nav>
         )}
-        
-        {actionsSlot && (
-          <div className={actionsSlot}>
-            {actionsSlot}
+
+        {actionsSlotProp && (
+          <div className={actionsSlotClass}>
+            {actionsSlotProp}
           </div>
         )}
         

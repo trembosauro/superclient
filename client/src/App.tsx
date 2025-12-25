@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
 import { ThemeProvider } from "@mui/material/styles";
 import {
   Avatar,
@@ -16,7 +15,6 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
 import AutoGraphRoundedIcon from "@mui/icons-material/AutoGraphRounded";
 import { Link as RouterLink, Route, Switch, useLocation } from "wouter";
@@ -635,7 +633,7 @@ function App() {
                     href="/profile"
                     variant="text"
                     color="inherit"
-                    sx={theme => ({
+                    sx={{
                       minWidth: 0,
                       p: 0,
                       borderRadius: APP_RADIUS,
@@ -645,7 +643,7 @@ function App() {
                       backgroundColor: isActive("/profile")
                         ? "rgba(34, 201, 166, 0.12)"
                         : "transparent",
-                    })}
+                    }}
                   >
                     <Avatar
                       src={profilePhoto}
@@ -666,35 +664,36 @@ function App() {
             mobileActionsSlot={
               <>
                 {isLoggedIn && (
-                  <IconButton
+                  <Button
                     component={RouterLink}
-                    href="/notifications"
+                    href="/profile"
+                    variant="text"
+                    color="inherit"
                     sx={{
-                      color: "rgba(34, 201, 166, 0.7)",
-                      border: isActive("/notifications")
+                      minWidth: 0,
+                      p: 0,
+                      borderRadius: APP_RADIUS,
+                      border: isActive("/profile")
                         ? "1px solid rgba(34, 201, 166, 0.6)"
                         : "1px solid transparent",
-                      backgroundColor: isActive("/notifications")
+                      backgroundColor: isActive("/profile")
                         ? "rgba(34, 201, 166, 0.12)"
                         : "transparent",
-                      p: 0.5,
-                      "&:hover": {
-                        backgroundColor: "rgba(34, 201, 166, 0.12)",
-                      },
-                      "&:active": {
-                        backgroundColor: "rgba(34, 201, 166, 0.28)",
-                        color: "rgba(34, 201, 166, 0.9)",
-                      },
                     }}
                   >
-                    <Badge
-                      variant="dot"
-                      color="error"
-                      invisible={!hasNotifications}
+                    <Avatar
+                      src={profilePhoto}
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        fontSize: 14,
+                        bgcolor: "rgba(34, 201, 166, 0.18)",
+                        color: "text.primary",
+                      }}
                     >
-                      <NotificationsNoneRoundedIcon />
-                    </Badge>
-                  </IconButton>
+                      {avatarInitial}
+                    </Avatar>
+                  </Button>
                 )}
               </>
             }
@@ -730,6 +729,32 @@ function App() {
                 {t(item.labelKey)}
               </MenuItem>
             ))}
+            {isLoggedIn ? (
+              <MenuItem
+                onClick={() => {
+                  setLocation("/notifications");
+                  handleMobileMenuClose();
+                }}
+                sx={{
+                  fontWeight: 600,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  ...(isActive("/notifications")
+                    ? { backgroundColor: "action.selected" }
+                    : null),
+                }}
+              >
+                Notificações
+                {hasNotifications && (
+                  <Badge
+                    variant="dot"
+                    color="error"
+                    sx={{ ml: 1 }}
+                  />
+                )}
+              </MenuItem>
+            ) : null}
             {isLoggedIn ? (
               <MenuItem
                 onClick={() => {
