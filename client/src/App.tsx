@@ -56,6 +56,7 @@ function App() {
   const [location, setLocation] = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>("");
+  const [profilePhoto, setProfilePhoto] = useState<string>("");
   const [mobileAnchorEl, setMobileAnchorEl] = useState<null | HTMLElement>(
     null
   );
@@ -87,13 +88,15 @@ function App() {
         setIsLoggedIn(true);
         setUserName(typeof name === "string" ? name : "");
         if (response?.data?.user?.email) {
-          window.localStorage.setItem(
-            "sc_user",
-            JSON.stringify({
-              name: response.data.user.name || "",
-              email: response.data.user.email,
-            })
-          );
+          const userData = {
+            name: response.data.user.name || "",
+            email: response.data.user.email,
+            profilePhoto: (response.data.user as { profilePhoto?: string }).profilePhoto || ""
+          };
+          window.localStorage.setItem("sc_user", JSON.stringify(userData));
+          if (userData.profilePhoto) {
+            setProfilePhoto(userData.profilePhoto);
+          }
         }
         try {
           const prefsResponse = await api.get("/api/profile");
@@ -183,6 +186,21 @@ function App() {
     window.addEventListener("contacts-change", handleContactsChange);
     computeNotifications();
 
+    const handleProfilePhotoChange = () => {
+      const stored = window.localStorage.getItem("sc_user");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as { profilePhoto?: string };
+          if (typeof parsed?.profilePhoto === "string") {
+            setProfilePhoto(parsed.profilePhoto);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener("profile-photo-change", handleProfilePhotoChange);
+
     const handleSwitchAccount = () => {
       const notice = window.localStorage.getItem("sc_switch_notice");
       if (notice) {
@@ -197,6 +215,7 @@ function App() {
       window.removeEventListener("auth-change", handleAuthChange);
       window.removeEventListener("prefs-change", handlePrefsChange);
       window.removeEventListener("contacts-change", handleContactsChange);
+      window.removeEventListener("profile-photo-change", handleProfilePhotoChange);
       window.removeEventListener("switch-account", handleSwitchAccount);
     };
   }, []);
@@ -691,6 +710,7 @@ function App() {
                     })}
                   >
                     <Avatar
+                      src={profilePhoto}
                       sx={{
                         width: 32,
                         height: 32,

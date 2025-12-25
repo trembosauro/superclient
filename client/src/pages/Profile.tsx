@@ -276,6 +276,8 @@ export default function Profile() {
       reader.onload = () => {
         const dataUrl = reader.result as string;
         setProfilePhoto(dataUrl);
+        // Trigger photo change event to update navbar
+        window.dispatchEvent(new Event("profile-photo-change"));
       };
       reader.readAsDataURL(file);
     } catch {
@@ -631,6 +633,7 @@ export default function Profile() {
   }, [
     name,
     email,
+    profilePhoto,
     team,
     role,
     timezone,
@@ -908,7 +911,10 @@ export default function Profile() {
                 <Button
                   variant="text"
                   size="small"
-                  onClick={() => setProfilePhoto("")}
+                  onClick={() => {
+                    setProfilePhoto("");
+                    window.dispatchEvent(new Event("profile-photo-change"));
+                  }}
                   sx={{ textTransform: "none" }}
                 >
                   Remover foto
