@@ -6,6 +6,13 @@ export const pageHeaderContainer = style({
   justifyContent: 'space-between',
   marginBottom: 'var(--sc-page-header-gap, 16px)',
   gap: 'var(--md-sys-spacing-16, 16px)',
+  flexWrap: 'wrap',
+  
+  '@media': {
+    '(min-width: 960px)': {
+      flexWrap: 'nowrap',
+    },
+  },
 });
 
 export const pageTitleContainer = style({
@@ -37,5 +44,6 @@ export const pageActionsContainer = style({
   display: 'flex',
   alignItems: 'center',
   gap: 'var(--sc-page-actions-gap, 8px)',
-  flexShrink: 0,
+  flex: 'none',
+  whiteSpace: 'nowrap',
 });

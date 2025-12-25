@@ -18,7 +18,10 @@ export function PageContainer({ children, title, subtitle, actionsSlot }: PageCo
   return (
     <div className={pageContainer}>
       {(title || actionsSlot) && (
-        <div className={pageHeaderContainer}>
+        <div 
+          className={pageHeaderContainer} 
+          style={!title && actionsSlot ? { justifyContent: 'flex-end' } : undefined}
+        >
           {title && <PageTitle subtitle={subtitle}>{title}</PageTitle>}
           {actionsSlot && <PageActions>{actionsSlot}</PageActions>}
         </div>
