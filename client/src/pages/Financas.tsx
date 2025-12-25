@@ -47,6 +47,7 @@ import CategoryFilter from "../components/CategoryFilter";
 import CardSection from "../components/layout/CardSection";
 import { PageContainer } from "../ui/PageContainer/PageContainer";
 import { SearchField } from "../ui/SearchField";
+import { Select } from "../ui/Select";
 import SettingsDialog from "../components/SettingsDialog";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import * as financasStyles from "./financas.css";
@@ -1124,20 +1125,18 @@ export default function Financas() {
                 onChange={event => setAmount(event.target.value)}
                 disabled={!permissions.finance_edit}
               />
-              <TextField
-                select
-                label="Categoria"
+              <Select
+                placeholder="Categoria"
                 fullWidth
                 value={categoryId}
                 onChange={event => setCategoryId(event.target.value)}
                 disabled={!permissions.finance_edit}
-              >
-                {categories.map(cat => (
-                  <MenuItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </MenuItem>
-                ))}
-              </TextField>
+                options={categories.map(cat => ({
+                  value: cat.id,
+                  label: cat.name,
+                }))}
+                ariaLabel="Categoria"
+              />
               <TextField
                 label="Comentario"
                 fullWidth
