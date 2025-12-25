@@ -551,7 +551,7 @@ export default function Dashboard() {
   );
 
   return (
-    <PageContainer actionsSlot={pageActions}>
+    <PageContainer title="Início" actionsSlot={pageActions}>
       <Stack spacing={3}>
         {visibleQuickLinks.length ? (
           <AppCard sx={{ p: { xs: 2, md: 2.5 }, display: { xs: "block", md: "none" } }}>
