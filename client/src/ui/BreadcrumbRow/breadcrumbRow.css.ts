@@ -1,7 +1,7 @@
 import { style } from '@vanilla-extract/css';
 
 export const breadcrumbRowContainer = style({
-  maxWidth: '1200px',
+  maxWidth: 'var(--sc-page-max-width, 1200px)',
   margin: '0 auto',
   width: '100%',
   display: 'flex',
@@ -9,8 +9,12 @@ export const breadcrumbRowContainer = style({
   justifyContent: 'space-between',
   gap: '16px',
   marginBottom: '8px',
+  padding: '0 var(--sc-page-px-mobile, 16px)',
   
   '@media': {
+    '(min-width: 960px)': {
+      padding: '0 var(--sc-page-px-desktop, 24px)',
+    },
     '(max-width: 959px)': {
       display: 'block',
     },
