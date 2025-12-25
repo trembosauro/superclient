@@ -118,6 +118,7 @@ function clampNumber(value: number, min: number, max: number) {
 
 function createResizeHandle(side: "w" | "e") {
   const el = document.createElement("div");
+  el.className = "pm-image-resize-handle";
   el.dataset.side = side;
   el.style.position = "absolute";
   el.style.top = "0";
@@ -164,33 +165,48 @@ const ImageResizeOverlay = Extension.create({
           handleDOMEvents: {
             mousedown: (view: EditorView, event: Event) => {
               const mouseEvent = event as MouseEvent;
+              if (mouseEvent.button !== 0) {
+                return false;
+              }
               const target = mouseEvent.target as HTMLElement | null;
               const img = target?.closest?.("img") as HTMLImageElement | null;
               if (!img) {
                 return false;
               }
 
-              const coords = view.posAtCoords({
-                left: mouseEvent.clientX,
-                top: mouseEvent.clientY,
-              });
-              if (!coords) {
-                return false;
-              }
-
               const { state } = view;
-              const $pos = state.doc.resolve(coords.pos);
-              const nodeAfter = $pos.nodeAfter;
-              const nodeBefore = $pos.nodeBefore;
-
               let imagePos: number | null = null;
-              if (nodeAfter?.type.name === "image") {
-                imagePos = $pos.pos;
-              } else if (nodeBefore?.type.name === "image") {
-                imagePos = $pos.pos - nodeBefore.nodeSize;
+              try {
+                imagePos = view.posAtDOM(img, 0);
+              } catch {
+                imagePos = null;
               }
 
               if (imagePos == null) {
+                const coords = view.posAtCoords({
+                  left: mouseEvent.clientX,
+                  top: mouseEvent.clientY,
+                });
+                if (!coords) {
+                  return false;
+                }
+                imagePos = coords.pos;
+              }
+
+              // Normalize to the actual image node position.
+              // Depending on DOM mapping, posAtDOM/posAtCoords may land next to the node.
+              const nodeAt = state.doc.nodeAt(imagePos);
+              if (nodeAt?.type.name !== "image") {
+                const before = state.doc.nodeAt(Math.max(0, imagePos - 1));
+                const after = state.doc.nodeAt(imagePos + 1);
+                if (before?.type.name === "image") {
+                  imagePos = imagePos - 1;
+                } else if (after?.type.name === "image") {
+                  imagePos = imagePos + 1;
+                }
+              }
+
+              if (state.doc.nodeAt(imagePos)?.type.name !== "image") {
                 return false;
               }
 
@@ -231,6 +247,7 @@ const ImageResizeOverlay = Extension.create({
           }
 
           const overlay = document.createElement("div");
+          overlay.className = "pm-image-resize-overlay";
           overlay.style.position = "absolute";
           overlay.style.pointerEvents = "none";
           overlay.style.zIndex = "10";
@@ -1194,6 +1211,21 @@ export default function RichTextEditor({
             outline: "2px solid",
             outlineColor: "primary.main",
             boxShadow: `0 0 0 4px ${theme.palette.primary.main}33`,
+          },
+          "& .tiptap .pm-image-resize-overlay": {
+            borderRadius: APP_RADIUS,
+          },
+          "& .tiptap .pm-image-resize-handle": {
+            backgroundColor: theme.palette.action.hover,
+            borderColor: theme.palette.divider,
+          },
+          "& .tiptap .pm-image-resize-handle[data-side='w']": {
+            borderRightWidth: 1,
+            borderRightStyle: "solid",
+          },
+          "& .tiptap .pm-image-resize-handle[data-side='e']": {
+            borderLeftWidth: 1,
+            borderLeftStyle: "solid",
           },
           "& .tiptap p.is-editor-empty:first-of-type::before": {
             content: "attr(data-placeholder)",
