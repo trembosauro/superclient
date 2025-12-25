@@ -34,7 +34,6 @@ import { interactiveCardSx } from "../styles/interactiveCard";
 import { PageContainer } from "../ui/PageContainer/PageContainer";
 import { TextField as TextFieldVE } from "../ui/TextField";
 import { SearchField } from "../ui/SearchField";
-import { Select } from "../ui/Select";
 import CardSection from "../components/layout/CardSection";
 import CategoryFilter from "../components/CategoryFilter";
 import SettingsDialog from "../components/SettingsDialog";
@@ -1377,8 +1376,9 @@ export default function Contacts() {
                 )
               }
             />
-            <Select
-              placeholder="Papel (Gestão)"
+            <TextField
+              select
+              label="Papel (Gestão)"
               fullWidth
               value={contactForm?.role || ""}
               onChange={event =>
@@ -1386,12 +1386,14 @@ export default function Contacts() {
                   prev ? { ...prev, role: event.target.value } : prev
                 )
               }
-              options={[
-                { value: "", label: "Sem papel" },
-                ...roleOptions.map(role => ({ value: role, label: role })),
-              ]}
-              ariaLabel="Papel (Gestão)"
-            />
+            >
+              <MenuItem value="">Sem papel</MenuItem>
+              {roleOptions.map(role => (
+                <MenuItem key={role} value={role}>
+                  {role}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               label="Data de aniversario"
               fullWidth
