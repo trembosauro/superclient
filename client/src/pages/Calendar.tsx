@@ -2017,7 +2017,11 @@ export default function Calendar() {
                               <IconButton
                                 size="small"
                                 onClick={() => handleCreateTask(day)}
-                                sx={{ border: 1, borderColor: "divider" }}
+                                sx={theme => ({
+                                  border: 1,
+                                  borderColor: "divider",
+                                  borderRadius: theme.shape.borderRadius,
+                                })}
                               >
                                 <AddRoundedIcon fontSize="small" />
                               </IconButton>
@@ -2090,9 +2094,9 @@ export default function Calendar() {
                                                 alignItems: "center",
                                                 gap: 1,
                                                 p: 1,
-                                                
                                                 border: 1,
                                                 borderColor: "divider",
+                                                borderRadius: theme.shape.borderRadius,
                                               })}
                                             >
                                               <Checkbox

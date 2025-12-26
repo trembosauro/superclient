@@ -2481,9 +2481,9 @@ export default function Pipeline() {
                                 key={deal.id}
                                 sx={theme => ({
                                   p: 2,
-                                  
                                   border: 1,
                                   borderColor: "divider",
+                                  borderRadius: theme.shape.borderRadius,
                                   backgroundColor: "background.paper",
                                 })}
                               >
@@ -2524,9 +2524,9 @@ export default function Pipeline() {
                         <Box
                           sx={theme => ({
                             p: 2,
-                            
                             border: 1,
                             borderColor: "divider",
+                            borderRadius: theme.shape.borderRadius,
                             backgroundColor: "background.paper",
                             boxShadow: theme.shadows[2],
                           })}
@@ -2754,11 +2754,12 @@ export default function Pipeline() {
                       <IconButton
                         size="small"
                         onClick={() => handleCopyLink(viewingDeal.id)}
-                        sx={{
+                        sx={theme => ({
                           color: "text.secondary",
                           border: 1,
                           borderColor: "divider",
-                        }}
+                          borderRadius: theme.shape.borderRadius,
+                        })}
                       >
                         <LinkRoundedIcon fontSize="small" />
                       </IconButton>
@@ -2874,9 +2875,9 @@ export default function Pipeline() {
                 </Typography>
                 <Box
                   sx={theme => ({
-                    
                     border: 1,
                     borderColor: "divider",
+                    borderRadius: theme.shape.borderRadius,
                     backgroundColor: "background.paper",
                     p: 2,
                     minHeight: 120,
@@ -4164,9 +4165,9 @@ function SortableDeal({
       ref={setNodeRef}
       sx={theme => ({
         p: 2,
-        
         border: 1,
         borderColor: "divider",
+        borderRadius: theme.shape.borderRadius,
         backgroundColor: "background.paper",
         cursor: canEditTasks ? "grab" : "pointer",
         touchAction: canEditTasks ? "none" : "auto",
@@ -4256,7 +4257,11 @@ function SortableColumnRow({
           <Tooltip title="Arquivar" placement="top">
             <IconButton
               onClick={onArchive}
-              sx={{ border: 1, borderColor: "divider" }}
+              sx={theme => ({
+                border: 1,
+                borderColor: "divider",
+                borderRadius: theme.shape.borderRadius,
+              })}
               aria-label={`Arquivar ${column.title}`}
             >
               <ArchiveRoundedIcon fontSize="small" />
@@ -4265,7 +4270,11 @@ function SortableColumnRow({
           <Tooltip title="Remover" placement="top">
             <IconButton
               onClick={onRemove}
-              sx={{ border: 1, borderColor: "divider" }}
+              sx={theme => ({
+                border: 1,
+                borderColor: "divider",
+                borderRadius: theme.shape.borderRadius,
+              })}
               aria-label={`Remover ${column.title}`}
             >
               <DeleteRoundedIcon fontSize="small" />
@@ -4274,11 +4283,12 @@ function SortableColumnRow({
           <IconButton
             {...attributes}
             {...listeners}
-            sx={{
+            sx={theme => ({
               border: 1,
               borderColor: "divider",
+              borderRadius: theme.shape.borderRadius,
               cursor: "grab",
-            }}
+            })}
             aria-label={`Arrastar ${column.title}`}
           >
             <DragIndicatorRoundedIcon fontSize="small" />

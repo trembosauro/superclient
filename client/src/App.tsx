@@ -285,6 +285,8 @@ function App() {
     return location === href;
   };
 
+  const isProfileSectionActive = location === "/profile" || location === "/access";
+
   const visibleNavItems = isLoggedIn
     ? navItems.filter(item => {
         if (item.href === "/pipeline") {
@@ -603,7 +605,15 @@ function App() {
                   <IconButton
                     component={RouterLink}
                     href="/profile"
-                    sx={{ display: { xs: "none", md: "flex" }, width: 40, height: 40 }}
+                    aria-current={isProfileSectionActive ? "page" : undefined}
+                    sx={theme => ({
+                      display: { xs: "none", md: "flex" },
+                      width: 40,
+                      height: 40,
+                      backgroundColor: isProfileSectionActive
+                        ? theme.palette.action.selected
+                        : "transparent",
+                    })}
                   >
                     <Avatar src={profilePhoto} sx={{ width: 32, height: 32 }}>
                       {avatarInitial}
@@ -614,7 +624,15 @@ function App() {
                   <IconButton
                     component={RouterLink}
                     href="/profile"
-                    sx={{ display: { xs: "flex", md: "none" }, width: 40, height: 40 }}
+                    aria-current={isProfileSectionActive ? "page" : undefined}
+                    sx={theme => ({
+                      display: { xs: "flex", md: "none" },
+                      width: 40,
+                      height: 40,
+                      backgroundColor: isProfileSectionActive
+                        ? theme.palette.action.selected
+                        : "transparent",
+                    })}
                   >
                     <Avatar src={profilePhoto} sx={{ width: 32, height: 32 }}>
                       {avatarInitial}

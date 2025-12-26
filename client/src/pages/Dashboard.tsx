@@ -592,56 +592,65 @@ export default function Dashboard() {
         ) : null}
 
         {sections.notifications ? (
-          <Card
-            title="Notificações"
-            actionsSlot={
-              <Tooltip title="Ir para Notificações" placement="top">
-                <IconButton
-                  component={RouterLink}
-                  href="/notifications"
-                  aria-label="Ir para Notificações"
-                  sx={{
-                    border: 1,
-                    borderColor: "divider",
-                  }}
-                >
-                  <ArrowForwardRoundedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            }
-          >
-            {completedTasks.length > 0 ? (
-              <Stack spacing={1}>
-                {completedTasks.slice(0, notificationsCount).map(task => (
-                  <VeCardSection
-                    key={task.id}
-                    size="compact"
-                    interactive
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => navigate(`/calendario?task=${task.taskId}`)}
-                    onKeyDown={event => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        navigate(`/calendario?task=${task.taskId}`);
-                      }
-                    }}
+          <AppCard sx={{ p: { xs: 3, md: 4 } }}>
+            <Stack spacing={2.5}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Typography variant="h6">Notificações</Typography>
+                <Tooltip title="Ir para Notificações" placement="top">
+                  <IconButton
+                    component={RouterLink}
+                    href="/notifications"
+                    aria-label="Ir para Notificações"
+                    sx={theme => ({
+                      border: 1,
+                      borderColor: "divider",
+                      borderRadius: theme.shape.borderRadius,
+                    })}
                   >
-                    <Box>
-                      <Typography variant="body2">{task.taskName}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Concluída {formatTimeAgo(task.completedAt)}
-                      </Typography>
-                    </Box>
-                  </VeCardSection>
-                ))}
-              </Stack>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                Nenhuma notificação recente
-              </Typography>
-            )}
-          </Card>
+                    <ArrowForwardRoundedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+
+              {completedTasks.length > 0 ? (
+                <Stack spacing={1}>
+                  {completedTasks.slice(0, notificationsCount).map(task => (
+                    <VeCardSection
+                      key={task.id}
+                      size="compact"
+                      interactive
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`/calendario?task=${task.taskId}`)}
+                      onKeyDown={event => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          navigate(`/calendario?task=${task.taskId}`);
+                        }
+                      }}
+                    >
+                      <Box>
+                        <Typography variant="body2">{task.taskName}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Concluída {formatTimeAgo(task.completedAt)}
+                        </Typography>
+                      </Box>
+                    </VeCardSection>
+                  ))}
+                </Stack>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  Nenhuma notificação recente
+                </Typography>
+              )}
+            </Stack>
+          </AppCard>
         ) : null}
 
         {sections.pipeline ? (
