@@ -1537,10 +1537,6 @@ export default function Notes() {
                             sx={theme => ({
                               ...interactiveItemSx(theme),
                               p: isExpanded ? 2.5 : 2,
-                              border: 1,
-                              borderColor: isExpanded
-                                ? "primary.main"
-                                : "divider",
                               backgroundColor: "background.paper",
                               cursor: "pointer",
                               minHeight: isExpanded ? "auto" : 96,
