@@ -34,6 +34,7 @@ import ArchiveRoundedIcon from "@mui/icons-material/ArchiveRounded";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
@@ -509,6 +510,7 @@ export default function Notes() {
     string | null
   >(null);
   const [mobileNotesExpanded, setMobileNotesExpanded] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [noteQuery, setNoteQuery] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsAccordion, setSettingsAccordion] = useState<
@@ -1376,6 +1378,22 @@ export default function Notes() {
         >
           Nova nota
         </Button>
+        <IconButton
+          onClick={() => {
+            setShowSearch(!showSearch);
+            if (showSearch) {
+              setNoteQuery("");
+            }
+          }}
+          aria-label="Buscar notas"
+          sx={{
+            width: 40,
+            height: 40,
+            color: showSearch ? "primary.main" : "text.secondary",
+          }}
+        >
+          <SearchRoundedIcon />
+        </IconButton>
         <SettingsIconButton onClick={() => setSettingsOpen(true)} />
       </Stack>
     ),
@@ -1445,38 +1463,42 @@ export default function Notes() {
             {!selectedNote ? (
               <CardSection size="xs">
                 <Stack spacing={1.5}>
-                  <MuiTextField
-                    placeholder="Buscar nota"
-                    label="Buscar nota"
-                    variant="outlined"
-                    size="medium"
-                    fullWidth
-                    value={noteQuery}
-                    onChange={event => setNoteQuery(event.target.value)}
-                    onKeyDown={event => {
-                      if (event.key === "Escape") {
-                        setNoteQuery("");
-                      }
-                    }}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          {noteQuery ? (
-                            <IconButton
-                              size="small"
-                              onClick={() => setNoteQuery("")}
-                              aria-label="Limpar busca"
-                              sx={{ width: 48, height: 48 }}
-                            >
-                              <CloseRoundedIcon fontSize="small" />
-                            </IconButton>
-                          ) : (
-                            <Box sx={{ width: 48, height: 48 }} />
-                          )}
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
+                  {showSearch && (
+                    <MuiTextField
+                      placeholder="Buscar nota"
+                      label="Buscar nota"
+                      variant="outlined"
+                      size="medium"
+                      fullWidth
+                      autoFocus
+                      value={noteQuery}
+                      onChange={event => setNoteQuery(event.target.value)}
+                      onKeyDown={event => {
+                        if (event.key === "Escape") {
+                          setNoteQuery("");
+                          setShowSearch(false);
+                        }
+                      }}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            {noteQuery ? (
+                              <IconButton
+                                size="small"
+                                onClick={() => setNoteQuery("")}
+                                aria-label="Limpar busca"
+                                sx={{ width: 48, height: 48 }}
+                              >
+                                <CloseRoundedIcon fontSize="small" />
+                              </IconButton>
+                            ) : (
+                              <Box sx={{ width: 48, height: 48 }} />
+                            )}
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  )}
                   {filteredNotes.length ? (
                     <Box
                       sx={{
