@@ -183,6 +183,12 @@ export const icon = style({
   justifyContent: 'center',
   color: 'var(--sc-input-label-color)',
   flexShrink: 0,
+  backgroundColor: 'transparent',
+  border: 'none',
+  outline: 'none',
+  boxShadow: 'none',
+  padding: 0,
+  margin: 0,
 });
 
 export const helperText = style({

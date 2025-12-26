@@ -14,11 +14,17 @@ export const clearButton = style({
   margin: 0,
   border: 'none',
   background: 'transparent',
+  backgroundColor: 'transparent',
   color: 'var(--sc-input-label-color)',
   cursor: 'pointer',
   borderRadius: '50%',
   transition: 'background-color 150ms cubic-bezier(0.4, 0, 0.2, 1)',
   flexShrink: 0,
+  outline: 'none',
+  boxShadow: 'none',
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  MozAppearance: 'none',
   
   ':hover': {
     backgroundColor: 'rgba(0, 0, 0, 0.04)',
@@ -43,5 +49,11 @@ export const clearButtonGhost = style({
   width: '40px',
   height: '40px',
   flexShrink: 0,
+  backgroundColor: 'transparent',
+  border: 'none',
+  outline: 'none',
+  boxShadow: 'none',
+  padding: 0,
+  margin: 0,
 });
 
