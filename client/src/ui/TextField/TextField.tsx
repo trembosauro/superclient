@@ -77,7 +77,7 @@ export function TextField({
   
   return (
     <div className={containerClasses}>
-      <div className={wrapperClasses}>
+      <div className={wrapperClasses} data-ve="textfield-wrapper">
         {label && (
           <label htmlFor={id} className={labelClasses}>
             {label}
@@ -87,6 +87,7 @@ export function TextField({
         <input
           id={id}
           className={input}
+          data-ve="textfield-input"
           disabled={disabled}
           required={required}
           aria-invalid={hasError}

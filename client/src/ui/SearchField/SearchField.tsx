@@ -45,6 +45,7 @@ export function SearchField({
         type="button"
         onClick={handleClear}
         className={styles.clearButton}
+        data-ve="searchfield-clear"
         aria-label="Limpar busca"
       >
         <CloseRoundedIcon fontSize="small" />
@@ -52,7 +53,7 @@ export function SearchField({
     )
   ) : (
     // Ghost span maintains 48px slot when no clear button
-    <span className={styles.clearButtonGhost} aria-hidden="true" />
+    <span className={styles.clearButtonGhost} data-ve="searchfield-ghost" aria-hidden="true" />
   );
 
   return (

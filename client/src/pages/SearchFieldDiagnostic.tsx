@@ -4,28 +4,55 @@ import { SearchField } from '../ui/SearchField';
 
 /**
  * Diagnostic page for SearchField VE
- * Validates that input has correct styling and no native box appearance
+ * Identifies the exact element causing white box appearance
  */
 export function SearchFieldDiagnostic() {
   const [value, setValue] = useState('');
 
-  const checkInputStyles = () => {
-    const searchFields = document.querySelectorAll('input[type="text"]');
+  const runCompleteDiagnostic = () => {
     console.clear();
-    console.log('=== SearchField Input Diagnostics ===\n');
+    console.log('=== SearchField Complete Diagnostic ===\n');
 
-    searchFields.forEach((input, index) => {
-      const computed = window.getComputedStyle(input);
-      const rect = input.getBoundingClientRect();
+    // Find all TextField wrappers (SearchField uses TextField internally)
+    const wrappers = document.querySelectorAll('[data-ve="textfield-wrapper"]');
+    console.log(`Found ${wrappers.length} TextField wrapper(s)\n`);
 
-      const diagnostics = {
-        index,
-        id: input.id,
-        rect: {
-          width: rect.width,
-          height: rect.height,
-        },
-        computed: {
+    wrappers.forEach((wrapper, wrapperIndex) => {
+      console.log(`\n--- Wrapper ${wrapperIndex} ---`);
+
+      // Step 1: Count inputs
+      const inputs = wrapper.querySelectorAll('input');
+      console.log(`✓ Input count: ${inputs.length}`);
+      
+      if (inputs.length === 0) {
+        console.error('❌ FAIL: No input found!');
+        return;
+      }
+      
+      if (inputs.length > 1) {
+        console.error(`❌ FAIL: Multiple inputs found (${inputs.length}). Should be exactly 1.`);
+      } else {
+        console.log('✅ PASS: Exactly 1 input');
+      }
+
+      // Step 2: Check each input
+      inputs.forEach((input, inputIndex) => {
+        console.log(`\nInput ${inputIndex}:`);
+        console.log('  type:', input.getAttribute('type'));
+        console.log('  data-ve:', input.getAttribute('data-ve'));
+        console.log('  className:', input.className);
+
+        const hasVEAttribute = input.getAttribute('data-ve') === 'textfield-input';
+        console.log(hasVEAttribute ? '  ✅ Has data-ve="textfield-input"' : '  ❌ Missing data-ve="textfield-input"');
+
+        const hasClassName = input.className && input.className.length > 0;
+        console.log(hasClassName ? '  ✅ Has className' : '  ❌ Missing className');
+
+        // Computed styles
+        const computed = window.getComputedStyle(input);
+        const rect = input.getBoundingClientRect();
+
+        const styles = {
           backgroundColor: computed.backgroundColor,
           borderTopWidth: computed.borderTopWidth,
           borderRightWidth: computed.borderRightWidth,
@@ -36,38 +63,102 @@ export function SearchFieldDiagnostic() {
           width: computed.width,
           height: computed.height,
           flex: computed.flex,
-          minWidth: computed.minWidth,
-          padding: computed.padding,
-          margin: computed.margin,
           appearance: computed.appearance,
-          WebkitAppearance: (computed as any).WebkitAppearance,
-        },
-      };
+          rect: {
+            width: rect.width.toFixed(2),
+            height: rect.height.toFixed(2),
+          },
+        };
 
-      console.log(`Input ${index}:`, diagnostics);
+        console.log('  Computed styles:', styles);
 
-      // Validations
-      const checks = {
-        backgroundIsTransparent: computed.backgroundColor === 'rgba(0, 0, 0, 0)' || computed.backgroundColor === 'transparent',
-        borderIsZero: computed.borderTopWidth === '0px' && computed.borderBottomWidth === '0px',
-        outlineIsNone: computed.outline === 'none' || computed.outlineWidth === '0px',
-        boxShadowIsNone: computed.boxShadow === 'none',
-        widthIsSufficient: rect.width > 100,
-        appearanceIsNone: computed.appearance === 'none' || (computed as any).WebkitAppearance === 'none',
-      };
+        // Validate
+        const isBackgroundTransparent = 
+          computed.backgroundColor === 'rgba(0, 0, 0, 0)' || 
+          computed.backgroundColor === 'transparent' ||
+          computed.backgroundColor === 'rgba(0,0,0,0)';
+        
+        const isBorderZero = 
+          computed.borderTopWidth === '0px' && 
+          computed.borderBottomWidth === '0px' &&
+          computed.borderLeftWidth === '0px' &&
+          computed.borderRightWidth === '0px';
 
-      console.log(`Checks for Input ${index}:`, checks);
+        console.log(isBackgroundTransparent ? '  ✅ Background is transparent' : `  ❌ Background is NOT transparent: ${computed.backgroundColor}`);
+        console.log(isBorderZero ? '  ✅ Border is zero' : '  ❌ Border is NOT zero');
+      });
 
-      const allPass = Object.values(checks).every(v => v);
-      console.log(`\n${allPass ? '✅ PASS' : '❌ FAIL'}: Input ${index} styling is ${allPass ? 'correct' : 'INCORRECT'}\n`);
+      // Step 3: Find elements with non-transparent background
+      console.log('\n--- Searching for elements with non-transparent background ---');
+      
+      const allElements = wrapper.querySelectorAll('*');
+      const elementsWithBackground: Array<{
+        tag: string;
+        className: string;
+        dataVe: string | null;
+        backgroundColor: string;
+        area: number;
+      }> = [];
 
-      if (!allPass) {
-        console.warn('Failed checks:', Object.entries(checks).filter(([_, v]) => !v).map(([k]) => k));
+      allElements.forEach((el) => {
+        const computed = window.getComputedStyle(el);
+        const bg = computed.backgroundColor;
+        
+        // Check if not transparent
+        if (bg && 
+            bg !== 'rgba(0, 0, 0, 0)' && 
+            bg !== 'transparent' &&
+            bg !== 'rgba(0,0,0,0)' &&
+            bg !== 'inherit') {
+          
+          const rect = el.getBoundingClientRect();
+          const area = rect.width * rect.height;
+          
+          if (area > 100) { // Ignore tiny elements
+            elementsWithBackground.push({
+              tag: el.tagName.toLowerCase(),
+              className: (el as HTMLElement).className || '',
+              dataVe: el.getAttribute('data-ve'),
+              backgroundColor: bg,
+              area: Math.round(area),
+            });
+          }
+        }
+      });
+
+      if (elementsWithBackground.length === 0) {
+        console.log('✅ PASS: No elements with non-transparent background found');
+      } else {
+        console.log(`❌ FAIL: Found ${elementsWithBackground.length} element(s) with non-transparent background:`);
+        elementsWithBackground
+          .sort((a, b) => b.area - a.area)
+          .forEach((el, i) => {
+            console.log(`  ${i + 1}. <${el.tag}> area=${el.area}px² bg="${el.backgroundColor}"`);
+            console.log(`     className: "${el.className}"`);
+            console.log(`     data-ve: "${el.dataVe || 'none'}"`);
+          });
+      }
+
+      // Step 4: Check clear button and ghost
+      const clearBtn = wrapper.querySelector('[data-ve="searchfield-clear"]');
+      const ghostSpan = wrapper.querySelector('[data-ve="searchfield-ghost"]');
+      
+      if (clearBtn) {
+        const computed = window.getComputedStyle(clearBtn);
+        console.log('\n--- Clear Button ---');
+        console.log('  background:', computed.backgroundColor);
+        console.log('  border:', computed.borderTopWidth);
+      }
+      
+      if (ghostSpan) {
+        const computed = window.getComputedStyle(ghostSpan);
+        console.log('\n--- Ghost Span ---');
+        console.log('  background:', computed.backgroundColor);
+        console.log('  border:', computed.borderTopWidth);
       }
     });
 
-    console.log(`\nTotal inputs found: ${searchFields.length}`);
-    console.log('Expected: 1 input per SearchField');
+    console.log('\n=== Diagnostic Complete ===');
   };
 
   return (
@@ -77,10 +168,14 @@ export function SearchFieldDiagnostic() {
       </Typography>
 
       <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
-        <Button variant="contained" onClick={checkInputStyles}>
-          Check Input Styles (Console)
+        <Button variant="contained" onClick={runCompleteDiagnostic} color="primary">
+          🔍 Run Complete Diagnostic
         </Button>
       </Stack>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+        Open browser console and click the button above to see detailed analysis.
+      </Typography>
 
       <Typography variant="h6" gutterBottom>
         Empty SearchField
@@ -106,17 +201,19 @@ export function SearchFieldDiagnostic() {
         />
       </Box>
 
-      <Typography variant="caption" display="block" sx={{ mt: 4 }}>
-        Open console and click "Check Input Styles" to validate:
-        <ul>
-          <li>backgroundColor is transparent</li>
-          <li>border widths are 0</li>
-          <li>outline is none</li>
-          <li>boxShadow is none</li>
-          <li>width is sufficient (not collapsed)</li>
-          <li>appearance is none (no native styling)</li>
+      <Box sx={{ mt: 6, p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
+        <Typography variant="h6" gutterBottom>
+          Expected Results:
+        </Typography>
+        <ul style={{ marginTop: 8 }}>
+          <li><strong>Input count:</strong> Exactly 1</li>
+          <li><strong>data-ve attribute:</strong> input has data-ve="textfield-input"</li>
+          <li><strong>className:</strong> input has VE className (not empty)</li>
+          <li><strong>Background:</strong> transparent or rgba(0,0,0,0)</li>
+          <li><strong>Border:</strong> all sides 0px</li>
+          <li><strong>White box elements:</strong> None found</li>
         </ul>
-      </Typography>
+      </Box>
     </Box>
   );
 }
