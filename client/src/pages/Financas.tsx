@@ -944,9 +944,6 @@ export default function Financas() {
         justifyContent="space-between"
         sx={{ mb: 2 }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Detalhe dos gastos
-        </Typography>
         <div className={financasStyles.filtersRow}>
           <div className={financasStyles.searchWrap}>
             <SearchField
