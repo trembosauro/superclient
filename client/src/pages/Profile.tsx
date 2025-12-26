@@ -21,7 +21,6 @@ import PhotoCameraRoundedIcon from "@mui/icons-material/PhotoCameraRounded";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { PageContainer } from "../ui/PageContainer/PageContainer";
-import { TextField as TextFieldVE } from "../ui/TextField";
 import AppAccordion from "../components/layout/AppAccordion";
 import CardSection from "../components/layout/CardSection";
 import AppCard from "../components/layout/AppCard";
@@ -994,26 +993,34 @@ export default function Profile() {
                 </Button>
               )}
             </Box>
-            <TextFieldVE
+            <TextField
               label="Nome"
+              variant="outlined"
+              size="medium"
               fullWidth
               value={name}
               onChange={event => setName(event.target.value)}
             />
-            <TextFieldVE
+            <TextField
               label="Time"
+              variant="outlined"
+              size="medium"
               fullWidth
               value={team}
               onChange={event => setTeam(event.target.value)}
             />
-            <TextFieldVE
+            <TextField
               label="Cargo"
+              variant="outlined"
+              size="medium"
               fullWidth
               value={role}
               onChange={event => setRole(event.target.value)}
             />
-            <TextFieldVE
+            <TextField
               label="Fuso horario"
+              variant="outlined"
+              size="medium"
               fullWidth
               value={timezone}
               onChange={event => setTimezone(event.target.value)}
@@ -1681,17 +1688,21 @@ export default function Profile() {
                 gap: 2,
               }}
             >
-              <TextFieldVE 
-                label="Senha atual" 
-                type="password" 
-                fullWidth 
+              <TextField
+                label="Senha atual"
+                type="password"
+                variant="outlined"
+                size="medium"
+                fullWidth
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
               />
-              <TextFieldVE 
-                label="Nova senha" 
-                type="password" 
-                fullWidth 
+              <TextField
+                label="Nova senha"
+                type="password"
+                variant="outlined"
+                size="medium"
+                fullWidth
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
