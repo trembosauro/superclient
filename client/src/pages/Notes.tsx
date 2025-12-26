@@ -17,6 +17,7 @@ import {
   Dialog,
   DialogContent,
   IconButton,
+  InputAdornment,
   List,
   ListItemButton,
   ListItemText,
@@ -27,8 +28,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { TextField } from "../ui/TextField";
-import { SearchField } from "../ui/SearchField";
 import { useTranslation } from "react-i18next";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ArchiveRoundedIcon from "@mui/icons-material/ArchiveRounded";
@@ -1446,12 +1445,37 @@ export default function Notes() {
             {!selectedNote ? (
               <CardSection size="xs">
                 <Stack spacing={1.5}>
-                  <SearchField
+                  <MuiTextField
                     placeholder="Buscar nota"
+                    label="Buscar nota"
+                    variant="outlined"
+                    size="medium"
+                    fullWidth
                     value={noteQuery}
                     onChange={event => setNoteQuery(event.target.value)}
-                    onClear={() => setNoteQuery("")}
-                    fullWidth
+                    onKeyDown={event => {
+                      if (event.key === "Escape") {
+                        setNoteQuery("");
+                      }
+                    }}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          {noteQuery ? (
+                            <IconButton
+                              size="small"
+                              onClick={() => setNoteQuery("")}
+                              aria-label="Limpar busca"
+                              sx={{ width: 48, height: 48 }}
+                            >
+                              <CloseRoundedIcon fontSize="small" />
+                            </IconButton>
+                          ) : (
+                            <Box sx={{ width: 48, height: 48 }} />
+                          )}
+                        </InputAdornment>
+                      ),
+                    }}
                   />
                   {filteredNotes.length ? (
                     <Box
