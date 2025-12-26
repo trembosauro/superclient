@@ -3,7 +3,6 @@ import {
   Alert,
   Box,
   Button,
-  IconButton,
   MenuItem,
   Snackbar,
   Stack,
@@ -11,7 +10,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
 import { Link as RouterLink, useLocation } from "wouter";
 import api from "../api";
 import { saveUserStorage } from "../userStorage";
@@ -558,31 +556,16 @@ export default function Dashboard() {
                   key={link.href}
                   component={RouterLink}
                   href={link.href}
-                  variant="text"
-                  color="inherit"
+                  variant={location === link.href ? "outlined" : "text"}
+                  color={location === link.href ? "primary" : "inherit"}
                   size="small"
-                  sx={theme => ({
+                  sx={{
                     minWidth: 0,
                     fontWeight: 600,
                     minHeight: 36,
                     px: 1.25,
                     py: 0.75,
-                    color:
-                      location === link.href
-                        ? theme.palette.primary.main
-                        : theme.palette.text.secondary,
-                    backgroundColor:
-                      location === link.href
-                        ? alpha(theme.palette.primary.main, 0.12)
-                        : "transparent",
-                    "&:hover": {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                      color: theme.palette.primary.main,
-                    },
-                    "&:active": {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.18),
-                    },
-                  })}
+                  }}
                 >
                   {link.label}
                 </Button>
@@ -603,22 +586,26 @@ export default function Dashboard() {
               >
                 <Typography variant="h6">Notificações</Typography>
                 <Tooltip title="Ir para Notificações" placement="top">
-                  <IconButton
+                  <ActionIconButton
                     component={RouterLink}
                     href="/notifications"
                     aria-label="Ir para Notificações"
-                    sx={theme => ({
-                      border: 1,
-                      borderColor: "divider",
-                    })}
-                  >
-                    <ArrowForwardRoundedIcon fontSize="small" />
-                  </IconButton>
+                    icon={<ArrowForwardRoundedIcon fontSize="small" />}
+                  />
                 </Tooltip>
               </Box>
 
               {completedTasks.length > 0 ? (
-                <Stack spacing={1}>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gap: 1,
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      md: "repeat(2, minmax(0, 1fr))",
+                    },
+                  }}
+                >
                   {completedTasks.slice(0, notificationsCount).map(task => (
                     <VeCardSection
                       key={task.id}
@@ -626,6 +613,7 @@ export default function Dashboard() {
                       interactive
                       role="button"
                       tabIndex={0}
+                      sx={{ height: "100%" }}
                       onClick={() => navigate(`/calendario?task=${task.taskId}`)}
                       onKeyDown={event => {
                         if (event.key === "Enter" || event.key === " ") {
@@ -642,7 +630,7 @@ export default function Dashboard() {
                       </Box>
                     </VeCardSection>
                   ))}
-                </Stack>
+                </Box>
               ) : (
                 <Typography variant="body2" color="text.secondary">
                   Nenhuma notificação recente
@@ -664,17 +652,12 @@ export default function Dashboard() {
               >
                 <Typography variant="h6">Pipeline</Typography>
                 <Tooltip title="Ir para Pipeline" placement="top">
-                  <IconButton
+                  <ActionIconButton
                     component={RouterLink}
                     href="/pipeline"
                     aria-label="Ir para Pipeline"
-                    sx={{
-                      border: 1,
-                      borderColor: "divider",
-                    }}
-                  >
-                    <ArrowForwardRoundedIcon fontSize="small" />
-                  </IconButton>
+                    icon={<ArrowForwardRoundedIcon fontSize="small" />}
+                  />
                 </Tooltip>
               </Box>
               <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
@@ -744,17 +727,12 @@ export default function Dashboard() {
               >
                 <Typography variant="h6">Finanças</Typography>
                 <Tooltip title="Ir para Finanças" placement="top">
-                  <IconButton
+                  <ActionIconButton
                     component={RouterLink}
                     href="/financas"
                     aria-label="Ir para Finanças"
-                    sx={{
-                      border: 1,
-                      borderColor: "divider",
-                    }}
-                  >
-                    <ArrowForwardRoundedIcon fontSize="small" />
-                  </IconButton>
+                    icon={<ArrowForwardRoundedIcon fontSize="small" />}
+                  />
                 </Tooltip>
               </Box>
               <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
@@ -815,7 +793,6 @@ export default function Dashboard() {
                     href="/access"
                     aria-label="Ir para Gestão"
                     icon={<ArrowForwardRoundedIcon fontSize="small" />}
-                    sx={{ border: 1, borderColor: "divider" }}
                   />
                 </Tooltip>
               </Box>

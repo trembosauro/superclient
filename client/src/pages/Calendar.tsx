@@ -2009,10 +2009,6 @@ export default function Calendar() {
                               <IconButton
                                 size="small"
                                 onClick={() => handleCreateTask(day)}
-                                sx={theme => ({
-                                  border: 1,
-                                  borderColor: "divider",
-                                })}
                               >
                                 <AddRoundedIcon fontSize="small" />
                               </IconButton>
@@ -2085,8 +2081,6 @@ export default function Calendar() {
                                                 alignItems: "center",
                                                 gap: 1,
                                                 p: 1,
-                                                border: 1,
-                                                borderColor: "divider",
                                               })}
                                             >
                                               <Checkbox
@@ -2224,6 +2218,7 @@ export default function Calendar() {
                   value={viewingTask?.name || ""}
                   onChange={event => handleUpdateViewingTaskName(event.target.value)}
                   size="small"
+                  variant="standard"
                   placeholder="Título"
                   inputProps={{
                     "aria-label": "Título da tarefa",
@@ -2232,6 +2227,7 @@ export default function Calendar() {
                       Math.max(6, (viewingTask?.name || "").length || 6)
                     ),
                   }}
+                  InputProps={{ disableUnderline: true }}
                   sx={{
                     width: "auto",
                     flex: "0 1 auto",
@@ -2240,9 +2236,6 @@ export default function Calendar() {
                     "& .MuiInputBase-root": {
                       alignItems: "center",
                     },
-                    "& .MuiOutlinedInput-notchedOutline": { border: 0 },
-                    "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": { border: 0 },
-                    "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": { border: 0 },
                     "& .MuiInputBase-input": {
                       typography: "h6",
                       fontWeight: 700,
@@ -2405,12 +2398,9 @@ export default function Calendar() {
                             }
                             fullWidth
                             size="small"
+                            variant="standard"
+                            InputProps={{ disableUnderline: true }}
                             placeholder="Subtarefa"
-                            sx={{
-                              "& .MuiOutlinedInput-notchedOutline": {
-                                border: 0,
-                              },
-                            }}
                           />
                         </Stack>
                         <IconButton
@@ -2463,12 +2453,9 @@ export default function Calendar() {
                           }}
                           fullWidth
                           size="small"
+                          variant="standard"
+                          InputProps={{ disableUnderline: true }}
                           placeholder="Escreva uma subtarefa e aperte Enter"
-                          sx={{
-                            "& .MuiOutlinedInput-notchedOutline": {
-                              border: 0,
-                            },
-                          }}
                         />
                       </Stack>
                       <IconButton
