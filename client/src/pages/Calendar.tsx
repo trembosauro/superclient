@@ -1791,14 +1791,13 @@ export default function Calendar() {
                         {day ? day.getDate() : ""}
                         {hasTasks ? (
                           <Box
-                            sx={{
+                            sx={theme => ({
                               position: "absolute",
                               bottom: 4,
                               width: 6,
                               height: 6,
-                              borderRadius: "50%",
                               backgroundColor: "primary.main",
-                            }}
+                            })}
                           />
                         ) : null}
                       </Box>
@@ -1868,14 +1867,7 @@ export default function Calendar() {
                       })}
                     >
                       <Stack direction="row" spacing={1.5} alignItems="center">
-                        <Box
-                          sx={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: "50%",
-                            backgroundColor: source.color,
-                          }}
-                        />
+                        <Box sx={{ width: 12, height: 12, backgroundColor: source.color }} />
                         <Typography variant="body2">{source.name}</Typography>
                       </Stack>
                       <Checkbox
@@ -2020,7 +2012,6 @@ export default function Calendar() {
                                 sx={theme => ({
                                   border: 1,
                                   borderColor: "divider",
-                                  borderRadius: theme.shape.borderRadius,
                                 })}
                               >
                                 <AddRoundedIcon fontSize="small" />
@@ -2096,7 +2087,6 @@ export default function Calendar() {
                                                 p: 1,
                                                 border: 1,
                                                 borderColor: "divider",
-                                                borderRadius: theme.shape.borderRadius,
                                               })}
                                             >
                                               <Checkbox
@@ -2261,17 +2251,16 @@ export default function Calendar() {
                   }}
                 />
                 <Box
-                  sx={{
+                  sx={theme => ({
                     width: 8,
                     height: 8,
-                    borderRadius: "50%",
                     backgroundColor:
                       calendarSources.find(
                         source => source.id === viewingTask?.calendarId
                       )?.color || "primary.main",
                     ml: 1,
                     alignSelf: "center",
-                  }}
+                  })}
                 />
               </Stack>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ pl: 1 }}>
@@ -2647,14 +2636,13 @@ export default function Calendar() {
                         {day ? day.getDate() : ""}
                         {hasTasks ? (
                           <Box
-                            sx={{
+                            sx={theme => ({
                               position: "absolute",
                               bottom: 4,
                               width: 6,
                               height: 6,
-                              borderRadius: "50%",
                               backgroundColor: "primary.main",
-                            }}
+                            })}
                           />
                         ) : null}
                       </Box>
@@ -2724,14 +2712,7 @@ export default function Calendar() {
                       })}
                     >
                       <Stack direction="row" spacing={1.5} alignItems="center">
-                        <Box
-                          sx={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: "50%",
-                            backgroundColor: source.color,
-                          }}
-                        />
+                        <Box sx={{ width: 12, height: 12, backgroundColor: source.color }} />
                         <Typography variant="body2">{source.name}</Typography>
                       </Stack>
                       <Checkbox

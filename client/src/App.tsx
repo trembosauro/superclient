@@ -593,8 +593,23 @@ function App() {
                   <IconButton
                     component={RouterLink}
                     href="/notifications"
-                    color={isActive("/notifications") ? "primary" : "default"}
-                    sx={{ width: 40, height: 40 }}
+                    aria-current={isActive("/notifications") ? "page" : undefined}
+                    color="inherit"
+                    sx={theme => {
+                      const active = isActive("/notifications");
+                      return {
+                        width: 40,
+                        height: 40,
+                        backgroundColor: active
+                          ? theme.palette.action.selected
+                          : "transparent",
+                        "&:hover": {
+                          backgroundColor: active
+                            ? theme.palette.action.selected
+                            : theme.palette.action.hover,
+                        },
+                      };
+                    }}
                   >
                     <Badge variant="dot" color="error" invisible={!hasNotifications}>
                       <NotificationsNoneRoundedIcon />

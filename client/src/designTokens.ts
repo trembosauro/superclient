@@ -1,6 +1,6 @@
 // Centralized design-system tokens (Material Design 3 inspired)
 
-export const APP_RADIUS_PX = 16;
+export const APP_RADIUS_PX = 12;
 export const APP_RADIUS = `${APP_RADIUS_PX}px`;
 
 export const DESIGN_TOKENS = {

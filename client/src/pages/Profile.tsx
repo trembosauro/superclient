@@ -20,6 +20,7 @@ import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import PhotoCameraRoundedIcon from "@mui/icons-material/PhotoCameraRounded";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
+import ActionButton from "../components/ActionButton";
 import { PageContainer } from "../ui/PageContainer/PageContainer";
 import AppAccordion from "../components/layout/AppAccordion";
 import CardSection from "../components/layout/CardSection";
@@ -914,15 +915,9 @@ export default function Profile() {
   const profileActions = useMemo(
     () => (
       <Stack direction="row" spacing={1} alignItems="center">
-        <Button
-          type="button"
-          variant="outlined"
-          size="small"
-          onClick={handleGoToAccess}
-          sx={{ textTransform: "none", fontWeight: 600 }}
-        >
+        <ActionButton type="button" onClick={handleGoToAccess}>
           {t("nav.access")}
-        </Button>
+        </ActionButton>
         {languageSelect}
       </Stack>
     ),

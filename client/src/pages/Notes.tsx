@@ -11,6 +11,7 @@ import {
   Alert,
   Box,
   Button,
+  Divider,
   Checkbox,
   Chip,
   ClickAwayListener,
@@ -55,6 +56,7 @@ import StarBorderRoundedIcon from "@mui/icons-material/StarBorderRounded";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
 import { interactiveItemSx, interactiveCardSx } from "../styles/interactiveCard";
 import SettingsIconButton from "../components/SettingsIconButton";
+import ActionIconButton from "../components/ActionIconButton";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import CardSection from "../components/layout/CardSection";
 import AppCard from "../components/layout/AppCard";
@@ -497,6 +499,7 @@ const emptyNote = (): Note => ({
 const defaultNoteFieldSettings = {
   showLinks: false,
   showFiles: false,
+  showEditorToolbar: false,
 };
 
 export default function Notes() {
@@ -1161,7 +1164,7 @@ export default function Notes() {
       for (const note of sidebarTree.favorites) {
         const isActive = note.id === selectedNoteId;
         rows.push(
-          <Box
+          <ListItemButton
             key={`fav-${note.id}`}
             onClick={() => {
               opts.onSelect(note);
@@ -1175,7 +1178,6 @@ export default function Notes() {
               border: 1,
               borderColor: "transparent",
               backgroundColor: isActive ? "action.hover" : undefined,
-              cursor: "pointer",
             })}
           >
             <Stack direction="row" spacing={1} alignItems="center">
@@ -1222,11 +1224,16 @@ export default function Notes() {
                 </Box>
               </Stack>
             </Stack>
-          </Box>
+          </ListItemButton>
         );
       }
 
-      rows.push(<Box key="__favorites-divider" sx={{ height: 12 }} />);
+      rows.push(
+        <Divider
+          key="__favorites-divider"
+          sx={{ my: 1, opacity: 0.5, borderColor: "divider" }}
+        />
+      );
     }
 
     const stack: Array<{ note: Note; depth: number }> = [];
@@ -1246,7 +1253,7 @@ export default function Notes() {
       const isActive = note.id === selectedNoteId;
 
       rows.push(
-        <Box
+        <ListItemButton
           key={note.id}
           onClick={() => {
             opts.onSelect(note);
@@ -1260,7 +1267,6 @@ export default function Notes() {
             border: 1,
             borderColor: "transparent",
             backgroundColor: isActive ? "action.hover" : undefined,
-            cursor: "pointer",
           })}
         >
           <Stack direction="row" spacing={1} alignItems="center">
@@ -1331,7 +1337,7 @@ export default function Notes() {
               ) : null}
             </Stack>
           </Stack>
-        </Box>
+        </ListItemButton>
       );
 
       if (hasChildren && isExpanded && depth < 6) {
@@ -1381,7 +1387,7 @@ export default function Notes() {
         </Button>
         <Tooltip title="Buscar notas" placement="bottom">
           <span>
-            <Button
+            <ActionIconButton
               onClick={event => {
                 (event.currentTarget as HTMLElement).blur();
                 const next = !showSearch;
@@ -1394,14 +1400,9 @@ export default function Notes() {
                   setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
                 }
               }}
-              variant="outlined"
-              sx={{
-                minWidth: 0,
-                px: 1.75,
-              }}
-            >
-              <SearchRoundedIcon fontSize="small" />
-            </Button>
+              icon={<SearchRoundedIcon fontSize="small" />}
+              aria-label="Buscar notas"
+            />
           </span>
         </Tooltip>
         <SettingsIconButton onClick={() => setSettingsOpen(true)} />
@@ -1409,7 +1410,6 @@ export default function Notes() {
     ),
     [
       addNote,
-      archiveLink.href,
       archiveLink.label,
       showSearch,
       selectedNoteId,
@@ -1636,23 +1636,13 @@ export default function Notes() {
                 <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
                   <Stack spacing={2}>
                     <Stack direction="row" spacing={1} alignItems="center">
-                      <Button
-                        variant="outlined"
+                      <IconButton
+                        aria-label="Trocar emoji"
                         onClick={e => openEmojiPicker(e.currentTarget, { mode: "note" })}
-                        sx={{
-                          minWidth: 56,
-                          width: 56,
-                          height: 56,
-                          minHeight: 56,
-                          fontSize: "1.5rem",
-                          lineHeight: 1,
-                          p: 0,
-                          borderColor: "divider",
-                          "&:hover": { borderColor: "primary.main" },
-                        }}
+                        sx={{ width: 56, height: 56, fontSize: "1.5rem" }}
                       >
                         {selectedNote.emoji}
-                      </Button>
+                      </IconButton>
                       <Popper
                         open={Boolean(emojiPickerAnchor)}
                         anchorEl={emojiPickerAnchor}
@@ -1664,18 +1654,17 @@ export default function Notes() {
                           setEmojiSearch("");
                         }}>
                           <Box
-                            sx={{
+                            sx={theme => ({
                               bgcolor: "background.paper",
                               border: 1,
                               borderColor: "divider",
-                              borderRadius: 2,
                               boxShadow: 3,
                               p: 1.5,
                               width: 280,
                               maxHeight: 320,
                               display: "flex",
                               flexDirection: "column",
-                            }}
+                            })}
                           >
                             <Stack
                               direction="row"
@@ -1703,11 +1692,10 @@ export default function Notes() {
                                         updatedAt: new Date().toISOString(),
                                       });
                                     }}
-                                    sx={{
+                                    sx={theme => ({
                                       border: "1px solid",
                                       borderColor: "divider",
-                                      borderRadius: 1.5,
-                                    }}
+                                    })}
                                   >
                                     <ShuffleRoundedIcon fontSize="small" />
                                   </IconButton>
@@ -2000,7 +1988,8 @@ export default function Notes() {
                         updatedAt: new Date().toISOString(),
                       })
                     }
-                    placeholder="Escreva sua nota..."
+                    placeholder=""
+                    showToolbar={Boolean(fieldSettings.showEditorToolbar)}
                     onNavigate={href => setLocation(href)}
                     onCreateChildPage={() => createChildNote(selectedNote)}
                     noteEmoji={"😊"}
@@ -2102,6 +2091,7 @@ export default function Notes() {
                 {[
                   { key: "showLinks", label: "Mostrar links" },
                   { key: "showFiles", label: "Mostrar arquivos" },
+                  { key: "showEditorToolbar", label: "Barra de formatação" },
                 ].map(item => (
                   <CardSection
                     key={item.key}

@@ -1241,7 +1241,6 @@ export default function Financas() {
                             sx={{
                               width: 28,
                               height: 28,
-                              borderRadius: 1,
                               backgroundColor: color,
                               borderStyle: "solid",
                               borderWidth:
@@ -1314,7 +1313,6 @@ export default function Financas() {
                             sx={{
                               width: 28,
                               height: 28,
-                              borderRadius: 1,
                               backgroundColor: color,
                               borderStyle: "solid",
                               borderWidth: newCategoryColor === color ? 2 : 1,

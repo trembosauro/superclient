@@ -9,6 +9,7 @@ import {
   List,
   ListItemButton,
   ListItemText,
+  Paper,
   Popper,
   Stack,
   TextField,
@@ -156,8 +157,9 @@ function ResizableImageNodeView({
           maxWidth: "100%",
           width: widthStyle,
           height: "auto",
-          
-          outline: selected ? "2px solid var(--mui-palette-primary-main, #1976d2)" : undefined,
+          outline: selected
+            ? "2px solid var(--mui-palette-primary-main, #1976d2)"
+            : undefined,
           boxShadow: selected ? "0 0 0 4px rgba(25,118,210,0.2)" : undefined,
         }}
       />
@@ -273,6 +275,8 @@ export type RichTextEditorProps = {
   placeholder?: string;
   autoFocus?: boolean;
 
+  showToolbar?: boolean;
+
   onNavigate?: (href: string) => void;
   onCreateChildPage?: () => ChildPage;
   noteEmoji?: string;
@@ -302,6 +306,7 @@ export default function RichTextEditor({
   onChange,
   placeholder,
   autoFocus,
+  showToolbar = true,
   onNavigate,
   onCreateChildPage,
   noteEmoji,
@@ -353,7 +358,7 @@ export default function RichTextEditor({
       }),
       ResizableImage,
       Placeholder.configure({
-        placeholder: placeholder || "Escreva...",
+        placeholder: placeholder ?? "Escreva...",
       }),
       Underline,
       Link.configure({
@@ -857,75 +862,55 @@ export default function RichTextEditor({
 
   const iconButtonProps = {
     size: "small" as const,
-    sx: (theme: { shape: { borderRadius: string | number } }) => ({
-      border: 1,
-      borderColor: "divider",
-      backgroundColor: "background.paper",
-      width: 40,
-      height: 40,
-      borderRadius: theme.shape.borderRadius,
-      p: 0,
-      "&:hover": { backgroundColor: "action.hover" },
-    }),
   };
 
   const shouldInterceptLinks = Boolean(onNavigate);
 
   return (
     <Stack spacing={1} sx={{ flex: 1, minHeight: 0 }}>
-      <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-        {noteEmoji && onOpenEmojiPicker ? (
-          <Button
-            variant="outlined"
-            onClick={event =>
-              onOpenEmojiPicker(event.currentTarget, {
-                mode: "editor",
-                onPick: emoji => {
-                  editor?.chain().focus().insertContent(emoji).run();
-                },
-              })
-            }
-            aria-label="Emoji"
-            sx={{
-              minWidth: 40,
-              width: 40,
-              height: 40,
-              minHeight: 40,
-              fontSize: "1.25rem",
-              lineHeight: 1,
-              p: 0,
-              borderColor: "divider",
-              "&:hover": { borderColor: "primary.main" },
-            }}
-          >
-            {noteEmoji}
-          </Button>
-        ) : null}
+      {showToolbar ? (
+        <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+          {noteEmoji && onOpenEmojiPicker ? (
+            <IconButton
+              {...iconButtonProps}
+              onClick={event =>
+                onOpenEmojiPicker(event.currentTarget, {
+                  mode: "editor",
+                  onPick: emoji => {
+                    editor?.chain().focus().insertContent(emoji).run();
+                  },
+                })
+              }
+              aria-label="Emoji"
+            >
+              {noteEmoji}
+            </IconButton>
+          ) : null}
 
-        <IconButton
-          {...iconButtonProps}
-          onClick={() => editor?.chain().focus().toggleBold().run()}
-          color={editor?.isActive("bold") ? "primary" : "default"}
-          aria-label="Negrito"
-        >
-          <FormatBoldRoundedIcon fontSize="small" />
-        </IconButton>
-        <IconButton
-          {...iconButtonProps}
-          onClick={() => editor?.chain().focus().toggleItalic().run()}
-          color={editor?.isActive("italic") ? "primary" : "default"}
-          aria-label="Italico"
-        >
-          <FormatItalicRoundedIcon fontSize="small" />
-        </IconButton>
-        <IconButton
-          {...iconButtonProps}
-          onClick={() => editor?.chain().focus().toggleUnderline().run()}
-          color={editor?.isActive("underline") ? "primary" : "default"}
-          aria-label="Sublinhado"
-        >
-          <FormatUnderlinedRoundedIcon fontSize="small" />
-        </IconButton>
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => editor?.chain().focus().toggleBold().run()}
+            color={editor?.isActive("bold") ? "primary" : "default"}
+            aria-label="Negrito"
+          >
+            <FormatBoldRoundedIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => editor?.chain().focus().toggleItalic().run()}
+            color={editor?.isActive("italic") ? "primary" : "default"}
+            aria-label="Italico"
+          >
+            <FormatItalicRoundedIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            {...iconButtonProps}
+            onClick={() => editor?.chain().focus().toggleUnderline().run()}
+            color={editor?.isActive("underline") ? "primary" : "default"}
+            aria-label="Sublinhado"
+          >
+            <FormatUnderlinedRoundedIcon fontSize="small" />
+          </IconButton>
         <IconButton
           {...iconButtonProps}
           onClick={openLinkDialogFromSelection}
@@ -995,14 +980,13 @@ export default function RichTextEditor({
         >
           <BackspaceRoundedIcon fontSize="small" />
         </IconButton>
-      </Stack>
+        </Stack>
+      ) : null}
 
-      <Box
+      <Paper
+        variant="outlined"
         sx={theme => ({
-          
-          border: 1,
-          borderColor: "divider",
-          backgroundColor: "background.paper",
+          overflow: "hidden",
           flex: 1,
           minHeight: 0,
           display: "flex",
@@ -1148,9 +1132,21 @@ export default function RichTextEditor({
           event.preventDefault();
           event.stopPropagation();
         }}
+        onMouseDown={event => {
+          if (!editor) {
+            return;
+          }
+
+          const target = event.target as HTMLElement | null;
+          if (target?.closest?.("button, a, input, textarea, [role='button']")) {
+            return;
+          }
+
+          editor.chain().focus().run();
+        }}
       >
         <EditorContent editor={editor} className="tiptap" />
-      </Box>
+      </Paper>
 
       <Popper
         open={linkMenuOpen && Boolean(linkMenuAnchorRect)}

@@ -18,6 +18,7 @@ import { saveUserStorage } from "../userStorage";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import SettingsIconButton from "../components/SettingsIconButton";
+import ActionIconButton from "../components/ActionIconButton";
 import { PageContainer } from "../ui/PageContainer/PageContainer";
 import AppCard from "../components/layout/AppCard";
 import CardSection from "../components/layout/CardSection";
@@ -563,7 +564,6 @@ export default function Dashboard() {
                   sx={theme => ({
                     minWidth: 0,
                     fontWeight: 600,
-                    borderRadius: theme.shape.borderRadius,
                     minHeight: 36,
                     px: 1.25,
                     py: 0.75,
@@ -610,7 +610,6 @@ export default function Dashboard() {
                     sx={theme => ({
                       border: 1,
                       borderColor: "divider",
-                      borderRadius: theme.shape.borderRadius,
                     })}
                   >
                     <ArrowForwardRoundedIcon fontSize="small" />
@@ -811,17 +810,13 @@ export default function Dashboard() {
               >
                 <Typography variant="h6">Gestão</Typography>
                 <Tooltip title="Ir para Gestão" placement="top">
-                  <IconButton
+                  <ActionIconButton
                     component={RouterLink}
                     href="/access"
                     aria-label="Ir para Gestão"
-                    sx={{
-                      border: 1,
-                      borderColor: "divider",
-                    }}
-                  >
-                    <ArrowForwardRoundedIcon fontSize="small" />
-                  </IconButton>
+                    icon={<ArrowForwardRoundedIcon fontSize="small" />}
+                    sx={{ border: 1, borderColor: "divider" }}
+                  />
                 </Tooltip>
               </Box>
               <Stack direction={{ xs: "column", md: "row" }} spacing={2}>

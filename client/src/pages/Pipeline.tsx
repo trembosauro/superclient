@@ -475,6 +475,7 @@ const defaultTaskFieldSettings = {
   value: false,
   link: false,
   description: true,
+  showEditorToolbar: false,
   priority: false,
   dueDate: false,
   checklist: false,
@@ -735,6 +736,7 @@ export default function Pipeline() {
         link: Boolean(parsed.link),
         description:
           parsed.description !== undefined ? Boolean(parsed.description) : true,
+        showEditorToolbar: Boolean(parsed.showEditorToolbar),
         priority: Boolean(parsed.priority),
         dueDate: Boolean(parsed.dueDate),
         checklist: Boolean(parsed.checklist),
@@ -2298,7 +2300,6 @@ export default function Pipeline() {
                   zIndex: 2,
                   width: 48,
                   height: 48,
-                  borderRadius: theme.shape.borderRadius,
                   backgroundColor: "transparent",
                   border: "none",
                   color: "text.primary",
@@ -2323,7 +2324,6 @@ export default function Pipeline() {
                   zIndex: 2,
                   width: 48,
                   height: 48,
-                  borderRadius: theme.shape.borderRadius,
                   backgroundColor: "transparent",
                   border: "none",
                   color: "text.primary",
@@ -2483,7 +2483,6 @@ export default function Pipeline() {
                                   p: 2,
                                   border: 1,
                                   borderColor: "divider",
-                                  borderRadius: theme.shape.borderRadius,
                                   backgroundColor: "background.paper",
                                 })}
                               >
@@ -2526,7 +2525,6 @@ export default function Pipeline() {
                             p: 2,
                             border: 1,
                             borderColor: "divider",
-                            borderRadius: theme.shape.borderRadius,
                             backgroundColor: "background.paper",
                             boxShadow: theme.shadows[2],
                           })}
@@ -2758,7 +2756,6 @@ export default function Pipeline() {
                           color: "text.secondary",
                           border: 1,
                           borderColor: "divider",
-                          borderRadius: theme.shape.borderRadius,
                         })}
                       >
                         <LinkRoundedIcon fontSize="small" />
@@ -2877,7 +2874,6 @@ export default function Pipeline() {
                   sx={theme => ({
                     border: 1,
                     borderColor: "divider",
-                    borderRadius: theme.shape.borderRadius,
                     backgroundColor: "background.paper",
                     p: 2,
                     minHeight: 120,
@@ -3250,6 +3246,36 @@ export default function Pipeline() {
                       />
                     </Box>
                   ))}
+
+                  <Box
+                    sx={theme => ({
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      p: 1.5,
+                      borderColor: "divider",
+                      cursor: "pointer",
+                      ...interactiveCardSx(theme),
+                    })}
+                    onClick={() =>
+                      setTaskFieldSettings(prev => ({
+                        ...prev,
+                        showEditorToolbar: !prev.showEditorToolbar,
+                      }))
+                    }
+                  >
+                    <Typography variant="subtitle2">Barra de formatação</Typography>
+                    <ToggleCheckbox
+                      checked={Boolean(taskFieldSettings.showEditorToolbar)}
+                      onChange={event =>
+                        setTaskFieldSettings(prev => ({
+                          ...prev,
+                          showEditorToolbar: event.target.checked,
+                        }))
+                      }
+                      onClick={event => event.stopPropagation()}
+                    />
+                  </Box>
                 </Box>
               ),
             },
@@ -3467,10 +3493,10 @@ export default function Pipeline() {
                                     onClick={() =>
                                       handleRestoreColumn(column.id)
                                     }
-                                    sx={{
+                                    sx={theme => ({
                                       border: 1,
                                       borderColor: "divider",
-                                    }}
+                                    })}
                                     aria-label={`Restaurar ${column.title}`}
                                   >
                                     <RestoreFromTrashRoundedIcon fontSize="small" />
@@ -3481,10 +3507,10 @@ export default function Pipeline() {
                                     onClick={() =>
                                       handleRequestRemoveColumn(column)
                                     }
-                                    sx={{
+                                    sx={theme => ({
                                       border: 1,
                                       borderColor: "divider",
-                                    }}
+                                    })}
                                     aria-label={`Remover ${column.title}`}
                                   >
                                     <DeleteRoundedIcon fontSize="small" />
@@ -3829,6 +3855,7 @@ export default function Pipeline() {
                   value={editDescription}
                   onChange={setEditDescription}
                   placeholder="Escreva a descricao da tarefa..."
+                  showToolbar={Boolean(taskFieldSettings.showEditorToolbar)}
                 />
               </Stack>
               <Stack
@@ -4161,16 +4188,13 @@ function SortableDeal({
   };
 
   return (
-    <Box
+    <AppCard
       ref={setNodeRef}
       sx={theme => ({
         p: 2,
-        border: 1,
-        borderColor: "divider",
-        borderRadius: theme.shape.borderRadius,
-        backgroundColor: "background.paper",
         cursor: canEditTasks ? "grab" : "pointer",
         touchAction: canEditTasks ? "none" : "auto",
+        ...interactiveCardSx(theme),
       })}
       style={style}
       {...(canEditTasks ? { ...attributes, ...listeners } : {})}
@@ -4196,7 +4220,7 @@ function SortableDeal({
           {deal.value}
         </Typography>
       ) : null}
-    </Box>
+    </AppCard>
   );
 }
 
@@ -4260,7 +4284,6 @@ function SortableColumnRow({
               sx={theme => ({
                 border: 1,
                 borderColor: "divider",
-                borderRadius: theme.shape.borderRadius,
               })}
               aria-label={`Arquivar ${column.title}`}
             >
@@ -4273,7 +4296,6 @@ function SortableColumnRow({
               sx={theme => ({
                 border: 1,
                 borderColor: "divider",
-                borderRadius: theme.shape.borderRadius,
               })}
               aria-label={`Remover ${column.title}`}
             >
@@ -4286,7 +4308,6 @@ function SortableColumnRow({
             sx={theme => ({
               border: 1,
               borderColor: "divider",
-              borderRadius: theme.shape.borderRadius,
               cursor: "grab",
             })}
             aria-label={`Arrastar ${column.title}`}

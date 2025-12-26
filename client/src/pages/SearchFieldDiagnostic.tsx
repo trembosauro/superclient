@@ -201,7 +201,7 @@ export function SearchFieldDiagnostic() {
         />
       </Box>
 
-      <Box sx={{ mt: 6, p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
+      <Box sx={{ mt: 6, p: 3, bgcolor: 'background.paper' }}>
         <Typography variant="h6" gutterBottom>
           Expected Results:
         </Typography>

@@ -18,6 +18,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
@@ -1519,10 +1520,10 @@ export default function Contacts() {
                       : false;
                     const isToday = isSameDay(day.date, new Date());
                     return (
-                      <Box
+                      <Button
                         key={day.date.toISOString()}
-                        component="button"
-                        type="button"
+                        variant="text"
+                        color="inherit"
                         onClick={() => {
                           const iso = `${day.date.getFullYear()}-${String(
                             day.date.getMonth() + 1
@@ -1540,26 +1541,31 @@ export default function Contacts() {
                           );
                           setCalendarOpen(false);
                         }}
-                        sx={{
-                          appearance: "none",
-                          borderRadius: 1.5,
+                        sx={theme => ({
+                          minWidth: 0,
                           p: 0.75,
-                          cursor: "pointer",
-                          backgroundColor: isSelected
-                            ? "rgba(34, 201, 166, 0.25)"
-                            : "transparent",
+                          lineHeight: 1,
                           color: day.inMonth
-                            ? "text.primary"
-                            : "text.secondary",
-                          border: isToday
-                            ? "1px solid rgba(34, 201, 166, 0.5)"
-                            : "1px solid transparent",
-                        }}
+                            ? theme.palette.text.primary
+                            : theme.palette.text.secondary,
+                          border: "1px solid",
+                          borderColor: isToday
+                            ? alpha(theme.palette.primary.main, 0.5)
+                            : "transparent",
+                          backgroundColor: isSelected
+                            ? alpha(theme.palette.primary.main, 0.25)
+                            : "transparent",
+                          "&:hover": {
+                            backgroundColor: isSelected
+                              ? alpha(theme.palette.primary.main, 0.28)
+                              : theme.palette.action.hover,
+                          },
+                        })}
                       >
                         <Typography variant="caption">
                           {day.date.getDate()}
                         </Typography>
-                      </Box>
+                      </Button>
                     );
                   })}
                 </Box>
@@ -1906,7 +1912,6 @@ export default function Contacts() {
                             sx={{
                               width: 28,
                               height: 28,
-                              borderRadius: 1,
                               backgroundColor: color,
                               borderStyle: "solid",
                               borderWidth:
@@ -1976,7 +1981,6 @@ export default function Contacts() {
                             sx={{
                               width: 28,
                               height: 28,
-                              borderRadius: 1,
                               backgroundColor: color,
                               borderStyle: "solid",
                               borderWidth: newCategoryColor === color ? 2 : 1,

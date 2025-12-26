@@ -30,6 +30,15 @@ const theme = createTheme({
     },
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        ":root": {
+          "--radius": APP_RADIUS,
+          "--radius-card": APP_RADIUS,
+          "--radius-button": APP_RADIUS,
+        },
+      },
+    },
     MuiAppBar: {
       styleOverrides: {
         root: {
@@ -159,6 +168,13 @@ const theme = createTheme({
       },
     },
     MuiChip: {
+      styleOverrides: {
+        root: () => ({
+          borderRadius: APP_RADIUS,
+        }),
+      },
+    },
+    MuiListItemButton: {
       styleOverrides: {
         root: () => ({
           borderRadius: APP_RADIUS,

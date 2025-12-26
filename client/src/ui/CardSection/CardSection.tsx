@@ -1,28 +1,36 @@
-import type { ReactNode, HTMLAttributes } from 'react';
-import { Box } from '@mui/material';
+import type { ReactNode } from "react";
+import type { PaperProps } from "@mui/material";
+import type { SxProps, Theme } from "@mui/material/styles";
 
-export interface CardSectionProps extends HTMLAttributes<HTMLDivElement> {
+import AppCard from "../../components/layout/AppCard";
+
+export interface CardSectionProps extends Omit<PaperProps, "children" | "sx"> {
   children: ReactNode;
-  size?: 'default' | 'compact';
+  size?: "default" | "compact";
   interactive?: boolean;
+  sx?: SxProps<Theme>;
 }
 
 export function CardSection({ 
   children, 
-  size = 'default',
+  size = "default",
   interactive = false,
+  sx,
   ...rest
 }: CardSectionProps) {
   return (
-    <Box
-      sx={{
-        p: size === 'compact' ? 1 : 2,
-        cursor: interactive ? 'pointer' : undefined,
-        '&:hover': interactive ? { bgcolor: 'action.hover' } : undefined,
-      }}
+    <AppCard
       {...rest}
+      sx={[
+        {
+          p: size === "compact" ? 1 : 2,
+          cursor: interactive ? "pointer" : undefined,
+          "&:hover": interactive ? { bgcolor: "action.hover" } : undefined,
+        },
+        ...(Array.isArray(sx) ? sx : [sx]),
+      ].filter(Boolean)}
     >
       {children}
-    </Box>
+    </AppCard>
   );
 }
