@@ -525,7 +525,10 @@ function SidebarTreeDraggableItem(props: {
   isExpanded: boolean;
   onSelect: (note: Note) => void;
   onToggleExpanded: (noteId: string) => void;
-  onOpenMenu: (note: Note, anchor: HTMLElement) => void;
+  onOpenMenu: (
+    note: Note,
+    anchor: HTMLElement | { top: number; left: number }
+  ) => void;
 }) {
   const {
     note,
@@ -552,6 +555,11 @@ function SidebarTreeDraggableItem(props: {
       {...attributes}
       {...listeners}
       onClick={() => onSelect(note)}
+      onContextMenu={event => {
+        event.preventDefault();
+        event.stopPropagation();
+        onOpenMenu(note, { top: event.clientY, left: event.clientX });
+      }}
       style={{
         transform: CSS.Translate.toString(transform),
         opacity: isDragging ? 0.6 : 1,
@@ -723,10 +731,12 @@ export default function Notes() {
   const [sidebarItemMenuAnchorEl, setSidebarItemMenuAnchorEl] = useState<
     HTMLElement | null
   >(null);
+  const [sidebarItemMenuAnchorPosition, setSidebarItemMenuAnchorPosition] =
+    useState<{ top: number; left: number } | null>(null);
   const [sidebarItemMenuNoteId, setSidebarItemMenuNoteId] = useState<string | null>(
     null
   );
-  const sidebarItemMenuOpen = Boolean(sidebarItemMenuAnchorEl);
+  const sidebarItemMenuOpen = Boolean(sidebarItemMenuAnchorEl || sidebarItemMenuAnchorPosition);
 
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [renameDialogValue, setRenameDialogValue] = useState("");
@@ -1378,13 +1388,23 @@ export default function Notes() {
     );
   };
 
-  const openSidebarItemMenu = useCallback((note: Note, anchor: HTMLElement) => {
-    setSidebarItemMenuNoteId(note.id);
-    setSidebarItemMenuAnchorEl(anchor);
-  }, []);
+  const openSidebarItemMenu = useCallback(
+    (note: Note, anchor: HTMLElement | { top: number; left: number }) => {
+      setSidebarItemMenuNoteId(note.id);
+      if (anchor instanceof HTMLElement) {
+        setSidebarItemMenuAnchorPosition(null);
+        setSidebarItemMenuAnchorEl(anchor);
+        return;
+      }
+      setSidebarItemMenuAnchorEl(null);
+      setSidebarItemMenuAnchorPosition(anchor);
+    },
+    []
+  );
 
   const closeSidebarItemMenu = useCallback(() => {
     setSidebarItemMenuAnchorEl(null);
+    setSidebarItemMenuAnchorPosition(null);
     setSidebarItemMenuNoteId(null);
   }, []);
 
@@ -2105,6 +2125,14 @@ export default function Notes() {
                                 setExpandedNoteId(note.id);
                                 selectNote(note);
                               }
+                            }}
+                            onContextMenu={event => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              openSidebarItemMenu(note, {
+                                top: event.clientY,
+                                left: event.clientX,
+                              });
                             }}
                             sx={theme => ({
                               ...interactiveItemSx(theme),
@@ -2899,6 +2927,17 @@ export default function Notes() {
 
       <Menu
         anchorEl={sidebarItemMenuAnchorEl}
+        anchorReference={
+          sidebarItemMenuAnchorPosition ? "anchorPosition" : "anchorEl"
+        }
+        anchorPosition={
+          sidebarItemMenuAnchorPosition
+            ? {
+                top: sidebarItemMenuAnchorPosition.top,
+                left: sidebarItemMenuAnchorPosition.left,
+              }
+            : undefined
+        }
         open={sidebarItemMenuOpen}
         onClose={closeSidebarItemMenu}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
