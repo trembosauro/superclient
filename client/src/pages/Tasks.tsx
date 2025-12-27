@@ -1828,6 +1828,22 @@ export default function Tasks() {
       STORAGE_CATEGORIES,
       JSON.stringify(nextCategories)
     );
+
+    const nextCategoryIdSet = new Set(nextCategories.map(cat => cat.id));
+
+    setCategoryFilter(prev => prev.filter(id => nextCategoryIdSet.has(id)));
+
+    setTasks(prev =>
+      prev.map(task => {
+        const current = task.categoryIds || [];
+        const next = current.filter(id => nextCategoryIdSet.has(id));
+        if (next.length === current.length) {
+          return task;
+        }
+        return { ...task, categoryIds: next };
+      })
+    );
+
     if (pipelineSnapshotRef.current) {
       void api.put("/api/pipeline/board", {
         data: {
