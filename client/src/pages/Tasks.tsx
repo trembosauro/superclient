@@ -2184,234 +2184,6 @@ export default function Tasks() {
               />
             ) : null}
 
-            {isCategoryListMode ? null : (
-              <>
-                <Box
-                  onClick={event =>
-                    setMiniCalendarAnchorEl(prev =>
-                      prev ? null : (event.currentTarget as HTMLElement)
-                    )
-                  }
-                  sx={theme => ({
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    px: 1,
-                    py: 0.75,
-                    cursor: "pointer",
-                    borderRadius: getInteractiveItemRadiusPx(theme),
-                    ...interactiveItemSx(theme),
-                    backgroundColor: miniCalendarAnchorEl
-                      ? theme.palette.action.selected
-                      : undefined,
-                  })}
-                  aria-haspopup="dialog"
-                  aria-expanded={Boolean(miniCalendarAnchorEl)}
-                >
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <CalendarTodayRoundedIcon fontSize="small" />
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {monthLabels[miniCalendarMonth.getMonth()]}{" "}
-                      {miniCalendarMonth.getFullYear()}
-                    </Typography>
-                  </Stack>
-                  <ChevronRightRoundedIcon
-                    fontSize="small"
-                    sx={{
-                      transform: miniCalendarAnchorEl
-                        ? "rotate(-90deg)"
-                        : "rotate(90deg)",
-                      transition: "transform 120ms ease",
-                    }}
-                  />
-                </Box>
-
-                <Popover
-                  open={Boolean(miniCalendarAnchorEl)}
-                  anchorEl={miniCalendarAnchorEl}
-                  onClose={() => setMiniCalendarAnchorEl(null)}
-                  anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-                  transformOrigin={{ vertical: "top", horizontal: "left" }}
-                  disableRestoreFocus
-                  PaperProps={{
-                    sx: theme => ({
-                      mt: 1,
-                      overflow: "visible",
-                      borderRadius: getInteractiveItemRadiusPx(theme),
-                      border: 1,
-                      borderColor: "divider",
-                      backgroundColor: "background.paper",
-                      width: 280,
-                      maxWidth: "calc(100vw - 32px)",
-                      "&::before": {
-                        content: '""',
-                        position: "absolute",
-                        top: -6,
-                        left: 28,
-                        width: 12,
-                        height: 12,
-                        transform: "rotate(45deg)",
-                        backgroundColor: theme.palette.background.paper,
-                        borderLeft: `1px solid ${theme.palette.divider}`,
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                      },
-                    }),
-                  }}
-                >
-                  <ClickAwayListener onClickAway={() => setMiniCalendarAnchorEl(null)}>
-                    <Box sx={{ p: 1.5 }}>
-                      <Stack spacing={1.5}>
-                        <Stack
-                          direction="row"
-                          alignItems="center"
-                          justifyContent="space-between"
-                        >
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              setMiniCalendarMonth(
-                                new Date(
-                                  miniCalendarMonth.getFullYear(),
-                                  miniCalendarMonth.getMonth() - 1,
-                                  1
-                                )
-                              )
-                            }
-                            aria-label="Mês anterior"
-                          >
-                            <ChevronLeftRoundedIcon fontSize="small" />
-                          </IconButton>
-
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                            {monthLabels[miniCalendarMonth.getMonth()]}{" "}
-                            {miniCalendarMonth.getFullYear()}
-                          </Typography>
-
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              setMiniCalendarMonth(
-                                new Date(
-                                  miniCalendarMonth.getFullYear(),
-                                  miniCalendarMonth.getMonth() + 1,
-                                  1
-                                )
-                              )
-                            }
-                            aria-label="Próximo mês"
-                          >
-                            <ChevronRightRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </Stack>
-
-                        <Box
-                          sx={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(7, 1fr)",
-                            gap: 0.5,
-                          }}
-                        >
-                          {weekLabels.map((label, index) => (
-                            <Typography
-                              key={`mini-main-weekday-${index}`}
-                              variant="caption"
-                              sx={{ textAlign: "center", color: "text.secondary" }}
-                            >
-                              {label}
-                            </Typography>
-                          ))}
-                          {getCalendarDays(miniCalendarMonth).map((day, index) => {
-                            const selectedKey = formatDateKey(selectedDate);
-                            const dayKey = day ? formatDateKey(day) : "";
-                            const isSelected = Boolean(day && dayKey === selectedKey);
-                            const hasTasks = Boolean(day && tasksByDate.has(dayKey));
-
-                            return (
-                              <Box
-                                key={`mini-main-${day ? day.toISOString() : "empty"}-${index}`}
-                                onClick={() => {
-                                  if (!day) {
-                                    return;
-                                  }
-                                  const next = new Date(day);
-                                  next.setHours(0, 0, 0, 0);
-                                  setSelectedDate(next);
-                                  setMiniCalendarAnchorEl(null);
-                                }}
-                                sx={theme => ({
-                                  ...interactiveItemSx(theme),
-                                  height: 32,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  borderRadius: getInteractiveItemRadiusPx(theme),
-                                  border: isSelected ? 1 : "1px solid transparent",
-                                  borderColor: isSelected ? "primary.main" : "transparent",
-                                  cursor: day ? "pointer" : "default",
-                                  color: isSelected ? "primary.main" : "text.secondary",
-                                  fontWeight: isSelected ? 600 : 500,
-                                  position: "relative",
-                                })}
-                              >
-                                {day ? day.getDate() : ""}
-                                {hasTasks ? (
-                                  <Box
-                                    sx={theme => ({
-                                      width: 6,
-                                      height: 6,
-                                      borderRadius: "50%",
-                                      backgroundColor: theme.palette.text.secondary,
-                                      position: "absolute",
-                                      bottom: 4,
-                                    })}
-                                  />
-                                ) : null}
-                              </Box>
-                            );
-                          })}
-                        </Box>
-
-                        <Autocomplete
-                          freeSolo
-                          options={miniCalendarYearOptions}
-                          getOptionLabel={option => String(option)}
-                          value={miniCalendarMonth.getFullYear()}
-                          inputValue={miniCalendarYearInput}
-                          onInputChange={(_, value) => setMiniCalendarYearInput(value)}
-                          onChange={(_, value) => {
-                            const parsed = parseYearInput(value);
-                            if (parsed == null) {
-                              return;
-                            }
-                            setMiniCalendarYear(parsed);
-                          }}
-                          renderInput={params => (
-                            <TextField
-                              {...params}
-                              label="Ano"
-                              size="small"
-                              onFocus={() => setIsMiniCalendarYearEditing(true)}
-                              onBlur={() => {
-                                setIsMiniCalendarYearEditing(false);
-                                const parsed = parseYearInput(miniCalendarYearInput);
-                                if (parsed == null) {
-                                  setMiniCalendarYearInput(
-                                    String(miniCalendarMonth.getFullYear())
-                                  );
-                                  return;
-                                }
-                                setMiniCalendarYear(parsed);
-                              }}
-                            />
-                          )}
-                        />
-                      </Stack>
-                    </Box>
-                  </ClickAwayListener>
-                </Popover>
-              </>
-            )}
-
             <Stack spacing={2}>
               {isCategoryListMode ? (
                 <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -2548,6 +2320,236 @@ export default function Tasks() {
                     p: 2,
                   })}
                 >
+                  <Box
+                    onClick={event =>
+                      setMiniCalendarAnchorEl(prev =>
+                        prev ? null : (event.currentTarget as HTMLElement)
+                      )
+                    }
+                    sx={theme => ({
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      px: 0.75,
+                      py: 0.5,
+                      cursor: "pointer",
+                      borderRadius: getInteractiveItemRadiusPx(theme),
+                      border: 0,
+                      backgroundColor: miniCalendarAnchorEl
+                        ? theme.palette.action.selected
+                        : "transparent",
+                      "&:hover": {
+                        backgroundColor: theme.palette.action.hover,
+                      },
+                      "&:active": {
+                        backgroundColor: theme.palette.action.selected,
+                      },
+                    })}
+                    aria-haspopup="dialog"
+                    aria-expanded={Boolean(miniCalendarAnchorEl)}
+                  >
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <CalendarTodayRoundedIcon fontSize="small" />
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {monthLabels[miniCalendarMonth.getMonth()]}{" "}
+                        {miniCalendarMonth.getFullYear()}
+                      </Typography>
+                    </Stack>
+                    <ChevronRightRoundedIcon
+                      fontSize="small"
+                      sx={{
+                        transform: miniCalendarAnchorEl
+                          ? "rotate(-90deg)"
+                          : "rotate(90deg)",
+                        transition: "transform 120ms ease",
+                      }}
+                    />
+                  </Box>
+
+                  <Popover
+                    open={Boolean(miniCalendarAnchorEl)}
+                    anchorEl={miniCalendarAnchorEl}
+                    onClose={() => setMiniCalendarAnchorEl(null)}
+                    anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                    transformOrigin={{ vertical: "top", horizontal: "left" }}
+                    disableRestoreFocus
+                    PaperProps={{
+                      sx: theme => ({
+                        mt: 1,
+                        overflow: "visible",
+                        borderRadius: getInteractiveItemRadiusPx(theme),
+                        border: 1,
+                        borderColor: "divider",
+                        backgroundColor: "background.paper",
+                        width: 280,
+                        maxWidth: "calc(100vw - 32px)",
+                        "&::before": {
+                          content: '""',
+                          position: "absolute",
+                          top: -6,
+                          left: 28,
+                          width: 12,
+                          height: 12,
+                          transform: "rotate(45deg)",
+                          backgroundColor: theme.palette.background.paper,
+                          borderLeft: `1px solid ${theme.palette.divider}`,
+                          borderTop: `1px solid ${theme.palette.divider}`,
+                        },
+                      }),
+                    }}
+                  >
+                    <ClickAwayListener onClickAway={() => setMiniCalendarAnchorEl(null)}>
+                      <Box sx={{ p: 1.5 }}>
+                        <Stack spacing={1.5}>
+                          <Stack
+                            direction="row"
+                            alignItems="center"
+                            justifyContent="space-between"
+                          >
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                setMiniCalendarMonth(
+                                  new Date(
+                                    miniCalendarMonth.getFullYear(),
+                                    miniCalendarMonth.getMonth() - 1,
+                                    1
+                                  )
+                                )
+                              }
+                              aria-label="Mês anterior"
+                            >
+                              <ChevronLeftRoundedIcon fontSize="small" />
+                            </IconButton>
+
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                              {monthLabels[miniCalendarMonth.getMonth()]}{" "}
+                              {miniCalendarMonth.getFullYear()}
+                            </Typography>
+
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                setMiniCalendarMonth(
+                                  new Date(
+                                    miniCalendarMonth.getFullYear(),
+                                    miniCalendarMonth.getMonth() + 1,
+                                    1
+                                  )
+                                )
+                              }
+                              aria-label="Próximo mês"
+                            >
+                              <ChevronRightRoundedIcon fontSize="small" />
+                            </IconButton>
+                          </Stack>
+
+                          <Box
+                            sx={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(7, 1fr)",
+                              gap: 0.5,
+                            }}
+                          >
+                            {weekLabels.map((label, index) => (
+                              <Typography
+                                key={`mini-main-weekday-${index}`}
+                                variant="caption"
+                                sx={{ textAlign: "center", color: "text.secondary" }}
+                              >
+                                {label}
+                              </Typography>
+                            ))}
+                            {getCalendarDays(miniCalendarMonth).map((day, index) => {
+                              const selectedKey = formatDateKey(selectedDate);
+                              const dayKey = day ? formatDateKey(day) : "";
+                              const isSelected = Boolean(day && dayKey === selectedKey);
+                              const hasTasks = Boolean(day && tasksByDate.has(dayKey));
+
+                              return (
+                                <Box
+                                  key={`mini-main-${day ? day.toISOString() : "empty"}-${index}`}
+                                  onClick={() => {
+                                    if (!day) {
+                                      return;
+                                    }
+                                    const next = new Date(day);
+                                    next.setHours(0, 0, 0, 0);
+                                    setSelectedDate(next);
+                                    setMiniCalendarAnchorEl(null);
+                                  }}
+                                  sx={theme => ({
+                                    ...interactiveItemSx(theme),
+                                    height: 32,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    borderRadius: getInteractiveItemRadiusPx(theme),
+                                    border: isSelected ? 1 : "1px solid transparent",
+                                    borderColor: isSelected ? "primary.main" : "transparent",
+                                    cursor: day ? "pointer" : "default",
+                                    color: isSelected ? "primary.main" : "text.secondary",
+                                    fontWeight: isSelected ? 600 : 500,
+                                    position: "relative",
+                                  })}
+                                >
+                                  {day ? day.getDate() : ""}
+                                  {hasTasks ? (
+                                    <Box
+                                      sx={theme => ({
+                                        width: 6,
+                                        height: 6,
+                                        borderRadius: "50%",
+                                        backgroundColor: theme.palette.text.secondary,
+                                        position: "absolute",
+                                        bottom: 4,
+                                      })}
+                                    />
+                                  ) : null}
+                                </Box>
+                              );
+                            })}
+                          </Box>
+
+                          <Autocomplete
+                            freeSolo
+                            options={miniCalendarYearOptions}
+                            getOptionLabel={option => String(option)}
+                            value={miniCalendarMonth.getFullYear()}
+                            inputValue={miniCalendarYearInput}
+                            onInputChange={(_, value) => setMiniCalendarYearInput(value)}
+                            onChange={(_, value) => {
+                              const parsed = parseYearInput(value);
+                              if (parsed == null) {
+                                return;
+                              }
+                              setMiniCalendarYear(parsed);
+                            }}
+                            renderInput={params => (
+                              <TextField
+                                {...params}
+                                label="Ano"
+                                size="small"
+                                onFocus={() => setIsMiniCalendarYearEditing(true)}
+                                onBlur={() => {
+                                  setIsMiniCalendarYearEditing(false);
+                                  const parsed = parseYearInput(miniCalendarYearInput);
+                                  if (parsed == null) {
+                                    setMiniCalendarYearInput(
+                                      String(miniCalendarMonth.getFullYear())
+                                    );
+                                    return;
+                                  }
+                                  setMiniCalendarYear(parsed);
+                                }}
+                              />
+                            )}
+                          />
+                        </Stack>
+                      </Box>
+                    </ClickAwayListener>
+                  </Popover>
+
                   <DndContext
                     sensors={sensors}
                     onDragEnd={handleAgendaDragEnd}
