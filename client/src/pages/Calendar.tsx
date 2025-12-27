@@ -562,6 +562,10 @@ export default function Calendar() {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
+  const [miniCalendarYearInput, setMiniCalendarYearInput] = useState(() =>
+    String(new Date().getFullYear())
+  );
+  const [isMiniCalendarYearEditing, setIsMiniCalendarYearEditing] = useState(false);
   const [draftTask, setDraftTask] = useState<CalendarTask | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [viewingTask, setViewingTask] = useState<CalendarTask | null>(null);
@@ -1318,9 +1322,57 @@ export default function Calendar() {
   }, [tasks]);
 
   const miniCalendarYearOptions = useMemo(() => {
-    const baseYear = miniCalendarMonth.getFullYear();
-    return Array.from({ length: 21 }, (_, index) => baseYear - 10 + index);
-  }, [miniCalendarMonth]);
+    const years = new Set<number>();
+    for (const task of tasks) {
+      if (!task.date) {
+        continue;
+      }
+      const year = Number(task.date.slice(0, 4));
+      if (Number.isFinite(year)) {
+        years.add(year);
+      }
+    }
+    years.add(new Date().getFullYear());
+    return Array.from(years).sort((a, b) => a - b);
+  }, [tasks]);
+
+  useEffect(() => {
+    if (isMiniCalendarYearEditing) {
+      return;
+    }
+    setMiniCalendarYearInput(String(miniCalendarMonth.getFullYear()));
+  }, [miniCalendarMonth, isMiniCalendarYearEditing]);
+
+  const parseYearInput = (value: unknown) => {
+    const raw = typeof value === "number" ? String(value) : String(value ?? "");
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed)) {
+      return null;
+    }
+    const year = Math.floor(parsed);
+    if (year < 1900 || year > 9999) {
+      return null;
+    }
+    return year;
+  };
+
+  const setMiniCalendarYear = (nextYear: number) => {
+    setMiniCalendarMonth(new Date(nextYear, miniCalendarMonth.getMonth(), 1));
+    const nextSelected = new Date(
+      nextYear,
+      miniCalendarMonth.getMonth(),
+      Math.min(
+        selectedDate.getDate(),
+        getDaysInMonth(nextYear, miniCalendarMonth.getMonth())
+      )
+    );
+    nextSelected.setHours(0, 0, 0, 0);
+    setSelectedDate(nextSelected);
+  };
 
   const getDaysInMonth = (year: number, monthIndex: number) =>
     new Date(year, monthIndex + 1, 0).getDate();
@@ -1953,34 +2005,40 @@ export default function Calendar() {
                   </Stack>
 
                   <Stack spacing={1}>
-                    <TextField
-                      select
-                      size="small"
-                      label="Ano"
+                    <Autocomplete
+                      freeSolo
+                      options={miniCalendarYearOptions}
+                      getOptionLabel={option => String(option)}
                       value={miniCalendarMonth.getFullYear()}
-                      onChange={event => {
-                        const nextYear = Number(event.target.value);
-                        setMiniCalendarMonth(
-                          new Date(nextYear, miniCalendarMonth.getMonth(), 1)
-                        );
-                        const nextSelected = new Date(
-                          nextYear,
-                          miniCalendarMonth.getMonth(),
-                          Math.min(
-                            selectedDate.getDate(),
-                            getDaysInMonth(nextYear, miniCalendarMonth.getMonth())
-                          )
-                        );
-                        nextSelected.setHours(0, 0, 0, 0);
-                        setSelectedDate(nextSelected);
+                      inputValue={miniCalendarYearInput}
+                      onInputChange={(_, value) => setMiniCalendarYearInput(value)}
+                      onChange={(_, value) => {
+                        const parsed = parseYearInput(value);
+                        if (parsed == null) {
+                          return;
+                        }
+                        setMiniCalendarYear(parsed);
                       }}
-                    >
-                      {miniCalendarYearOptions.map(year => (
-                        <MenuItem key={`mini-year-${year}`} value={year}>
-                          {year}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      renderInput={params => (
+                        <TextField
+                          {...params}
+                          label="Ano"
+                          size="small"
+                          onFocus={() => setIsMiniCalendarYearEditing(true)}
+                          onBlur={() => {
+                            setIsMiniCalendarYearEditing(false);
+                            const parsed = parseYearInput(miniCalendarYearInput);
+                            if (parsed == null) {
+                              setMiniCalendarYearInput(
+                                String(miniCalendarMonth.getFullYear())
+                              );
+                              return;
+                            }
+                            setMiniCalendarYear(parsed);
+                          }}
+                        />
+                      )}
+                    />
                   </Stack>
 
                   <Box
@@ -2795,35 +2853,42 @@ export default function Calendar() {
                   </Stack>
 
                   <Stack spacing={1}>
-                    <TextField
-                      select
-                      size="small"
-                      label="Ano"
+                    <Autocomplete
+                      freeSolo
+                      options={miniCalendarYearOptions}
+                      getOptionLabel={option => String(option)}
                       value={miniCalendarMonth.getFullYear()}
-                      onChange={event => {
-                        const nextYear = Number(event.target.value);
-                        setMiniCalendarMonth(
-                          new Date(nextYear, miniCalendarMonth.getMonth(), 1)
-                        );
-                        const nextSelected = new Date(
-                          nextYear,
-                          miniCalendarMonth.getMonth(),
-                          Math.min(
-                            selectedDate.getDate(),
-                            getDaysInMonth(nextYear, miniCalendarMonth.getMonth())
-                          )
-                        );
-                        nextSelected.setHours(0, 0, 0, 0);
-                        setSelectedDate(nextSelected);
+                      inputValue={miniCalendarYearInput}
+                      onInputChange={(_, value) => setMiniCalendarYearInput(value)}
+                      onChange={(_, value) => {
+                        const parsed = parseYearInput(value);
+                        if (parsed == null) {
+                          return;
+                        }
+                        setMiniCalendarYear(parsed);
                         setMobileSidebarOpen(false);
                       }}
-                    >
-                      {miniCalendarYearOptions.map(year => (
-                        <MenuItem key={`mini-mobile-year-${year}`} value={year}>
-                          {year}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      renderInput={params => (
+                        <TextField
+                          {...params}
+                          label="Ano"
+                          size="small"
+                          onFocus={() => setIsMiniCalendarYearEditing(true)}
+                          onBlur={() => {
+                            setIsMiniCalendarYearEditing(false);
+                            const parsed = parseYearInput(miniCalendarYearInput);
+                            if (parsed == null) {
+                              setMiniCalendarYearInput(
+                                String(miniCalendarMonth.getFullYear())
+                              );
+                              return;
+                            }
+                            setMiniCalendarYear(parsed);
+                            setMobileSidebarOpen(false);
+                          }}
+                        />
+                      )}
+                    />
                   </Stack>
 
                   <Box
