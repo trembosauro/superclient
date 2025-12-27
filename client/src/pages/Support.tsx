@@ -140,12 +140,33 @@ const faqItems = [
   {
     title: "Criar e organizar notas",
     content:
-      "Em Notas, clique em 'Nova nota'. Use o editor rico para formatar texto (negrito, itálico, listas, títulos). Organize notas por categorias e use a busca para encontrar rapidamente.",
+      "Em Notas, clique em 'Nova nota'. Use o editor rico para formatar texto (negrito, itálico, listas, títulos). Organize por categorias e use a busca para encontrar rapidamente.",
+  },
+  {
+    title: "Notas: subnotas (arrastar e soltar)",
+    content:
+      "Você pode organizar notas em níveis (nota dentro de nota). Em lista ou grade, arraste uma nota e solte em cima de outra para criar uma subnota. Para desfazer, mova a nota de volta para o nível principal.",
   },
   {
     title: "Arquivar notas",
     content:
       "Clique em uma nota e use a opção 'Arquivar'. Notas arquivadas vão para Notas > Arquivo. Você pode restaurar notas arquivadas a qualquer momento.",
+  },
+  {
+    title: "Lixeira de notas",
+    content:
+      "Ao excluir uma nota, ela vai para Notas > Lixeira. De lá você pode restaurar ou remover definitivamente. Isso ajuda a evitar perdas acidentais.",
+  },
+  {
+    title: "Duplicar e importar notas",
+    content:
+      "Em Notas, você pode duplicar uma nota para reaproveitar uma estrutura. Também é possível importar notas para acelerar a migração e começar a usar o app com conteúdo real.",
+  },
+  // Tarefas (agenda)
+  {
+    title: "Tarefas (agenda)",
+    content:
+      "Em Tarefas, você organiza sua rotina em uma visão de agenda com foco no dia. Crie tarefas, marque como concluídas e acompanhe o volume diário. Use categorias e busca para encontrar o que precisa rápido.",
   },
   // Gestão e Configurações
   {
