@@ -1745,6 +1745,26 @@ export default function Notes() {
   const pageActions = useMemo(
     () => (
       <Stack direction="row" spacing={1} alignItems="center">
+        <Tooltip title="Buscar notas" placement="bottom">
+          <span>
+            <ActionIconButton
+              onClick={event => {
+                (event.currentTarget as HTMLElement).blur();
+                const next = !showSearch;
+                setShowSearch(next);
+                if (!next) {
+                  setNoteQuery("");
+                  return;
+                }
+                if (selectedNoteId) {
+                  setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
+                }
+              }}
+              icon={<SearchRoundedIcon fontSize="small" />}
+              aria-label="Buscar notas"
+            />
+          </span>
+        </Tooltip>
         <Button
           component={RouterLink}
           href={archiveLink.href}
@@ -1777,26 +1797,6 @@ export default function Notes() {
         >
           Nova nota
         </Button>
-        <Tooltip title="Buscar notas" placement="bottom">
-          <span>
-            <ActionIconButton
-              onClick={event => {
-                (event.currentTarget as HTMLElement).blur();
-                const next = !showSearch;
-                setShowSearch(next);
-                if (!next) {
-                  setNoteQuery("");
-                  return;
-                }
-                if (selectedNoteId) {
-                  setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
-                }
-              }}
-              icon={<SearchRoundedIcon fontSize="small" />}
-              aria-label="Buscar notas"
-            />
-          </span>
-        </Tooltip>
         <SettingsIconButton onClick={() => setSettingsOpen(true)} />
       </Stack>
     ),
