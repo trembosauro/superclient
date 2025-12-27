@@ -22,6 +22,7 @@ type MuiPaletteKey =
   | "grey";
 
 export const CATEGORY_COLOR_OPTIONS = [
+  "mui.grey.900",
   "mui.green.600",
   "mui.amber.700",
   "mui.blue.600",
@@ -31,7 +32,6 @@ export const CATEGORY_COLOR_OPTIONS = [
   "mui.purple.500",
   "mui.pink.A200",
   "mui.lime.700",
-  "mui.grey.900",
 ] as const;
 
 const MUI_COLOR_MAP: Record<string, Record<string, string>> = {
