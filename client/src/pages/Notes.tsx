@@ -1428,9 +1428,23 @@ export default function Notes() {
   }, []);
 
   const showSidebar = true;
-  const archiveLink = isArchiveView
-    ? { label: "Notas", href: "/notas" }
-    : { label: "Arquivo", href: "/notas/arquivo" };
+  const makeSidebarFooterLinkSx = useCallback(
+    (isActive: boolean) =>
+      (theme: any) => ({
+        ...interactiveItemSx(theme),
+        py: 1,
+        pr: 1,
+        pl: 1,
+        border: 1,
+        borderColor: "transparent",
+        backgroundColor: isActive ? "action.hover" : undefined,
+        minWidth: 0,
+        justifyContent: "flex-start",
+        textTransform: "none",
+        fontWeight: 700,
+      }),
+    []
+  );
 
   const sidebarFooterLinks = useMemo(
     () => [
@@ -1879,7 +1893,13 @@ export default function Notes() {
                   return;
                 }
                 if (selectedNoteId) {
-                  setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
+                  setLocation(
+                    isTrashView
+                      ? "/notas/lixeira"
+                      : isArchiveView
+                        ? "/notas/arquivo"
+                        : "/notas"
+                  );
                 }
               }}
               icon={<SearchRoundedIcon fontSize="small" />}
@@ -1887,20 +1907,6 @@ export default function Notes() {
             />
           </span>
         </Tooltip>
-        <Button
-          component={RouterLink}
-          href={archiveLink.href}
-          variant="outlined"
-          sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            whiteSpace: "nowrap",
-            minWidth: 0,
-            px: 1.75,
-          }}
-        >
-          {archiveLink.label}
-        </Button>
         <Button
           variant="outlined"
           startIcon={
@@ -1924,10 +1930,10 @@ export default function Notes() {
     ),
     [
       addNote,
-      archiveLink.label,
       showSearch,
       selectedNoteId,
       isArchiveView,
+      isTrashView,
       setLocation,
     ]
   );
@@ -1958,23 +1964,17 @@ export default function Notes() {
               <Divider sx={{ my: 1.5, opacity: 0.5, borderColor: "divider" }} />
               <Stack spacing={0.5}>
                 {sidebarFooterLinks.map(link => (
-                  <Button
+                  <ListItemButton
                     key={link.key}
                     component={RouterLink}
                     href={link.href}
-                    variant="text"
-                    fullWidth
                     onClick={() => setMobileNotesExpanded(false)}
-                    sx={{
-                      textTransform: "none",
-                      justifyContent: "flex-start",
-                      fontWeight: 700,
-                      px: 1,
-                      backgroundColor: link.isActive ? "action.selected" : "transparent",
-                    }}
+                    sx={makeSidebarFooterLinkSx(link.isActive)}
                   >
-                    {link.label}
-                  </Button>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {link.label}
+                    </Typography>
+                  </ListItemButton>
                 ))}
               </Stack>
             </AppAccordion>
@@ -2015,22 +2015,16 @@ export default function Notes() {
                   <Divider sx={{ my: 0.5, opacity: 0.5, borderColor: "divider" }} />
                   <Stack spacing={0.5}>
                     {sidebarFooterLinks.map(link => (
-                      <Button
+                      <ListItemButton
                         key={link.key}
                         component={RouterLink}
                         href={link.href}
-                        variant="text"
-                        fullWidth
-                        sx={{
-                          textTransform: "none",
-                          justifyContent: "flex-start",
-                          fontWeight: 700,
-                          px: 1,
-                          backgroundColor: link.isActive ? "action.selected" : "transparent",
-                        }}
+                        sx={makeSidebarFooterLinkSx(link.isActive)}
                       >
-                        {link.label}
-                      </Button>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                          {link.label}
+                        </Typography>
+                      </ListItemButton>
                     ))}
                   </Stack>
                 </Stack>
