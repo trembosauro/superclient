@@ -3,20 +3,16 @@ import {
   Autocomplete,
   Alert,
   Box,
-  Badge,
   Button,
   Checkbox,
   Chip,
   Dialog,
   DialogContent,
-  Divider,
   IconButton,
   InputAdornment,
-  InputBase,
   ListItemIcon,
   Menu,
   MenuItem,
-  Pagination,
   Popover,
   Snackbar,
   Stack,
@@ -25,19 +21,22 @@ import {
   Typography,
   useMediaQuery,
 } from "@mui/material";
-import { useTheme, type Theme } from "@mui/material/styles";
-import { alpha } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 import { Link as RouterLink } from "wouter";
 import { useTranslation } from "react-i18next";
 import {
   type DragEndEvent,
   DndContext,
   PointerSensor,
-  useDraggable,
-  useDroppable,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CalendarTodayRoundedIcon from "@mui/icons-material/CalendarTodayRounded";
@@ -45,7 +44,6 @@ import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
-import RadioButtonUncheckedRoundedIcon from "@mui/icons-material/RadioButtonUncheckedRounded";
 import NotificationsActiveRoundedIcon from "@mui/icons-material/NotificationsActiveRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
@@ -54,7 +52,6 @@ import api from "../api";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import RichTextEditor from "../components/RichTextEditor";
 import {
-  clickableCardSx,
   getInteractiveItemRadiusPx,
   interactiveItemSx,
   staticCardSx,
@@ -65,7 +62,6 @@ import AppCard from "../components/layout/AppCard";
 import CardSection from "../components/layout/CardSection";
 import { CategoryChip } from "../components/CategoryChip";
 import { CategoryColorPicker } from "../components/CategoryColorPicker";
-import CategoryFilter from "../components/CategoryFilter";
 import SettingsDialog from "../components/SettingsDialog";
 import { loadUserStorage, saveUserStorage } from "../userStorage";
 import {
@@ -82,6 +78,7 @@ type Category = {
 type CalendarTask = {
   id: string;
   name: string;
+  sortOrder?: number;
   link?: string;
   descriptionHtml?: string;
   subtasks?: Array<{
@@ -124,17 +121,16 @@ type PersonOption = {
   type: "user" | "contact";
 };
 
-type CalendarSource = {
-  id: string;
-  name: string;
-  color: string;
-  enabled: boolean;
+type CalendarDaySection = {
+  dateKey: string;
+  date: Date;
+  tasks: CalendarTask[];
 };
 
 const STORAGE_TASKS = "calendar_tasks_v1";
 const STORAGE_CATEGORIES = "calendar_categories_v1";
-const STORAGE_CALENDARS = "calendar_sources_v1";
 const STORAGE_CATEGORY_FILTER = "sc_calendar_category_filter";
+const STORAGE_AGENDA_DAYS_COUNT = "sc_tasks_agenda_days_count";
 
 // NOTE: category/calendar colors accept MUI palette tokens (e.g. "primary", "primary.dark")
 // and legacy hex values. Rendering is normalized via resolveThemeColor().
@@ -150,33 +146,6 @@ const defaultCategories: Category[] = [
   { id: "cat-financas", name: "Pagamentos", color: "warning" },
   { id: "cat-feriados", name: "Feriados", color: "info" },
   { id: "cat-lembretes", name: "Lembretes", color: "primary" },
-];
-
-const defaultCalendars: CalendarSource[] = [
-  {
-    id: "cal-trabalho",
-    name: "Trabalho",
-    color: CATEGORY_COLOR_OPTIONS[0],
-    enabled: true,
-  },
-  {
-    id: "cal-pessoal",
-    name: "Pessoal",
-    color: CATEGORY_COLOR_OPTIONS[1] ?? CATEGORY_COLOR_OPTIONS[0],
-    enabled: true,
-  },
-  {
-    id: "cal-equipe",
-    name: "Equipe",
-    color: CATEGORY_COLOR_OPTIONS[2] ?? CATEGORY_COLOR_OPTIONS[0],
-    enabled: true,
-  },
-  {
-    id: "cal-financas",
-    name: "Financeiro",
-    color: CATEGORY_COLOR_OPTIONS[3] ?? CATEGORY_COLOR_OPTIONS[0],
-    enabled: true,
-  },
 ];
 
 const monthLabels = [
@@ -209,23 +178,6 @@ const defaultCalendarSettings = {
   showVisibility: true,
   showNotifications: true,
   showAgendaTaskCount: false,
-};
-
-const agendaMonthFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-});
-
-const agendaWeekdayFormatter = new Intl.DateTimeFormat("en-US", {
-  weekday: "long",
-});
-
-const formatAgendaDayTitle = (day: Date, includeTodayLabel: boolean) => {
-  const dayNumber = day.getDate();
-  const month = agendaMonthFormatter.format(day);
-  const weekday = agendaWeekdayFormatter.format(day);
-  return includeTodayLabel
-    ? `${dayNumber} ${month} ‧ Today ‧ ${weekday}`
-    : `${dayNumber} ${month} ‧ ${weekday}`;
 };
 
 const formatDateKey = (date: Date) => {
@@ -564,8 +516,6 @@ const InlineAddTaskRow = memo(function InlineAddTaskRow({
 export default function Calendar() {
   const { t } = useTranslation();
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
-  const [calendarSources, setCalendarSources] =
-    useState<CalendarSource[]>(defaultCalendars);
   const [tasks, setTasks] = useState<CalendarTask[]>([]);
   const [users, setUsers] = useState<PipelineUser[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -591,13 +541,23 @@ export default function Calendar() {
   const [editingCategoryColor, setEditingCategoryColor] = useState<string>(
     CATEGORY_COLOR_OPTIONS[0]
   );
-  const [selectedMonth, setSelectedMonth] = useState(() => {
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [agendaDaysCount, setAgendaDaysCount] = useState<number>(() => {
+    try {
+      const stored = window.localStorage.getItem(STORAGE_AGENDA_DAYS_COUNT);
+      const parsed = stored ? Number(stored) : 7;
+      if (!Number.isFinite(parsed)) {
+        return 7;
+      }
+      return Math.max(1, Math.min(30, Math.floor(parsed)));
+    } catch {
+      return 7;
+    }
+  });
+  const [miniCalendarMonth, setMiniCalendarMonth] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
-  const [selectedDate, setSelectedDate] = useState(() => new Date());
-  const [agendaPage, setAgendaPage] = useState(1);
-  const [agendaPerPage, setAgendaPerPage] = useState(10);
   const [draftTask, setDraftTask] = useState<CalendarTask | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [viewingTask, setViewingTask] = useState<CalendarTask | null>(null);
@@ -605,7 +565,6 @@ export default function Calendar() {
     const viewingSubtaskDraftInputRef = useRef<HTMLInputElement | null>(null);
   const [editCameFromView, setEditCameFromView] = useState(false);
   const [editSourceTaskId, setEditSourceTaskId] = useState<string | null>(null);
-  const [subtaskDraftTitle, setSubtaskDraftTitle] = useState("");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [datePickerMonth, setDatePickerMonth] = useState(() => {
     const today = new Date();
@@ -618,7 +577,6 @@ export default function Calendar() {
   } | null>(null);
   const restoreDefaultsSnapshotRef = useRef<{
     categories: Category[];
-    calendarSources: CalendarSource[];
     calendarSettings: typeof calendarSettings;
     configAccordion: typeof configAccordion;
     newCategoryName: string;
@@ -633,7 +591,7 @@ export default function Calendar() {
     useSensor(PointerSensor, { activationConstraint: { distance: 3 } })
   );
 
-  const [inlineAddTaskFocused, setInlineAddTaskFocused] = useState(false);
+  const handleInlineAddTaskFocusChange = () => undefined;
 
   const [taskContextMenu, setTaskContextMenu] = useState<{
     task: CalendarTask;
@@ -644,17 +602,6 @@ export default function Calendar() {
   const theme = useTheme();
   const isSmDown = useMediaQuery(theme.breakpoints.down("sm"));
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-
-  const coerceAllowedColor = (value: string) =>
-    (CATEGORY_COLOR_OPTIONS as readonly string[]).includes(value)
-      ? value
-      : CATEGORY_COLOR_OPTIONS[0];
-
-  const sanitizeCalendarSources = (sources: CalendarSource[]) =>
-    sources.map(source => ({
-      ...source,
-      color: coerceAllowedColor(source.color),
-    }));
 
   useEffect(() => {
     let cancelled = false;
@@ -777,60 +724,6 @@ export default function Calendar() {
     }, 250);
     return () => window.clearTimeout(t);
   }, [categories]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const fromDb =
-          await loadUserStorage<CalendarSource[]>(STORAGE_CALENDARS);
-        if (cancelled) {
-          return;
-        }
-        if (Array.isArray(fromDb) && fromDb.length) {
-          const sanitized = sanitizeCalendarSources(fromDb);
-          setCalendarSources(sanitized);
-          window.localStorage.setItem(
-            STORAGE_CALENDARS,
-            JSON.stringify(sanitized)
-          );
-          return;
-        }
-      } catch {
-        // Ignore and fallback.
-      }
-
-      const stored = window.localStorage.getItem(STORAGE_CALENDARS);
-      if (!stored) {
-        return;
-      }
-      try {
-        const parsed = JSON.parse(stored) as CalendarSource[];
-        if (Array.isArray(parsed) && parsed.length) {
-          const sanitized = sanitizeCalendarSources(parsed);
-          setCalendarSources(sanitized);
-          void saveUserStorage(STORAGE_CALENDARS, sanitized);
-        }
-      } catch {
-        window.localStorage.removeItem(STORAGE_CALENDARS);
-      }
-    };
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      STORAGE_CALENDARS,
-      JSON.stringify(calendarSources)
-    );
-    const t = window.setTimeout(() => {
-      void saveUserStorage(STORAGE_CALENDARS, calendarSources);
-    }, 250);
-    return () => window.clearTimeout(t);
-  }, [calendarSources]);
 
   useEffect(() => {
     const loadPipelineCategories = async () => {
@@ -1087,180 +980,155 @@ export default function Calendar() {
     return person.name || person.email || "";
   };
 
-  const calendarMap = useMemo(() => {
-    const map = new Map<string, CalendarSource>();
-    calendarSources.forEach(source => map.set(source.id, source));
-    return map;
-  }, [calendarSources]);
-
   const selectPersonsByIds = (ids?: string[]) =>
     personOptions.filter(person => ids?.includes(person.id));
 
-  const activeCalendarIds = useMemo(
-    () =>
-      new Set(
-        calendarSources.filter(item => item.enabled).map(item => item.id)
-      ),
-    [calendarSources]
-  );
-
-  const tasksByDate = useMemo(() => {
-    const map = new Map<string, CalendarTask[]>();
-    tasks.forEach(task => {
-      if (task.calendarId && !activeCalendarIds.has(task.calendarId)) {
-        return;
-      }
-      if (task.done) {
-        return;
-      }
-      if (categoryFilter.length) {
-        const taskCategories = task.categoryIds || [];
-        const hasMatch = taskCategories.some(id => categoryFilter.includes(id));
-        if (!hasMatch) {
-          return;
-        }
-      }
-      const key = task.date;
-      if (!map.has(key)) {
-        map.set(key, []);
-      }
-      map.get(key)?.push(task);
-    });
-    map.forEach(list =>
-      list.sort((a, b) =>
-        a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })
-      )
-    );
-    return map;
-  }, [tasks, activeCalendarIds, categoryFilter]);
-
-  const statusCounts = useMemo(() => {
-    let pending = 0;
-    let done = 0;
-    tasks.forEach(task => {
-      if (task.calendarId && !activeCalendarIds.has(task.calendarId)) {
-        return;
-      }
-      if (categoryFilter.length) {
-        const taskCategories = task.categoryIds || [];
-        const hasMatch = taskCategories.some(id => categoryFilter.includes(id));
-        if (!hasMatch) {
-          return;
-        }
-      }
-      if (task.done) {
-        done += 1;
-      } else {
-        pending += 1;
-      }
-    });
-    return { pending, done };
-  }, [tasks, activeCalendarIds, categoryFilter]);
-
-  const availableYears = useMemo(() => {
-    const years = new Set<number>();
-    years.add(new Date().getFullYear());
-    years.add(selectedMonth.getFullYear());
-    tasks.forEach(task => {
-      const year = Number(task.date.slice(0, 4));
-      if (Number.isFinite(year)) {
-        years.add(year);
-      }
-    });
-    return Array.from(years).sort((a, b) => a - b);
-  }, [tasks, selectedMonth]);
-
-  const setCalendarYear = (nextYear: number) => {
-    const month = selectedMonth.getMonth();
-    const daysInMonth = new Date(nextYear, month + 1, 0).getDate();
-    const nextDay = Math.min(selectedDate.getDate(), daysInMonth);
-    setSelectedMonth(new Date(nextYear, month, 1));
-    setSelectedDate(new Date(nextYear, month, nextDay));
-    setAgendaPage(1);
-  };
-
-  const [yearInputValue, setYearInputValue] = useState(() =>
-    String(selectedMonth.getFullYear())
-  );
+  const selectedCategoryId = categoryFilter[0] || "";
+  const isCategoryListMode = Boolean(selectedCategoryId);
 
   useEffect(() => {
-    setYearInputValue(String(selectedMonth.getFullYear()));
-  }, [selectedMonth]);
-
-  const parseYear = (raw: unknown) => {
-    const text = String(raw ?? "").trim();
-    if (!text) {
-      return null;
-    }
-    const digitsOnly = text.replace(/[^0-9]/g, "");
-    if (!digitsOnly) {
-      return null;
-    }
-    const year = Number(digitsOnly);
-    if (!Number.isFinite(year)) {
-      return null;
-    }
-    // JS Date suporta ano 0..9999 com segurança.
-    if (year < 0 || year > 9999) {
-      return null;
-    }
-    return year;
-  };
-
-  const agendaDays = useMemo(() => {
-    const monthStart = new Date(
-      selectedMonth.getFullYear(),
-      selectedMonth.getMonth(),
-      1
-    );
-    const monthEnd = new Date(
-      selectedMonth.getFullYear(),
-      selectedMonth.getMonth() + 1,
-      0
-    );
-    const selectedIsInMonth =
-      selectedDate.getFullYear() === selectedMonth.getFullYear() &&
-      selectedDate.getMonth() === selectedMonth.getMonth();
-    const startDay = selectedIsInMonth ? selectedDate.getDate() : 1;
-    const days: Date[] = [];
-    for (let day = startDay; day <= monthEnd.getDate(); day += 1) {
-      const date = new Date(
-        monthStart.getFullYear(),
-        monthStart.getMonth(),
-        day
+    try {
+      window.localStorage.setItem(
+        STORAGE_AGENDA_DAYS_COUNT,
+        String(agendaDaysCount)
       );
-      days.push(date);
+    } catch {
+      // ignore
     }
-    return days;
-  }, [selectedMonth, selectedDate]);
-
-  const totalAgendaPages = Math.max(
-    1,
-    Math.ceil(agendaDays.length / agendaPerPage)
-  );
+  }, [agendaDaysCount]);
 
   useEffect(() => {
-    if (agendaPage > totalAgendaPages) {
-      setAgendaPage(totalAgendaPages);
-    }
-  }, [agendaPage, totalAgendaPages]);
-
-  const pagedAgendaDays = useMemo(() => {
-    const start = (agendaPage - 1) * agendaPerPage;
-    return agendaDays.slice(start, start + agendaPerPage);
-  }, [agendaDays, agendaPage, agendaPerPage]);
-
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    const taskId = active.data.current?.taskId as string | undefined;
-    const nextDate = over?.data.current?.dateKey as string | undefined;
-    if (!taskId || !nextDate) {
+    if (isCategoryListMode) {
       return;
     }
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === taskId ? { ...task, date: nextDate } : task
-      )
+
+    if (
+      selectedDate.getHours() !== 0 ||
+      selectedDate.getMinutes() !== 0 ||
+      selectedDate.getSeconds() !== 0 ||
+      selectedDate.getMilliseconds() !== 0
+    ) {
+      const normalized = new Date(selectedDate);
+      normalized.setHours(0, 0, 0, 0);
+      setSelectedDate(normalized);
+      return;
+    }
+
+    const nextMonth = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      1
     );
+    if (
+      nextMonth.getFullYear() !== miniCalendarMonth.getFullYear() ||
+      nextMonth.getMonth() !== miniCalendarMonth.getMonth()
+    ) {
+      setMiniCalendarMonth(nextMonth);
+    }
+  }, [selectedDate, isCategoryListMode, miniCalendarMonth]);
+
+  const visibleTasks = useMemo(() => {
+    const filtered = tasks.filter(task => {
+      if (task.done) {
+        return false;
+      }
+      if (!categoryFilter.length) {
+        return true;
+      }
+      const taskCategories = task.categoryIds || [];
+      return taskCategories.some(id => categoryFilter.includes(id));
+    });
+    return filtered.sort((a, b) => {
+      const aOrder = a.sortOrder ?? Number.POSITIVE_INFINITY;
+      const bOrder = b.sortOrder ?? Number.POSITIVE_INFINITY;
+      if (aOrder !== bOrder) {
+        return aOrder - bOrder;
+      }
+      return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+    });
+  }, [tasks, categoryFilter]);
+
+  const visibleTaskIds = useMemo(
+    () => visibleTasks.map(task => task.id),
+    [visibleTasks]
+  );
+
+  const handleAgendaDragEnd = (dateKey: string, { active, over }: DragEndEvent) => {
+    if (!over) {
+      return;
+    }
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    if (activeId === overId) {
+      return;
+    }
+
+    const dayTaskIds = tasks
+      .filter(task => !task.done && task.date === dateKey)
+      .sort((a, b) => {
+        const aOrder = a.sortOrder ?? Number.POSITIVE_INFINITY;
+        const bOrder = b.sortOrder ?? Number.POSITIVE_INFINITY;
+        if (aOrder !== bOrder) {
+          return aOrder - bOrder;
+        }
+        return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+      })
+      .map(task => task.id);
+
+    const oldIndex = dayTaskIds.indexOf(activeId);
+    const newIndex = dayTaskIds.indexOf(overId);
+    if (oldIndex < 0 || newIndex < 0) {
+      return;
+    }
+
+    const nextIds = arrayMove(dayTaskIds, oldIndex, newIndex);
+    setTasks(prev => {
+      const dayTasks = prev
+        .filter(task => !task.done && task.date === dateKey)
+        .sort((a, b) => {
+          const aOrder = a.sortOrder ?? Number.POSITIVE_INFINITY;
+          const bOrder = b.sortOrder ?? Number.POSITIVE_INFINITY;
+          if (aOrder !== bOrder) {
+            return aOrder - bOrder;
+          }
+          return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+        });
+
+      const existingOrders = dayTasks
+        .map(task => task.sortOrder)
+        .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+      const base = existingOrders.length ? Math.min(...existingOrders) : Date.now();
+
+      const nextOrder = new Map(nextIds.map((id, index) => [id, base + index] as const));
+      return prev.map(task =>
+        nextOrder.has(task.id) ? { ...task, sortOrder: nextOrder.get(task.id) } : task
+      );
+    });
+  };
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over) {
+      return;
+    }
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    if (activeId === overId) {
+      return;
+    }
+    const oldIndex = visibleTaskIds.indexOf(activeId);
+    const newIndex = visibleTaskIds.indexOf(overId);
+    if (oldIndex < 0 || newIndex < 0) {
+      return;
+    }
+    const nextIds = arrayMove(visibleTaskIds, oldIndex, newIndex);
+    setTasks(prev => {
+      const nextOrder = new Map(nextIds.map((id, index) => [id, index] as const));
+      return prev.map(task =>
+        nextOrder.has(task.id)
+          ? { ...task, sortOrder: nextOrder.get(task.id) }
+          : task
+      );
+    });
   };
 
   const DraggableTaskCard = ({
@@ -1274,11 +1142,14 @@ export default function Calendar() {
     onContextMenu?: (event: React.MouseEvent) => void;
     children: ReactNode;
   }) => {
-    const { attributes, listeners, setNodeRef, transform, isDragging } =
-      useDraggable({
-        id: taskId,
-        data: { taskId },
-      });
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: taskId });
 
     const stableTransform = transform
       ? { ...transform, scaleX: 1, scaleY: 1 }
@@ -1294,7 +1165,7 @@ export default function Calendar() {
         {...listeners}
         sx={theme => ({
           ...staticCardSx(theme),
-          p: 1.5,
+          p: 1,
           border: 0,
           borderColor: "transparent",
           borderRadius: getInteractiveItemRadiusPx(theme),
@@ -1303,6 +1174,7 @@ export default function Calendar() {
           width: "100%",
           boxSizing: "border-box",
           transform: CSS.Transform.toString(stableTransform),
+          transition,
           touchAction: "none",
           userSelect: "none",
           "&:hover": {
@@ -1311,39 +1183,10 @@ export default function Calendar() {
           "&:active": {
             backgroundColor: theme.palette.background.paper,
           },
-          
         })}
       >
         {children}
       </AppCard>
-    );
-  };
-
-  const DroppableDay = ({
-    dateKey,
-    children,
-  }: {
-    dateKey: string;
-    children: ReactNode;
-  }) => {
-    const { isOver, setNodeRef } = useDroppable({
-      id: `day-${dateKey}`,
-      data: { dateKey },
-    });
-    return (
-      <Box
-        ref={setNodeRef}
-        sx={theme => ({
-          p: 0,
-          borderRadius: "var(--radius-card)",
-          backgroundColor: isOver
-            ? alpha(theme.palette.text.primary, 0.08)
-            : "transparent",
-          transition: "background-color 0.2s ease",
-        })}
-      >
-        {children}
-      </Box>
     );
   };
 
@@ -1353,12 +1196,10 @@ export default function Calendar() {
       return false;
     }
 
-    const defaultCalendar =
-      calendarSources.find(item => item.enabled) || calendarSources[0];
-
     const newTask: CalendarTask = {
       id: `cal-${Date.now()}`,
       name: title,
+      sortOrder: Date.now(),
       link: "",
       location: "",
       responsibleIds: [],
@@ -1366,7 +1207,6 @@ export default function Calendar() {
       descriptionHtml: "",
       subtasks: [],
       categoryIds: [],
-      calendarId: defaultCalendar?.id,
       date: dateKey,
       startTime: "",
       endTime: "",
@@ -1381,6 +1221,114 @@ export default function Calendar() {
     setTasks(prev => [...prev, newTask]);
     return true;
   };
+
+  const handleAddInlineTaskForSelectedCategory = (
+    dateKey: string,
+    titleRaw: string
+  ) => {
+    const title = titleRaw.trim();
+    if (!title) {
+      return false;
+    }
+
+    const newTask: CalendarTask = {
+      id: `cal-${Date.now()}`,
+      name: title,
+      sortOrder: Date.now(),
+      link: "",
+      location: "",
+      responsibleIds: [],
+      workerIds: [],
+      descriptionHtml: "",
+      subtasks: [],
+      categoryIds: selectedCategoryId ? [selectedCategoryId] : [],
+      date: dateKey,
+      startTime: "",
+      endTime: "",
+      reminder: "none",
+      repeat: "none",
+      visibility: "private",
+      notification: "app",
+      allDay: false,
+      done: false,
+    };
+
+    setTasks(prev => [...prev, newTask]);
+    return true;
+  };
+
+  const calendarDaySections = useMemo<CalendarDaySection[]>(() => {
+    if (isCategoryListMode) {
+      return [];
+    }
+
+    const pendingTasks = tasks.filter(task => !task.done);
+
+    const base = new Date(selectedDate);
+    base.setHours(0, 0, 0, 0);
+    const rangeKeys: string[] = [];
+    const safeCount = Math.max(1, Math.min(30, Math.floor(agendaDaysCount)));
+    for (let offset = 0; offset < safeCount; offset += 1) {
+      const next = new Date(base);
+      next.setDate(base.getDate() + offset);
+      rangeKeys.push(formatDateKey(next));
+    }
+
+    return rangeKeys.map(dateKey => {
+      const dayTasks = pendingTasks
+        .filter(task => task.date === dateKey)
+        .sort((a, b) => {
+          const aOrder = a.sortOrder ?? Number.POSITIVE_INFINITY;
+          const bOrder = b.sortOrder ?? Number.POSITIVE_INFINITY;
+          if (aOrder !== bOrder) {
+            return aOrder - bOrder;
+          }
+          return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+        });
+
+      return {
+        dateKey,
+        date: parseDateKey(dateKey),
+        tasks: dayTasks,
+      };
+    });
+  }, [tasks, isCategoryListMode, selectedDate, agendaDaysCount]);
+
+  const tasksByDate = useMemo(() => {
+    const map = new Map<string, CalendarTask[]>();
+    for (const task of tasks) {
+      if (task.done) {
+        continue;
+      }
+      if (!task.date) {
+        continue;
+      }
+      const existing = map.get(task.date);
+      if (existing) {
+        existing.push(task);
+      } else {
+        map.set(task.date, [task]);
+      }
+    }
+    return map;
+  }, [tasks]);
+
+  const miniCalendarYearOptions = useMemo(() => {
+    const baseYear = miniCalendarMonth.getFullYear();
+    return Array.from({ length: 21 }, (_, index) => baseYear - 10 + index);
+  }, [miniCalendarMonth]);
+
+  const getDaysInMonth = (year: number, monthIndex: number) =>
+    new Date(year, monthIndex + 1, 0).getDate();
+
+  const agendaDaysOptions = [7, 14, 30] as const;
+
+  const formatCalendarDayLabel = (date: Date) =>
+    date.toLocaleDateString("pt-BR", {
+      weekday: "short",
+      day: "2-digit",
+      month: "short",
+    });
 
   const handleOpenEditForTask = (task: CalendarTask) => {
     setDraftTask({ ...task });
@@ -1405,40 +1353,6 @@ export default function Calendar() {
     setDraftTask(prev => (prev?.id === taskId ? null : prev));
   };
 
-  // Inline add-task uses the same pattern as subtasks (Enter/Add button). We'll
-  // consider click-outside-to-save later if needed.
-
-  const handleCreateTask = (date?: Date) => {
-    const targetDate = date || selectedDate;
-    const defaultCalendar =
-      calendarSources.find(item => item.enabled) || calendarSources[0];
-    const newTask: CalendarTask = {
-      id: `cal-${Date.now()}`,
-      name: "Nova tarefa",
-      link: "",
-      location: "",
-      responsibleIds: [],
-      workerIds: [],
-      descriptionHtml: "",
-      subtasks: [],
-      categoryIds: [],
-      calendarId: defaultCalendar?.id,
-      date: formatDateKey(targetDate),
-      startTime: "",
-      endTime: "",
-      reminder: "none",
-      repeat: "none",
-      visibility: "private",
-      notification: "app",
-      allDay: true,
-      done: false,
-    };
-    setDraftTask(newTask);
-    setEditCameFromView(false);
-    setEditSourceTaskId(null);
-    setEditOpen(true);
-  };
-
   const handleViewTask = (task: CalendarTask) => {
     setViewingTask(task);
   };
@@ -1457,7 +1371,6 @@ export default function Calendar() {
   const handleCloseEdit = () => {
     setEditOpen(false);
     setDraftTask(null);
-    setSubtaskDraftTitle("");
     setEditCameFromView(false);
     setEditSourceTaskId(null);
   };
@@ -1470,54 +1383,9 @@ export default function Calendar() {
     const nextTask = tasks.find(task => task.id === editSourceTaskId) || null;
     setEditOpen(false);
     setDraftTask(null);
-    setSubtaskDraftTitle("");
     setEditCameFromView(false);
     setEditSourceTaskId(null);
     setViewingTask(nextTask);
-  };
-
-  const addDraftSubtask = () => {
-    const title = subtaskDraftTitle.trim();
-    if (!title) {
-      return;
-    }
-    setDraftTask(prev => {
-      if (!prev) {
-        return prev;
-      }
-      const nextSubtasks = [...(prev.subtasks || [])];
-      nextSubtasks.push({
-        id: `sub-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        title,
-        done: false,
-      });
-      return { ...prev, subtasks: nextSubtasks };
-    });
-    setSubtaskDraftTitle("");
-  };
-
-  const toggleDraftSubtaskDone = (subtaskId: string, nextDone: boolean) => {
-    setDraftTask(prev => {
-      if (!prev) {
-        return prev;
-      }
-      const nextSubtasks = (prev.subtasks || []).map(item =>
-        item.id === subtaskId ? { ...item, done: nextDone } : item
-      );
-      return { ...prev, subtasks: nextSubtasks };
-    });
-  };
-
-  const removeDraftSubtask = (subtaskId: string) => {
-    setDraftTask(prev => {
-      if (!prev) {
-        return prev;
-      }
-      const nextSubtasks = (prev.subtasks || []).filter(
-        item => item.id !== subtaskId
-      );
-      return { ...prev, subtasks: nextSubtasks };
-    });
   };
 
   const handleToggleViewingSubtaskDone = (
@@ -1822,7 +1690,6 @@ export default function Calendar() {
   const handleRestoreCalendarDefaults = () => {
     restoreDefaultsSnapshotRef.current = {
       categories,
-      calendarSources,
       calendarSettings,
       configAccordion,
       newCategoryName,
@@ -1836,7 +1703,6 @@ export default function Calendar() {
     setNewCategoryColor(CATEGORY_COLOR_OPTIONS[0]);
     setConfigAccordion(false);
     setCalendarSettings({ ...defaultCalendarSettings });
-    setCalendarSources(defaultCalendars);
     handleSaveCategories(defaultCategories);
     setRestoreDefaultsSnackbarOpen(true);
   };
@@ -1854,7 +1720,6 @@ export default function Calendar() {
     setNewCategoryColor(snapshot.newCategoryColor);
     setConfigAccordion(snapshot.configAccordion);
     setCalendarSettings(snapshot.calendarSettings);
-    setCalendarSources(snapshot.calendarSources);
     handleSaveCategories(snapshot.categories);
     restoreDefaultsSnapshotRef.current = null;
     setRestoreDefaultsSnackbarOpen(false);
@@ -1893,31 +1758,28 @@ export default function Calendar() {
     );
   };
 
-  const renderCreateReminderCard = (_date?: Date) => null;
-
-  const pageActions = useMemo(
-    () => (
-      <Stack direction="row" spacing={1} alignItems="center">
-        <Button
-          variant="outlined"
-          component={RouterLink}
-          href="/calendario/concluidas"
-          sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            minWidth: 0,
-            whiteSpace: "nowrap",
-          }}
-        >
-          Tarefas feitas
-        </Button>
+  const pageActions = (
+    <Stack direction="row" spacing={1} alignItems="center">
+      <Button
+        variant="outlined"
+        component={RouterLink}
+        href="/tarefas/concluidas"
+        sx={{
+          textTransform: "none",
+          fontWeight: 600,
+          minWidth: 0,
+          whiteSpace: "nowrap",
+        }}
+      >
+        Tarefas feitas
+      </Button>
+      {isCategoryListMode ? null : (
         <Button
           variant="outlined"
           onClick={() => {
             const today = new Date();
+            today.setHours(0, 0, 0, 0);
             setSelectedDate(today);
-            setSelectedMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-            setAgendaPage(1);
           }}
           sx={{
             textTransform: "none",
@@ -1928,10 +1790,31 @@ export default function Calendar() {
         >
           Hoje
         </Button>
-        <SettingsIconButton onClick={() => setCalendarSettingsOpen(true)} />
-      </Stack>
-    ),
-    []
+      )}
+
+      {isCategoryListMode ? null : (
+        <TextField
+          select
+          size="small"
+          label="Dias"
+          value={agendaDaysCount}
+          onChange={event => {
+            const next = Number(event.target.value);
+            if (agendaDaysOptions.includes(next as (typeof agendaDaysOptions)[number])) {
+              setAgendaDaysCount(next);
+            }
+          }}
+          sx={{ minWidth: 92 }}
+        >
+          {agendaDaysOptions.map(value => (
+            <MenuItem key={`agenda-days-actions-${value}`} value={value}>
+              {value}
+            </MenuItem>
+          ))}
+        </TextField>
+      )}
+      <SettingsIconButton onClick={() => setCalendarSettingsOpen(true)} />
+    </Stack>
   );
 
   return (
@@ -1953,188 +1836,48 @@ export default function Calendar() {
               height: "fit-content",
             }}
           >
-            <CategoryFilter
-              categories={categories}
-              selectedIds={categoryFilter}
-              onChange={setCategoryFilter}
-              fullWidth
-            />
             <CardSection size="xs">
-              <Stack spacing={2}>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                >
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      setSelectedMonth(
-                        new Date(
-                          selectedMonth.getFullYear(),
-                          selectedMonth.getMonth() - 1,
-                          1
-                        )
-                      )
-                    }
-                  >
-                    <ChevronLeftRoundedIcon fontSize="small" />
-                  </IconButton>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    {monthLabels[selectedMonth.getMonth()]} {selectedMonth.getFullYear()}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      setSelectedMonth(
-                        new Date(
-                          selectedMonth.getFullYear(),
-                          selectedMonth.getMonth() + 1,
-                          1
-                        )
-                      )
-                    }
-                  >
-                    <ChevronRightRoundedIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(7, 1fr)",
-                    gap: 0.5,
-                  }}
-                >
-                  {weekLabels.map((label, index) => (
-                    <Typography
-                      key={`weekday-${index}`}
-                      variant="caption"
-                      sx={{ textAlign: "center", color: "text.secondary" }}
-                    >
-                      {label}
-                    </Typography>
-                  ))}
-                  {getCalendarDays(selectedMonth).map((day, index) => {
-                    const isToday = day
-                      ? formatDateKey(day) === formatDateKey(new Date())
-                      : false;
-                    const isSelected = day
-                      ? formatDateKey(day) === formatDateKey(selectedDate)
-                      : false;
-                    const hasTasks = day
-                      ? tasksByDate.has(formatDateKey(day))
-                      : false;
-                    return (
-                      <Box
-                        key={`${day ? day.toISOString() : "empty"}-${index}`}
-                        onClick={() => {
-                          if (!day) {
-                            return;
-                          }
-                          setSelectedDate(day);
-                          setSelectedMonth(
-                            new Date(day.getFullYear(), day.getMonth(), 1)
-                          );
-                          setAgendaPage(1);
-                        }}
-                        sx={theme => ({
-                          ...interactiveItemSx(theme),
-                          height: 36,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          borderRadius: getInteractiveItemRadiusPx(theme),
-                          border: isSelected ? 1 : "1px solid transparent",
-                          borderColor: isSelected
-                            ? "primary.main"
-                            : "transparent",
-                          cursor: day ? "pointer" : "default",
-                          color: isSelected
-                            ? "primary.main"
-                            : isToday
-                              ? "text.primary"
-                              : "text.secondary",
-                          fontWeight: isToday ? 600 : 500,
-                          position: "relative",
-                        })}
-                      >
-                        {day ? day.getDate() : ""}
-                        {hasTasks ? (
-                          <Box
-                            sx={theme => ({
-                              position: "absolute",
-                              bottom: 4,
-                              width: 6,
-                              height: 6,
-                              backgroundColor: "primary.main",
-                            })}
-                          />
-                        ) : null}
-                      </Box>
-                    );
-                  })}
-                </Box>
-
-                <Autocomplete
-                  freeSolo
-                  options={availableYears}
-                  getOptionLabel={option => String(option)}
-                  value={String(selectedMonth.getFullYear())}
-                  inputValue={yearInputValue}
-                  onInputChange={(_, value) => setYearInputValue(value)}
-                  onChange={(_, nextValue) => {
-                    const parsed = parseYear(nextValue);
-                    if (parsed == null) {
-                      return;
-                    }
-                    setCalendarYear(parsed);
-                  }}
-                  renderInput={params => (
-                    <TextField
-                      {...params}
-                      label="Ano"
-                      size="small"
-                      onBlur={() => {
-                        const parsed = parseYear(yearInputValue);
-                        if (parsed == null) {
-                          setYearInputValue(String(selectedMonth.getFullYear()));
-                          return;
-                        }
-                        setCalendarYear(parsed);
-                      }}
-                    />
-                  )}
-                />
-              </Stack>
-            </CardSection>
-
-            <CardSection size="xs">
-              <Stack spacing={2}>
+              <Stack spacing={1.5}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  Calendários
+                  Categorias
                 </Typography>
-                <Stack spacing={1.5}>
-                  {calendarSources.map(source => (
+                <Stack spacing={0.5}>
+                  <Box
+                    onClick={() => setCategoryFilter([])}
+                    sx={theme => ({
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      px: 1,
+                      py: 0.75,
+                      cursor: "pointer",
+                      borderRadius: getInteractiveItemRadiusPx(theme),
+                      ...interactiveItemSx(theme),
+                      backgroundColor:
+                        selectedCategoryId === "" ? theme.palette.action.selected : undefined,
+                    })}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Todas
+                    </Typography>
+                  </Box>
+                  {categories.map(cat => (
                     <Box
-                      key={source.id}
-                      onClick={() =>
-                        setCalendarSources(prev =>
-                          prev.map(item =>
-                            item.id === source.id
-                              ? { ...item, enabled: !item.enabled }
-                              : item
-                          )
-                        )
-                      }
+                      key={cat.id}
+                      onClick={() => setCategoryFilter([cat.id])}
                       sx={theme => ({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                         px: 1,
-                        py: 0.5,
+                        py: 0.75,
                         cursor: "pointer",
                         borderRadius: getInteractiveItemRadiusPx(theme),
                         ...interactiveItemSx(theme),
+                        backgroundColor:
+                          selectedCategoryId === cat.id
+                            ? theme.palette.action.selected
+                            : undefined,
                       })}
                     >
                       <Stack direction="row" spacing={1.5} alignItems="center">
@@ -2143,32 +1886,168 @@ export default function Calendar() {
                             width: 12,
                             height: 12,
                             borderRadius: "50%",
-                            backgroundColor: resolveThemeColor(theme, source.color),
+                            backgroundColor: resolveThemeColor(theme, cat.color),
                             border: 1,
                             borderColor: "divider",
                           })}
                         />
-                        <Typography variant="body2">{source.name}</Typography>
+                        <Typography variant="body2">{cat.name}</Typography>
                       </Stack>
-                      <Checkbox
-                        checked={source.enabled}
-                        onClick={event => event.stopPropagation()}
-                        onChange={event =>
-                          setCalendarSources(prev =>
-                            prev.map(item =>
-                              item.id === source.id
-                                ? { ...item, enabled: event.target.checked }
-                                : item
-                            )
-                          )
-                        }
-                        size="small"
-                      />
                     </Box>
                   ))}
                 </Stack>
               </Stack>
             </CardSection>
+
+            {isCategoryListMode ? null : (
+              <CardSection size="xs">
+                <Stack spacing={1.5}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    Tarefas
+                  </Typography>
+
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                  >
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        setMiniCalendarMonth(
+                          new Date(
+                            miniCalendarMonth.getFullYear(),
+                            miniCalendarMonth.getMonth() - 1,
+                            1
+                          )
+                        )
+                      }
+                      aria-label="Mês anterior"
+                    >
+                      <ChevronLeftRoundedIcon fontSize="small" />
+                    </IconButton>
+
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      {monthLabels[miniCalendarMonth.getMonth()]}{" "}
+                      {miniCalendarMonth.getFullYear()}
+                    </Typography>
+
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        setMiniCalendarMonth(
+                          new Date(
+                            miniCalendarMonth.getFullYear(),
+                            miniCalendarMonth.getMonth() + 1,
+                            1
+                          )
+                        )
+                      }
+                      aria-label="Próximo mês"
+                    >
+                      <ChevronRightRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+
+                  <Stack spacing={1}>
+                    <TextField
+                      select
+                      size="small"
+                      label="Ano"
+                      value={miniCalendarMonth.getFullYear()}
+                      onChange={event => {
+                        const nextYear = Number(event.target.value);
+                        setMiniCalendarMonth(
+                          new Date(nextYear, miniCalendarMonth.getMonth(), 1)
+                        );
+                        const nextSelected = new Date(
+                          nextYear,
+                          miniCalendarMonth.getMonth(),
+                          Math.min(
+                            selectedDate.getDate(),
+                            getDaysInMonth(nextYear, miniCalendarMonth.getMonth())
+                          )
+                        );
+                        nextSelected.setHours(0, 0, 0, 0);
+                        setSelectedDate(nextSelected);
+                      }}
+                    >
+                      {miniCalendarYearOptions.map(year => (
+                        <MenuItem key={`mini-year-${year}`} value={year}>
+                          {year}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Stack>
+
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(7, 1fr)",
+                      gap: 0.5,
+                    }}
+                  >
+                    {weekLabels.map((label, index) => (
+                      <Typography
+                        key={`mini-weekday-${index}`}
+                        variant="caption"
+                        sx={{ textAlign: "center", color: "text.secondary" }}
+                      >
+                        {label}
+                      </Typography>
+                    ))}
+                    {getCalendarDays(miniCalendarMonth).map((day, index) => {
+                      const selectedKey = formatDateKey(selectedDate);
+                      const dayKey = day ? formatDateKey(day) : "";
+                      const isSelected = Boolean(day && dayKey === selectedKey);
+                      const hasTasks = Boolean(day && tasksByDate.has(dayKey));
+
+                      return (
+                        <Box
+                          key={`mini-${day ? day.toISOString() : "empty"}-${index}`}
+                          onClick={() => {
+                            if (!day) {
+                              return;
+                            }
+                            const next = new Date(day);
+                            next.setHours(0, 0, 0, 0);
+                            setSelectedDate(next);
+                          }}
+                          sx={theme => ({
+                            ...interactiveItemSx(theme),
+                            height: 32,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: getInteractiveItemRadiusPx(theme),
+                            border: isSelected ? 1 : "1px solid transparent",
+                            borderColor: isSelected ? "primary.main" : "transparent",
+                            cursor: day ? "pointer" : "default",
+                            color: isSelected ? "primary.main" : "text.secondary",
+                            fontWeight: isSelected ? 600 : 500,
+                            position: "relative",
+                          })}
+                        >
+                          {day ? day.getDate() : ""}
+                          {hasTasks ? (
+                            <Box
+                              sx={theme => ({
+                                width: 6,
+                                height: 6,
+                                borderRadius: "50%",
+                                backgroundColor: theme.palette.text.secondary,
+                                position: "absolute",
+                                bottom: 4,
+                              })}
+                            />
+                          ) : null}
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Stack>
+              </CardSection>
+            )}
           </Stack>
 
           <Stack spacing={{ xs: 2, md: 2.5 }}>
@@ -2184,306 +2063,298 @@ export default function Calendar() {
                     fontWeight: 600,
                     justifyContent: "space-between",
                   }}
-                  endIcon={<CalendarTodayRoundedIcon fontSize="small" />}
                 >
-                  {monthLabels[selectedMonth.getMonth()]}{" "}
-                  {selectedMonth.getFullYear()}
+                  Categorias
                 </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    const today = new Date();
-                    setSelectedDate(today);
-                    setSelectedMonth(
-                      new Date(today.getFullYear(), today.getMonth(), 1)
-                    );
-                    setAgendaPage(1);
-                  }}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Hoje
-                </Button>
+                {isCategoryListMode ? null : (
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      setSelectedDate(today);
+                    }}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      minWidth: 0,
+                    }}
+                  >
+                    Hoje
+                  </Button>
+                )}
               </Stack>
             ) : null}
             <Stack spacing={2}>
-              <Stack
-                direction={{ xs: "column", md: "row" }}
-                spacing={2}
-                alignItems={{ xs: "flex-start", md: "center" }}
-                justifyContent="space-between"
-                sx={{ display: { xs: "none", md: "flex" } }}
-              >
-                <TextField
-                  select
-                  label="Dias"
-                  value={agendaPerPage}
-                  onChange={event => {
-                    setAgendaPerPage(Number(event.target.value));
-                    setAgendaPage(1);
-                  }}
-                  sx={{ width: 180 }}
-                >
-                  {[7, 10, 15, 20].map(value => (
-                    <MenuItem key={value} value={value}>
-                      {value} dias
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <Pagination
-                  count={totalAgendaPages}
-                  page={agendaPage}
-                  onChange={(_, value) => setAgendaPage(value)}
-                  color="primary"
-                  variant="outlined"
-                  shape="circular"
-                  size="small"
-                  sx={{
-                    "& .MuiPaginationItem-root": {
-                      minWidth: 34,
-                      height: 34,
-                    },
-                    "& .MuiPagination-ul": {
-                      flexWrap: "nowrap",
-                    },
-                  }}
-                />
-              </Stack>
-              {agendaDays.length === 0 ? (
-                renderCreateReminderCard(selectedDate)
-              ) : (
-                <DndContext
-                  sensors={sensors}
-                  onDragEnd={handleDragEnd}
-                >
-                  <AppCard
-                    elevation={0}
-                    sx={theme => ({
-                      ...staticCardSx(theme),
-                      p: 2,
-                    })}
-                  >
-                    <Stack spacing={1.5}>
-                      {pagedAgendaDays.map((day, index) => {
-                        const todayKey = formatDateKey(new Date());
-                        const dateKey = formatDateKey(day);
-                        const dayTasks = tasksByDate.get(dateKey) || [];
-                        const includeTodayLabel =
-                          index === 0 && dateKey === todayKey;
+              {isCategoryListMode ? (
+                <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+                  <SortableContext items={visibleTaskIds} strategy={verticalListSortingStrategy}>
+                    <AppCard
+                      elevation={0}
+                      sx={theme => ({
+                        ...staticCardSx(theme),
+                        p: 2,
+                      })}
+                    >
+                      <Stack spacing={0.5}>
+                        {visibleTasks.map(task => {
+                          const subtaskCount = task.subtasks?.length ?? 0;
+                          const taskCategoryId = task.categoryIds?.[0];
+                          const taskCategory = taskCategoryId
+                            ? categories.find(cat => cat.id === taskCategoryId)
+                            : null;
 
-                        return (
-                          <DroppableDay key={dateKey} dateKey={dateKey}>
-                            <Stack spacing={1}>
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                alignItems="center"
-                                sx={{ minWidth: 0 }}
-                              >
-                                <Typography
-                                  variant="subtitle2"
-                                  sx={{ fontWeight: 700, whiteSpace: "nowrap" }}
+                          return (
+                            <DraggableTaskCard
+                              key={task.id}
+                              taskId={task.id}
+                              onClick={() => handleViewTask(task)}
+                              onContextMenu={event => {
+                                event.preventDefault();
+                                setTaskContextMenu({
+                                  task,
+                                  mouseX: event.clientX,
+                                  mouseY: event.clientY,
+                                });
+                              }}
+                            >
+                              <Stack spacing={0.25}>
+                                <Stack
+                                  direction="row"
+                                  spacing={1.5}
+                                  alignItems="center"
+                                  justifyContent="space-between"
                                 >
-                                  {formatAgendaDayTitle(day, includeTodayLabel)}
-                                </Typography>
-                                {calendarSettings.showAgendaTaskCount ? (
+                                  <Stack
+                                    direction="row"
+                                    spacing={1}
+                                    alignItems="center"
+                                    sx={{ flex: 1, minWidth: 0 }}
+                                  >
+                                    <Checkbox
+                                      checked={Boolean(task.done)}
+                                      size="small"
+                                      onPointerDown={event => event.stopPropagation()}
+                                      onClick={event => event.stopPropagation()}
+                                      onChange={event =>
+                                        handleToggleTaskDone(task, event.target.checked)
+                                      }
+                                      sx={{ ml: 0.25 }}
+                                    />
+                                    <Typography
+                                      variant="subtitle2"
+                                      sx={{
+                                        fontWeight: 600,
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                        flex: 1,
+                                        minWidth: 0,
+                                        textDecoration: task.done ? "line-through" : "none",
+                                        color: task.done ? "text.secondary" : "text.primary",
+                                      }}
+                                    >
+                                      {task.name}
+                                    </Typography>
+                                  </Stack>
                                   <Typography
                                     variant="caption"
                                     sx={{
                                       color: "text.secondary",
                                       whiteSpace: "nowrap",
+                                      flexShrink: 0,
+                                      maxWidth: 160,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
                                     }}
                                   >
-                                    {dayTasks.length} tarefas
+                                    {taskCategory ? taskCategory.name : ""}
+                                  </Typography>
+                                </Stack>
+
+                                {subtaskCount > 0 ? (
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: "text.secondary",
+                                      pl: 4.5,
+                                      lineHeight: 1.2,
+                                    }}
+                                  >
+                                    {subtaskCount} subtarefas
                                   </Typography>
                                 ) : null}
                               </Stack>
+                            </DraggableTaskCard>
+                          );
+                        })}
 
-                              {dayTasks.length === 0 ? (
-                                renderCreateReminderCard(day)
-                              ) : (
-                                <Stack spacing={1}>
-                                  {dayTasks.map(task => {
-                                    const subtaskCount = task.subtasks?.length ?? 0;
-                                    const taskCategoryId = task.categoryIds?.[0];
-                                    const taskCategory = taskCategoryId
-                                      ? categories.find(cat => cat.id === taskCategoryId)
-                                      : null;
-
-                                    return (
-                                      <DraggableTaskCard
-                                        key={task.id}
-                                        taskId={task.id}
-                                        onClick={() => handleViewTask(task)}
-                                        onContextMenu={event => {
-                                          event.preventDefault();
-                                          setTaskContextMenu({
-                                            task,
-                                            mouseX: event.clientX,
-                                            mouseY: event.clientY,
-                                          });
-                                        }}
-                                      >
-                                        <Stack spacing={0.5}>
-                                          <Stack
-                                            direction="row"
-                                            spacing={1.5}
-                                            alignItems="center"
-                                            justifyContent="space-between"
-                                          >
-                                            <Stack
-                                              direction="row"
-                                              spacing={1}
-                                              alignItems="center"
-                                              sx={{ flex: 1, minWidth: 0 }}
-                                            >
-                                              <Checkbox
-                                                checked={Boolean(task.done)}
-                                                size="small"
-                                                onPointerDown={event => event.stopPropagation()}
-                                                onClick={event =>
-                                                  event.stopPropagation()
-                                                }
-                                                onChange={event =>
-                                                  handleToggleTaskDone(
-                                                    task,
-                                                    event.target.checked
-                                                  )
-                                                }
-                                                sx={{ ml: 0.25 }}
-                                              />
-                                              <Typography
-                                                variant="subtitle2"
-                                                sx={{
-                                                  fontWeight: 600,
-                                                  overflow: "hidden",
-                                                  textOverflow: "ellipsis",
-                                                  whiteSpace: "nowrap",
-                                                  flex: 1,
-                                                  minWidth: 0,
-                                                  textDecoration: task.done
-                                                    ? "line-through"
-                                                    : "none",
-                                                  color: task.done
-                                                    ? "text.secondary"
-                                                    : "text.primary",
-                                                }}
-                                              >
-                                                {task.name}
-                                              </Typography>
-                                            </Stack>
-                                            <Typography
-                                              variant="caption"
-                                              sx={{
-                                                color: "text.secondary",
-                                                whiteSpace: "nowrap",
-                                                flexShrink: 0,
-                                              }}
-                                            >
-                                              {taskCategory ? (
-                                                <CategoryChip
-                                                  label={taskCategory.name}
-                                                  categoryColor={taskCategory.color}
-                                                  maxWidth={140}
-                                                />
-                                              ) : null}
-                                            </Typography>
-                                          </Stack>
-
-                                          {subtaskCount > 0 ? (
-                                            <Typography
-                                              variant="caption"
-                                              sx={{
-                                                color: "text.secondary",
-                                                pl: 4.5,
-                                                lineHeight: 1.2,
-                                              }}
-                                            >
-                                              {subtaskCount} subtarefas
-                                            </Typography>
-                                          ) : null}
-                                        </Stack>
-                                      </DraggableTaskCard>
-                                    );
-                                  })}
-                                  {renderCreateReminderCard(day)}
-                                </Stack>
-                              )}
-
-                              <InlineAddTaskRow
-                                dateKey={dateKey}
-                                placeholder={t("Adicionar tarefa")}
-                                onAdd={handleAddInlineTask}
-                                onFocusChange={setInlineAddTaskFocused}
-                              />
-                            </Stack>
-                          </DroppableDay>
-                        );
-                      })}
-                    </Stack>
-                  </AppCard>
+                        <InlineAddTaskRow
+                          dateKey={formatDateKey(new Date())}
+                          placeholder={t("Adicionar tarefa")}
+                          onAdd={handleAddInlineTaskForSelectedCategory}
+                          onFocusChange={handleInlineAddTaskFocusChange}
+                        />
+                      </Stack>
+                    </AppCard>
+                  </SortableContext>
                 </DndContext>
+              ) : (
+                <AppCard
+                  elevation={0}
+                  sx={theme => ({
+                    ...staticCardSx(theme),
+                    p: 2,
+                  })}
+                >
+                  <Stack spacing={1.25}>
+                    {calendarDaySections.map(section => (
+                      <Stack key={section.dateKey} spacing={0.75}>
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          justifyContent="space-between"
+                          sx={{ pt: 0.5 }}
+                        >
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: 700, textTransform: "capitalize" }}
+                          >
+                            {formatCalendarDayLabel(section.date)}
+                          </Typography>
+                          {calendarSettings.showAgendaTaskCount ? (
+                            <Typography
+                              variant="caption"
+                              sx={{ color: "text.secondary" }}
+                            >
+                              {section.tasks.length}
+                            </Typography>
+                          ) : null}
+                        </Stack>
+
+                        <Stack spacing={0.5}>
+                          <DndContext
+                            sensors={sensors}
+                            onDragEnd={event => handleAgendaDragEnd(section.dateKey, event)}
+                          >
+                            <SortableContext
+                              items={section.tasks.map(task => task.id)}
+                              strategy={verticalListSortingStrategy}
+                            >
+                              {section.tasks.map(task => {
+                                const subtaskCount = task.subtasks?.length ?? 0;
+                                const taskCategoryId = task.categoryIds?.[0];
+                                const taskCategory = taskCategoryId
+                                  ? categories.find(cat => cat.id === taskCategoryId)
+                                  : null;
+
+                                return (
+                                  <DraggableTaskCard
+                                    key={task.id}
+                                    taskId={task.id}
+                                    onClick={() => handleViewTask(task)}
+                                    onContextMenu={event => {
+                                      event.preventDefault();
+                                      setTaskContextMenu({
+                                        task,
+                                        mouseX: event.clientX,
+                                        mouseY: event.clientY,
+                                      });
+                                    }}
+                                  >
+                                    <Stack spacing={0.25}>
+                                      <Stack
+                                        direction="row"
+                                        spacing={1.5}
+                                        alignItems="center"
+                                        justifyContent="space-between"
+                                      >
+                                        <Stack
+                                          direction="row"
+                                          spacing={1}
+                                          alignItems="center"
+                                          sx={{ flex: 1, minWidth: 0 }}
+                                        >
+                                          <Checkbox
+                                            checked={Boolean(task.done)}
+                                            size="small"
+                                            onPointerDown={event => event.stopPropagation()}
+                                            onClick={event => event.stopPropagation()}
+                                            onChange={event =>
+                                              handleToggleTaskDone(task, event.target.checked)
+                                            }
+                                            sx={{ ml: 0.25 }}
+                                          />
+                                          <Typography
+                                            variant="subtitle2"
+                                            sx={{
+                                              fontWeight: 600,
+                                              overflow: "hidden",
+                                              textOverflow: "ellipsis",
+                                              whiteSpace: "nowrap",
+                                              flex: 1,
+                                              minWidth: 0,
+                                              textDecoration: task.done
+                                                ? "line-through"
+                                                : "none",
+                                              color: task.done
+                                                ? "text.secondary"
+                                                : "text.primary",
+                                            }}
+                                          >
+                                            {task.name}
+                                          </Typography>
+                                        </Stack>
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            color: "text.secondary",
+                                            whiteSpace: "nowrap",
+                                            flexShrink: 0,
+                                            maxWidth: 160,
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                          }}
+                                        >
+                                          {taskCategory ? taskCategory.name : ""}
+                                        </Typography>
+                                      </Stack>
+
+                                      {subtaskCount > 0 ? (
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            color: "text.secondary",
+                                            pl: 4.5,
+                                            lineHeight: 1.2,
+                                          }}
+                                        >
+                                          {subtaskCount} subtarefas
+                                        </Typography>
+                                      ) : null}
+                                    </Stack>
+                                  </DraggableTaskCard>
+                                );
+                              })}
+                            </SortableContext>
+                          </DndContext>
+
+                          <InlineAddTaskRow
+                            dateKey={section.dateKey}
+                            placeholder={t("Adicionar tarefa")}
+                            onAdd={handleAddInlineTask}
+                            onFocusChange={handleInlineAddTaskFocusChange}
+                          />
+                        </Stack>
+                      </Stack>
+                    ))}
+                  </Stack>
+                </AppCard>
               )}
-
-              <Stack
-                direction="column"
-                spacing={2}
-                sx={{ display: { xs: "flex", md: "none" } }}
-              >
-                <TextField
-                  select
-                  label="Dias"
-                  value={agendaPerPage}
-                  onChange={event => {
-                    setAgendaPerPage(Number(event.target.value));
-                    setAgendaPage(1);
-                  }}
-                  fullWidth
-                >
-                  {[7, 10, 15, 20].map(value => (
-                    <MenuItem key={value} value={value}>
-                      {value} dias
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <Pagination
-                  count={totalAgendaPages}
-                  page={agendaPage}
-                  onChange={(_, value) => setAgendaPage(value)}
-                  color="primary"
-                  variant="outlined"
-                  shape="circular"
-                  size="small"
-                  sx={{
-                    width: "100%",
-                    "& .MuiPagination-ul": {
-                      width: "100%",
-                      justifyContent: "center",
-                      flexWrap: "nowrap",
-                    },
-                    "& .MuiPaginationItem-root": {
-                      minWidth: 34,
-                      height: 34,
-                    },
-                  }}
-                />
-
-                <Button
-                  variant="outlined"
-                  component={RouterLink}
-                  href="/calendario/concluidas"
-                  fullWidth
-                  sx={{ textTransform: "none", fontWeight: 600 }}
-                >
-                  tarefas feitas
-                </Button>
-              </Stack>
             </Stack>
           </Stack>
-        </Box>
+      </Box>
 
       <Dialog
         open={Boolean(viewingTask)}
@@ -2546,22 +2417,6 @@ export default function Calendar() {
                 />
               </Stack>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ pl: 1 }}>
-                <Box
-                  sx={theme => ({
-                    width: 12,
-                    height: 12,
-                    borderRadius: "50%",
-                    backgroundColor: resolveThemeColor(
-                      theme,
-                      calendarSources.find(
-                        source => source.id === viewingTask?.calendarId
-                      )?.color || "primary"
-                    ),
-                    border: 1,
-                    borderColor: "divider",
-                    flex: "0 0 auto",
-                  })}
-                />
                 <Typography
                   variant="caption"
                   sx={{
@@ -2572,8 +2427,10 @@ export default function Calendar() {
                     textOverflow: "ellipsis",
                   }}
                 >
-                  {calendarMap.get(viewingTask?.calendarId || "")?.name ||
-                    "Calendário"}
+                  {viewingTask?.categoryIds?.[0]
+                    ? categories.find(cat => cat.id === viewingTask.categoryIds?.[0])
+                        ?.name || "Categoria"
+                    : "Categoria"}
                 </Typography>
                 <Typography
                   variant="caption"
@@ -2599,20 +2456,11 @@ export default function Calendar() {
               </Stack>
             </Box>
             <Stack spacing={1.5}>
-              {calendarSettings.showCategories &&
-              viewingTask?.categoryIds?.length ? (
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  {viewingTask.categoryIds
-                    .map(id => categories.find(cat => cat.id === id))
-                    .filter((cat): cat is Category => Boolean(cat))
-                    .map(cat => (
-                      <CategoryChip
-                        key={cat.id}
-                        label={cat.name}
-                        categoryColor={cat.color}
-                      />
-                    ))}
-                </Stack>
+              {calendarSettings.showCategories && viewingTask?.categoryIds?.length ? (
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  {categories.find(cat => cat.id === viewingTask.categoryIds?.[0])
+                    ?.name || ""}
+                </Typography>
               ) : null}
               {calendarSettings.showLocation && viewingTask?.location ? (
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
@@ -2815,7 +2663,7 @@ export default function Calendar() {
               justifyContent="space-between"
             >
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                Calendário
+                  Categorias
               </Typography>
               <Tooltip title="Fechar" placement="top">
                 <IconButton
@@ -2827,190 +2675,51 @@ export default function Calendar() {
               </Tooltip>
             </Stack>
 
-            <CategoryFilter
-              categories={categories}
-              selectedIds={categoryFilter}
-              onChange={setCategoryFilter}
-              fullWidth
-            />
-
             <CardSection size="xs">
-              <Stack spacing={2}>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                >
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      setSelectedMonth(
-                        new Date(
-                          selectedMonth.getFullYear(),
-                          selectedMonth.getMonth() - 1,
-                          1
-                        )
-                      )
-                    }
-                  >
-                    <ChevronLeftRoundedIcon fontSize="small" />
-                  </IconButton>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    {monthLabels[selectedMonth.getMonth()]} {selectedMonth.getFullYear()}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      setSelectedMonth(
-                        new Date(
-                          selectedMonth.getFullYear(),
-                          selectedMonth.getMonth() + 1,
-                          1
-                        )
-                      )
-                    }
-                  >
-                    <ChevronRightRoundedIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(7, 1fr)",
-                    gap: 0.5,
-                  }}
-                >
-                  {weekLabels.map((label, index) => (
-                    <Typography
-                      key={`weekday-mobile-${index}`}
-                      variant="caption"
-                      sx={{ textAlign: "center", color: "text.secondary" }}
-                    >
-                      {label}
-                    </Typography>
-                  ))}
-                  {getCalendarDays(selectedMonth).map((day, index) => {
-                    const isToday = day
-                      ? formatDateKey(day) === formatDateKey(new Date())
-                      : false;
-                    const isSelected = day
-                      ? formatDateKey(day) === formatDateKey(selectedDate)
-                      : false;
-                    const hasTasks = day
-                      ? tasksByDate.has(formatDateKey(day))
-                      : false;
-                    return (
-                      <Box
-                        key={`${day ? day.toISOString() : "empty"}-${index}`}
-                        onClick={() => {
-                          if (!day) {
-                            return;
-                          }
-                          setSelectedDate(day);
-                          setSelectedMonth(
-                            new Date(day.getFullYear(), day.getMonth(), 1)
-                          );
-                          setAgendaPage(1);
-                          setMobileSidebarOpen(false);
-                        }}
-                        sx={theme => ({
-                          ...interactiveItemSx(theme),
-                          height: 36,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          borderRadius: getInteractiveItemRadiusPx(theme),
-                          border: isSelected ? 1 : "1px solid transparent",
-                          borderColor: isSelected
-                            ? "primary.main"
-                            : "transparent",
-                          cursor: day ? "pointer" : "default",
-                          color: isSelected
-                            ? "primary.main"
-                            : isToday
-                              ? "text.primary"
-                              : "text.secondary",
-                          fontWeight: isToday ? 600 : 500,
-                          position: "relative",
-                        })}
-                      >
-                        {day ? day.getDate() : ""}
-                        {hasTasks ? (
-                          <Box
-                            sx={theme => ({
-                              position: "absolute",
-                              bottom: 4,
-                              width: 6,
-                              height: 6,
-                              backgroundColor: "primary.main",
-                            })}
-                          />
-                        ) : null}
-                      </Box>
-                    );
-                  })}
-                </Box>
-
-                <Autocomplete
-                  freeSolo
-                  options={availableYears}
-                  getOptionLabel={option => String(option)}
-                  value={String(selectedMonth.getFullYear())}
-                  inputValue={yearInputValue}
-                  onInputChange={(_, value) => setYearInputValue(value)}
-                  onChange={(_, nextValue) => {
-                    const parsed = parseYear(nextValue);
-                    if (parsed == null) {
-                      return;
-                    }
-                    setCalendarYear(parsed);
-                  }}
-                  renderInput={params => (
-                    <TextField
-                      {...params}
-                      label="Ano"
-                      size="small"
-                      onBlur={() => {
-                        const parsed = parseYear(yearInputValue);
-                        if (parsed == null) {
-                          setYearInputValue(String(selectedMonth.getFullYear()));
-                          return;
-                        }
-                        setCalendarYear(parsed);
-                      }}
-                    />
-                  )}
-                />
-              </Stack>
-            </CardSection>
-
-            <CardSection size="xs">
-              <Stack spacing={2}>
+              <Stack spacing={1.5}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  Calendários
+                  Categorias
                 </Typography>
-                <Stack spacing={1.5}>
-                  {calendarSources.map(source => (
+                <Stack spacing={0.5}>
+                  <Box
+                    onClick={() => setCategoryFilter([])}
+                    sx={theme => ({
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      px: 1,
+                      py: 0.75,
+                      cursor: "pointer",
+                      borderRadius: getInteractiveItemRadiusPx(theme),
+                      ...interactiveItemSx(theme),
+                      backgroundColor:
+                        selectedCategoryId === "" ? theme.palette.action.selected : undefined,
+                    })}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Todas
+                    </Typography>
+                  </Box>
+                  {categories.map(cat => (
                     <Box
-                      key={source.id}
-                      onClick={() =>
-                        setCalendarSources(prev =>
-                          prev.map(item =>
-                            item.id === source.id
-                              ? { ...item, enabled: !item.enabled }
-                              : item
-                          )
-                        )
-                      }
+                      key={cat.id}
+                      onClick={() => {
+                        setCategoryFilter([cat.id]);
+                        setMobileSidebarOpen(false);
+                      }}
                       sx={theme => ({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                         px: 1,
-                        py: 0.5,
+                        py: 0.75,
                         cursor: "pointer",
                         borderRadius: getInteractiveItemRadiusPx(theme),
                         ...interactiveItemSx(theme),
+                        backgroundColor:
+                          selectedCategoryId === cat.id
+                            ? theme.palette.action.selected
+                            : undefined,
                       })}
                     >
                       <Stack direction="row" spacing={1.5} alignItems="center">
@@ -3019,32 +2728,170 @@ export default function Calendar() {
                             width: 12,
                             height: 12,
                             borderRadius: "50%",
-                            backgroundColor: resolveThemeColor(theme, source.color),
+                            backgroundColor: resolveThemeColor(theme, cat.color),
                             border: 1,
                             borderColor: "divider",
                           })}
                         />
-                        <Typography variant="body2">{source.name}</Typography>
+                        <Typography variant="body2">{cat.name}</Typography>
                       </Stack>
-                      <Checkbox
-                        checked={source.enabled}
-                        onClick={event => event.stopPropagation()}
-                        onChange={event =>
-                          setCalendarSources(prev =>
-                            prev.map(item =>
-                              item.id === source.id
-                                ? { ...item, enabled: event.target.checked }
-                                : item
-                            )
-                          )
-                        }
-                        size="small"
-                      />
                     </Box>
                   ))}
                 </Stack>
               </Stack>
             </CardSection>
+
+            {isCategoryListMode ? null : (
+              <CardSection size="xs">
+                <Stack spacing={1.5}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    Tarefas
+                  </Typography>
+
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                  >
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        setMiniCalendarMonth(
+                          new Date(
+                            miniCalendarMonth.getFullYear(),
+                            miniCalendarMonth.getMonth() - 1,
+                            1
+                          )
+                        )
+                      }
+                      aria-label="Mês anterior"
+                    >
+                      <ChevronLeftRoundedIcon fontSize="small" />
+                    </IconButton>
+
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      {monthLabels[miniCalendarMonth.getMonth()]}{" "}
+                      {miniCalendarMonth.getFullYear()}
+                    </Typography>
+
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        setMiniCalendarMonth(
+                          new Date(
+                            miniCalendarMonth.getFullYear(),
+                            miniCalendarMonth.getMonth() + 1,
+                            1
+                          )
+                        )
+                      }
+                      aria-label="Próximo mês"
+                    >
+                      <ChevronRightRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+
+                  <Stack spacing={1}>
+                    <TextField
+                      select
+                      size="small"
+                      label="Ano"
+                      value={miniCalendarMonth.getFullYear()}
+                      onChange={event => {
+                        const nextYear = Number(event.target.value);
+                        setMiniCalendarMonth(
+                          new Date(nextYear, miniCalendarMonth.getMonth(), 1)
+                        );
+                        const nextSelected = new Date(
+                          nextYear,
+                          miniCalendarMonth.getMonth(),
+                          Math.min(
+                            selectedDate.getDate(),
+                            getDaysInMonth(nextYear, miniCalendarMonth.getMonth())
+                          )
+                        );
+                        nextSelected.setHours(0, 0, 0, 0);
+                        setSelectedDate(nextSelected);
+                        setMobileSidebarOpen(false);
+                      }}
+                    >
+                      {miniCalendarYearOptions.map(year => (
+                        <MenuItem key={`mini-mobile-year-${year}`} value={year}>
+                          {year}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Stack>
+
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(7, 1fr)",
+                      gap: 0.5,
+                    }}
+                  >
+                    {weekLabels.map((label, index) => (
+                      <Typography
+                        key={`mini-mobile-weekday-${index}`}
+                        variant="caption"
+                        sx={{ textAlign: "center", color: "text.secondary" }}
+                      >
+                        {label}
+                      </Typography>
+                    ))}
+                    {getCalendarDays(miniCalendarMonth).map((day, index) => {
+                      const selectedKey = formatDateKey(selectedDate);
+                      const dayKey = day ? formatDateKey(day) : "";
+                      const isSelected = Boolean(day && dayKey === selectedKey);
+                      const hasTasks = Boolean(day && tasksByDate.has(dayKey));
+
+                      return (
+                        <Box
+                          key={`mini-mobile-${day ? day.toISOString() : "empty"}-${index}`}
+                          onClick={() => {
+                            if (!day) {
+                              return;
+                            }
+                            const next = new Date(day);
+                            next.setHours(0, 0, 0, 0);
+                            setSelectedDate(next);
+                            setMobileSidebarOpen(false);
+                          }}
+                          sx={theme => ({
+                            ...interactiveItemSx(theme),
+                            height: 32,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: getInteractiveItemRadiusPx(theme),
+                            border: isSelected ? 1 : "1px solid transparent",
+                            borderColor: isSelected ? "primary.main" : "transparent",
+                            cursor: day ? "pointer" : "default",
+                            color: isSelected ? "primary.main" : "text.secondary",
+                            fontWeight: isSelected ? 600 : 500,
+                            position: "relative",
+                          })}
+                        >
+                          {day ? day.getDate() : ""}
+                          {hasTasks ? (
+                            <Box
+                              sx={theme => ({
+                                width: 6,
+                                height: 6,
+                                borderRadius: "50%",
+                                backgroundColor: theme.palette.text.secondary,
+                                position: "absolute",
+                                bottom: 4,
+                              })}
+                            />
+                          ) : null}
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Stack>
+              </CardSection>
+            )}
           </Stack>
         </DialogContent>
       </Dialog>
@@ -3096,24 +2943,22 @@ export default function Calendar() {
 
             <TextField
               select
-              label="Calendário"
+              label="Categoria"
               fullWidth
-              value={draftTask?.calendarId || ""}
+              value={draftTask?.categoryIds?.[0] || ""}
               onChange={event => {
                 const nextId = event.target.value;
                 setDraftTask(prev =>
-                  prev ? { ...prev, calendarId: nextId } : prev
-                );
-                setCalendarSources(prev =>
-                  prev.map(item =>
-                    item.id === nextId ? { ...item, enabled: true } : item
-                  )
+                  prev
+                    ? { ...prev, categoryIds: nextId ? [nextId] : [] }
+                    : prev
                 );
               }}
             >
-              {calendarSources.map(source => (
-                <MenuItem key={source.id} value={source.id}>
-                  {source.name}
+              <MenuItem value="">Sem categoria</MenuItem>
+              {categories.map(cat => (
+                <MenuItem key={cat.id} value={cat.id}>
+                  {cat.name}
                 </MenuItem>
               ))}
             </TextField>
@@ -3230,7 +3075,7 @@ export default function Calendar() {
             ) : null}
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
-                label="Dia do calendario"
+                label="Data"
                 value={
                   draftTask?.date
                     ? parseDateKey(draftTask.date).toLocaleDateString("pt-BR")
@@ -3533,6 +3378,28 @@ export default function Calendar() {
                 );
               })}
             </Box>
+
+            <TextField
+              select
+              size="small"
+              label="Ano"
+              value={datePickerMonth.getFullYear()}
+              onChange={event => {
+                const nextYear = Number(event.target.value);
+                setDatePickerMonth(
+                  new Date(nextYear, datePickerMonth.getMonth(), 1)
+                );
+              }}
+            >
+              {Array.from({ length: 21 }, (_, index) => {
+                const year = datePickerMonth.getFullYear() - 10 + index;
+                return (
+                  <MenuItem key={`picker-year-${year}`} value={year}>
+                    {year}
+                  </MenuItem>
+                );
+              })}
+            </TextField>
           </Stack>
         </Box>
       </Popover>
@@ -3540,7 +3407,7 @@ export default function Calendar() {
       <SettingsDialog
         open={calendarSettingsOpen}
         onClose={() => setCalendarSettingsOpen(false)}
-        title="Configurações do calendário"
+        title="Configurações de tarefas"
         maxWidth="sm"
         onRestoreDefaults={handleRestoreCalendarDefaults}
         sections={[
@@ -3685,79 +3552,6 @@ export default function Calendar() {
                     </Typography>
                   )}
                 </Stack>
-              </Stack>
-            ),
-          },
-          {
-            key: "calendars",
-            title: "Calendários",
-            content: (
-              <Stack spacing={1.5}>
-                {calendarSources.map(source => (
-                  <Box
-                    key={source.id}
-                    sx={theme => ({
-                      p: 1.5,
-                      borderColor: "divider",
-                      ...interactiveItemSx(theme),
-                    })}
-                  >
-                    <Stack spacing={1.5}>
-                      <Stack direction="row" spacing={1.5} alignItems="center">
-                        <Box
-                          sx={theme => ({
-                            width: 12,
-                            height: 12,
-                            borderRadius: "50%",
-                            flexShrink: 0,
-                            backgroundColor: resolveThemeColor(
-                              theme,
-                              coerceAllowedColor(source.color)
-                            ),
-                            border: 1,
-                            borderColor: "divider",
-                          })}
-                        />
-                        <TextField
-                          label="Nome"
-                          fullWidth
-                          value={source.name}
-                          onChange={event =>
-                            setCalendarSources(prev =>
-                              prev.map(item =>
-                                item.id === source.id
-                                  ? { ...item, name: event.target.value }
-                                  : item
-                              )
-                            )
-                          }
-                        />
-                      </Stack>
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        flexWrap="wrap"
-                        useFlexGap
-                      >
-                        <CategoryColorPicker
-                          value={coerceAllowedColor(source.color)}
-                          onChange={nextColor =>
-                            setCalendarSources(prev =>
-                              prev.map(item =>
-                                item.id === source.id
-                                  ? {
-                                      ...item,
-                                      color: coerceAllowedColor(nextColor),
-                                    }
-                                  : item
-                              )
-                            )
-                          }
-                        />
-                      </Stack>
-                    </Stack>
-                  </Box>
-                ))}
               </Stack>
             ),
           },
