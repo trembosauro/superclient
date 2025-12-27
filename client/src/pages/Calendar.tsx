@@ -545,13 +545,13 @@ export default function Calendar() {
   const [agendaDaysCount, setAgendaDaysCount] = useState<number>(() => {
     try {
       const stored = window.localStorage.getItem(STORAGE_AGENDA_DAYS_COUNT);
-      const parsed = stored ? Number(stored) : 7;
+      const parsed = stored ? Number(stored) : 15;
       if (!Number.isFinite(parsed)) {
-        return 7;
+        return 15;
       }
       return Math.max(1, Math.min(30, Math.floor(parsed)));
     } catch {
-      return 7;
+      return 15;
     }
   });
   const [miniCalendarMonth, setMiniCalendarMonth] = useState(() => {
@@ -1321,7 +1321,7 @@ export default function Calendar() {
   const getDaysInMonth = (year: number, monthIndex: number) =>
     new Date(year, monthIndex + 1, 0).getDate();
 
-  const agendaDaysOptions = [7, 14, 30] as const;
+  const agendaDaysOptions = [7, 15, 30] as const;
 
   const formatCalendarDayLabel = (date: Date) =>
     date.toLocaleDateString("pt-BR", {
@@ -1760,6 +1760,27 @@ export default function Calendar() {
 
   const pageActions = (
     <Stack direction="row" spacing={1} alignItems="center">
+      {isCategoryListMode ? null : (
+        <TextField
+          select
+          size="small"
+          label="Dias"
+          value={agendaDaysCount}
+          onChange={event => {
+            const next = Number(event.target.value);
+            if (agendaDaysOptions.includes(next as (typeof agendaDaysOptions)[number])) {
+              setAgendaDaysCount(next);
+            }
+          }}
+          sx={{ minWidth: 92 }}
+        >
+          {agendaDaysOptions.map(value => (
+            <MenuItem key={`agenda-days-actions-${value}`} value={value}>
+              {value}
+            </MenuItem>
+          ))}
+        </TextField>
+      )}
       <Button
         variant="outlined"
         component={RouterLink}
@@ -1790,28 +1811,6 @@ export default function Calendar() {
         >
           Hoje
         </Button>
-      )}
-
-      {isCategoryListMode ? null : (
-        <TextField
-          select
-          size="small"
-          label="Dias"
-          value={agendaDaysCount}
-          onChange={event => {
-            const next = Number(event.target.value);
-            if (agendaDaysOptions.includes(next as (typeof agendaDaysOptions)[number])) {
-              setAgendaDaysCount(next);
-            }
-          }}
-          sx={{ minWidth: 92 }}
-        >
-          {agendaDaysOptions.map(value => (
-            <MenuItem key={`agenda-days-actions-${value}`} value={value}>
-              {value}
-            </MenuItem>
-          ))}
-        </TextField>
       )}
       <SettingsIconButton onClick={() => setCalendarSettingsOpen(true)} />
     </Stack>
