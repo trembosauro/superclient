@@ -1028,6 +1028,10 @@ export default function Tasks() {
       return;
     }
 
+    if (miniCalendarAnchorEl) {
+      return;
+    }
+
     if (
       selectedDate.getHours() !== 0 ||
       selectedDate.getMinutes() !== 0 ||
@@ -1051,7 +1055,7 @@ export default function Tasks() {
     ) {
       setMiniCalendarMonth(nextMonth);
     }
-  }, [selectedDate, isCategoryListMode, miniCalendarMonth]);
+  }, [selectedDate, isCategoryListMode, miniCalendarMonth, miniCalendarAnchorEl]);
 
   const taskSearchIndex = useMemo(() => {
     const stripHtml = (value: string) => value.replace(/<[^>]+>/g, " ");
