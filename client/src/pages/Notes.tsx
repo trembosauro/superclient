@@ -711,6 +711,105 @@ function SidebarTreeDraggableItem(props: {
   );
 }
 
+function NoteListDraggableCard(props: {
+  note: Note;
+  isExpanded: boolean;
+  preview: string;
+  onSelect: (note: Note) => void;
+  onToggleExpand: (noteId: string | null) => void;
+  onOpenMenuAtPosition: (note: Note, pos: { top: number; left: number }) => void;
+}) {
+  const { note, isExpanded, preview, onSelect, onToggleExpand, onOpenMenuAtPosition } =
+    props;
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id: note.id });
+  const { setNodeRef: setDraggableRef, attributes, listeners, transform, isDragging } =
+    useDraggable({ id: note.id });
+
+  const setRefs = (node: HTMLElement | null) => {
+    setDroppableRef(node);
+    setDraggableRef(node);
+  };
+
+  return (
+    <AppCard
+      ref={setRefs as any}
+      elevation={0}
+      {...attributes}
+      {...listeners}
+      onClick={() => {
+        if (isExpanded) {
+          onToggleExpand(null);
+        } else {
+          onToggleExpand(note.id);
+          onSelect(note);
+        }
+      }}
+      onContextMenu={event => {
+        event.preventDefault();
+        event.stopPropagation();
+        onOpenMenuAtPosition(note, { top: event.clientY, left: event.clientX });
+      }}
+      style={{
+        transform: CSS.Translate.toString(transform),
+        opacity: isDragging ? 0.6 : 1,
+      }}
+      sx={theme => ({
+        ...interactiveItemSx(theme),
+        p: isExpanded ? 2.5 : 2,
+        backgroundColor: isOver ? "action.selected" : "background.paper",
+        cursor: "pointer",
+        minHeight: isExpanded ? "auto" : 96,
+        minWidth: 0,
+        touchAction: "none",
+      })}
+    >
+      <Stack spacing={isExpanded ? 1.5 : 1}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1,
+            width: "100%",
+          }}
+        >
+          <Typography
+            variant={isExpanded ? "subtitle1" : "subtitle2"}
+            sx={{
+              fontWeight: 600,
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              flex: 1,
+            }}
+          >
+            {note.emoji} {note.title}
+          </Typography>
+          {note.favorite ? (
+            <Box
+              sx={{
+                flex: "0 0 auto",
+                display: "inline-flex",
+                alignItems: "center",
+                color: "text.primary",
+              }}
+              aria-label="Nota favorita"
+            >
+              <StarRoundedIcon fontSize="small" />
+            </Box>
+          ) : null}
+        </Box>
+        {isExpanded && preview ? (
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            {preview.length > 180 ? `${preview.slice(0, 180)}...` : preview}
+          </Typography>
+        ) : null}
+      </Stack>
+    </AppCard>
+  );
+}
+
 export default function Notes() {
   const [location, setLocation] = useLocation();
   const isArchiveView = location.startsWith("/notas/arquivo");
@@ -1565,6 +1664,10 @@ export default function Notes() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
+  const listDndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
   const isAncestorOf = useCallback(
     (possibleAncestorId: string, noteId: string) => {
       if (!possibleAncestorId || !noteId) {
@@ -1649,6 +1752,69 @@ export default function Notes() {
 
         const now = new Date().toISOString();
         const nextActive: Note = { ...active, parentId: overId, updatedAt: now, isDraft: false };
+        const nextOver = ensureSubpageLinkInParent(over, nextActive);
+
+        return prev.map(note => {
+          if (note.id === nextActive.id) {
+            return nextActive;
+          }
+          if (note.id === nextOver.id) {
+            return nextOver;
+          }
+          return note;
+        });
+      });
+
+      setExpandedSidebarIds(prev => {
+        const next = new Set(prev);
+        next.add(overId);
+        return next;
+      });
+    },
+    [ensureSubpageLinkInParent, isAncestorOf, isTrashView]
+  );
+
+  const handleListDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      if (isTrashView) {
+        return;
+      }
+      const activeId = String(event.active.id || "");
+      const overId = event.over ? String(event.over.id || "") : "";
+      if (!activeId || !overId) {
+        return;
+      }
+      if (activeId === overId) {
+        return;
+      }
+
+      setNotes(prev => {
+        const byId = new Map(prev.map(note => [note.id, note] as const));
+        const active = byId.get(activeId);
+        const over = byId.get(overId);
+        if (!active || !over) {
+          return prev;
+        }
+        if (active.trashed || over.trashed) {
+          return prev;
+        }
+        if (active.archived !== over.archived) {
+          return prev;
+        }
+        if (isAncestorOf(activeId, overId)) {
+          return prev;
+        }
+        if (active.parentId === overId) {
+          return prev;
+        }
+
+        const now = new Date().toISOString();
+        const nextActive: Note = {
+          ...active,
+          parentId: overId,
+          updatedAt: now,
+          isDraft: false,
+        };
         const nextOver = ensureSubpageLinkInParent(over, nextActive);
 
         return prev.map(note => {
@@ -2168,110 +2334,43 @@ export default function Notes() {
                     />
                   )}
                   {filteredNotes.length ? (
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gap: 2,
-                        width: "100%",
-                        minWidth: 0,
-                        gridTemplateColumns: {
-                          xs: "1fr",
-                          sm: "repeat(auto-fit, minmax(220px, 1fr))",
-                        },
-                      }}
-                    >
-                      {(expandedNoteId
-                        ? sortedFilteredNotes.filter(
-                            note => note.id === expandedNoteId
-                          )
-                        : sortedFilteredNotes
-                      ).map(note => {
-                        const isExpanded = note.id === expandedNoteId;
-                        const preview = stripHtml(
-                          note.contentHtml || ""
-                        ).trim();
-                        return (
-                          <AppCard
-                            key={note.id}
-                            elevation={0}
-                            onClick={() => {
-                              if (isExpanded) {
-                                setExpandedNoteId(null);
-                              } else {
-                                setExpandedNoteId(note.id);
-                                selectNote(note);
+                    <DndContext sensors={listDndSensors} onDragEnd={handleListDragEnd}>
+                      <Box
+                        sx={{
+                          display: "grid",
+                          gap: 2,
+                          width: "100%",
+                          minWidth: 0,
+                          gridTemplateColumns: {
+                            xs: "1fr",
+                            sm: "repeat(auto-fit, minmax(220px, 1fr))",
+                          },
+                        }}
+                      >
+                        {(expandedNoteId
+                          ? sortedFilteredNotes.filter(
+                              note => note.id === expandedNoteId
+                            )
+                          : sortedFilteredNotes
+                        ).map(note => {
+                          const isExpanded = note.id === expandedNoteId;
+                          const preview = stripHtml(note.contentHtml || "").trim();
+                          return (
+                            <NoteListDraggableCard
+                              key={note.id}
+                              note={note}
+                              isExpanded={isExpanded}
+                              preview={preview}
+                              onSelect={selectNote}
+                              onToggleExpand={setExpandedNoteId}
+                              onOpenMenuAtPosition={(n, pos) =>
+                                openSidebarItemMenu(n, pos)
                               }
-                            }}
-                            onContextMenu={event => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              openSidebarItemMenu(note, {
-                                top: event.clientY,
-                                left: event.clientX,
-                              });
-                            }}
-                            sx={theme => ({
-                              ...interactiveItemSx(theme),
-                              p: isExpanded ? 2.5 : 2,
-                              backgroundColor: "background.paper",
-                              cursor: "pointer",
-                              minHeight: isExpanded ? "auto" : 96,
-                            })}
-                          >
-                            <Stack spacing={isExpanded ? 1.5 : 1}>
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "space-between",
-                                  gap: 1,
-                                  width: "100%",
-                                }}
-                              >
-                                <Typography
-                                  variant={
-                                    isExpanded ? "subtitle1" : "subtitle2"
-                                  }
-                                  sx={{
-                                    fontWeight: 600,
-                                    minWidth: 0,
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
-                                    flex: 1,
-                                  }}
-                                >
-                                  {note.emoji} {note.title}
-                                </Typography>
-                                {note.favorite ? (
-                                  <Box
-                                    sx={{
-                                      flex: "0 0 auto",
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      color: "text.primary",
-                                    }}
-                                    aria-label="Nota favorita"
-                                  >
-                                    <StarRoundedIcon fontSize="small" />
-                                  </Box>
-                                ) : null}
-                              </Box>
-                              {isExpanded && preview ? (
-                                <Typography
-                                  variant="body2"
-                                  sx={{ color: "text.secondary" }}
-                                >
-                                  {preview.length > 180
-                                    ? `${preview.slice(0, 180)}...`
-                                    : preview}
-                                </Typography>
-                              ) : null}
-                            </Stack>
-                          </AppCard>
-                        );
-                      })}
-                    </Box>
+                            />
+                          );
+                        })}
+                      </Box>
+                    </DndContext>
                   ) : (
                     <Typography
                       variant="body2"
