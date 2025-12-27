@@ -549,7 +549,11 @@ export default function Calendar() {
       if (!Number.isFinite(parsed)) {
         return 15;
       }
-      return Math.max(1, Math.min(30, Math.floor(parsed)));
+      const normalized = Math.max(1, Math.min(30, Math.floor(parsed)));
+      if (normalized !== 7 && normalized !== 15 && normalized !== 30) {
+        return 15;
+      }
+      return normalized;
     } catch {
       return 15;
     }
