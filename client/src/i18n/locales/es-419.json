@@ -103,7 +103,7 @@
   "nav": {
     "home": "Inicio",
     "dashboard": "Panel",
-    "calendar": "Calendario",
+    "calendar": "Tareas",
     "contacts": "Contactos",
     "pipeline": "Pipeline",
     "notes": "Notas",
@@ -205,7 +205,7 @@
     "paymentMethod": "Método de pago"
   },
   "calendar": {
-    "title": "Calendario",
+    "title": "Tareas",
     "today": "Hoy",
     "month": "Mes",
     "week": "Semana",

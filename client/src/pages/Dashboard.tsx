@@ -121,7 +121,7 @@ const dashboardQuickLinks = [
   { label: "Pipeline", href: "/pipeline", module: "pipeline" },
   { label: "Finanças", href: "/financas", module: "finance" },
   { label: "Contatos", href: "/contatos", module: "contacts" },
-  { label: "Calendário", href: "/calendario", module: "calendar" },
+  { label: "Tarefas", href: "/tarefas", module: "calendar" },
   { label: "Notas", href: "/notas", module: "notes" },
   { label: "Gestão", href: "/access", module: "access" },
 ] as const;
@@ -614,11 +614,11 @@ export default function Dashboard() {
                       role="button"
                       tabIndex={0}
                       sx={{ height: "100%" }}
-                      onClick={() => navigate(`/calendario?task=${task.taskId}`)}
+                      onClick={() => navigate(`/tarefas?task=${task.taskId}`)}
                       onKeyDown={event => {
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
-                          navigate(`/calendario?task=${task.taskId}`);
+                          navigate(`/tarefas?task=${task.taskId}`);
                         }
                       }}
                     >

@@ -103,7 +103,7 @@
   "nav": {
     "home": "Início",
     "dashboard": "Dashboard",
-    "calendar": "Calendário",
+    "calendar": "Tarefas",
     "contacts": "Contatos",
     "pipeline": "Pipeline",
     "notes": "Notas",
@@ -205,7 +205,7 @@
     "paymentMethod": "Método de pagamento"
   },
   "calendar": {
-    "title": "Calendário",
+    "title": "Tarefas",
     "today": "Hoje",
     "month": "Mês",
     "week": "Semana",

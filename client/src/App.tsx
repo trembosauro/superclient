@@ -47,7 +47,7 @@ import { BreadcrumbProvider } from "./contexts/BreadcrumbContext";
 // Keys para tradução - os labels serão traduzidos no render
 const navItems = [
   { labelKey: "nav.home", href: "/home" },
-  { labelKey: "nav.calendar", href: "/calendario" },
+  { labelKey: "nav.calendar", href: "/tarefas" },
   { labelKey: "nav.notes", href: "/notas" },
   { labelKey: "nav.finances", href: "/financas" },
   { labelKey: "nav.contacts", href: "/contatos" },
@@ -257,7 +257,7 @@ function App() {
     }
     if (
       !moduleAccess.calendar &&
-      (location === "/calendario" || location === "/calendario/concluidas")
+      (location === "/tarefas" || location === "/tarefas/concluidas")
     ) {
       setLocation("/profile");
     }
@@ -298,7 +298,7 @@ function App() {
         if (item.href === "/contatos") {
           return moduleAccess.contacts;
         }
-        if (item.href === "/calendario") {
+        if (item.href === "/tarefas") {
           return moduleAccess.calendar;
         }
         if (item.href === "/notas") {
@@ -319,8 +319,8 @@ function App() {
     "/pipeline/dados": t("common.details"),
     "/financas": t("nav.finances"),
     "/contatos": t("nav.contacts"),
-    "/calendario": t("nav.calendar"),
-    "/calendario/concluidas": t("calendar.completedTasks"),
+    "/tarefas": t("nav.calendar"),
+    "/tarefas/concluidas": t("calendar.completedTasks"),
     "/notas": t("nav.notes"),
     "/notas/arquivo": t("notes.archive"),
     "/notifications": t("nav.notifications"),
@@ -447,16 +447,16 @@ function App() {
               Dados
             </Typography>,
           ]
-        : location === "/calendario/concluidas"
+        : location === "/tarefas/concluidas"
           ? [
               <Link
-                key="calendario"
+                key="tarefas"
                 component={RouterLink}
-                href="/calendario"
+                href="/tarefas"
                 underline="hover"
                 color="inherit"
               >
-                Calendário
+                Tarefas
               </Link>,
               <Typography key="concluidas" color="text.primary">
                 Tarefas feitas
@@ -736,10 +736,10 @@ function App() {
                   <Route path="/financas" component={Financas} />
                   <Route path="/contatos" component={Contacts} />
                   <Route
-                    path="/calendario/concluidas"
+                    path="/tarefas/concluidas"
                     component={CalendarCompleted}
                   />
-                  <Route path="/calendario" component={Calendar} />
+                  <Route path="/tarefas" component={Calendar} />
                   <Route path="/notas/arquivo/:noteId" component={Notes} />
                   <Route path="/notas/arquivo" component={Notes} />
                   <Route path="/notas/:noteId" component={Notes} />

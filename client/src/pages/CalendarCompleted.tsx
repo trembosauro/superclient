@@ -234,10 +234,10 @@ export default function CalendarCompleted() {
         <Button
           variant="outlined"
           component={RouterLink}
-          href="/calendario"
+          href="/tarefas"
           sx={{ textTransform: "none", fontWeight: 600 }}
         >
-          Calendario
+          Tarefas
         </Button>
       }
     >

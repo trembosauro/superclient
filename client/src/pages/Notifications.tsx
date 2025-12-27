@@ -159,7 +159,7 @@ export default function Notifications() {
 
   const handleTaskClick = (taskId: string) => {
     // Vai para a tela do calendário e abre o modal da tarefa
-    setLocation(`/calendario?task=${taskId}`);
+    setLocation(`/tarefas?task=${taskId}`);
   };
 
   // Combinar todas as notificações
