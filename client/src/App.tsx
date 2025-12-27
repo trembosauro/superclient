@@ -611,7 +611,7 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-          <AppBar position="sticky">
+          <AppBar position="sticky" sx={{ border: 0 }}>
             <Toolbar sx={{ justifyContent: "space-between", gap: 2 }}>
               {/* Brand */}
               <Button
