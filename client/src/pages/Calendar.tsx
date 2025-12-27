@@ -26,10 +26,7 @@ import { Link as RouterLink } from "wouter";
 import { useTranslation } from "react-i18next";
 import {
   type DragEndEvent,
-  type CollisionDetection,
-  getFirstCollision,
-  pointerWithin,
-  rectIntersection,
+  useDraggable,
   useDroppable,
   DndContext,
   PointerSensor,
@@ -607,15 +604,6 @@ export default function Calendar() {
     useSensor(PointerSensor, { activationConstraint: { distance: 3 } })
   );
 
-  const agendaCollisionDetection: CollisionDetection = args => {
-    const pointerIntersections = pointerWithin(args);
-    const pointerCollision = getFirstCollision(pointerIntersections, "id");
-    if (pointerCollision) {
-      return pointerIntersections;
-    }
-    return rectIntersection(args);
-  };
-
   const handleInlineAddTaskFocusChange = () => undefined;
 
   const [taskContextMenu, setTaskContextMenu] = useState<{
@@ -1101,138 +1089,38 @@ export default function Calendar() {
   );
 
   const handleAgendaDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!over) {
-      return;
-    }
-    const activeId = String(active.id);
-    const overId = String(over.id);
-    if (activeId === overId) {
+    const taskId = active.data.current?.taskId as string | undefined;
+    const nextDate = over?.data.current?.dateKey as string | undefined;
+    if (!taskId || !nextDate) {
       return;
     }
 
-    const byId = new Map(tasks.map(task => [task.id, task] as const));
-    const activeTask = byId.get(activeId);
-    if (!activeTask?.date) {
-      return;
-    }
-    const sourceDateKey = activeTask.date;
-
-    const overDateKey = (() => {
-      if (overId.startsWith("day:")) {
-        return overId.slice(4);
-      }
-      const overTask = byId.get(overId);
-      return overTask?.date || "";
-    })();
-    if (!overDateKey) {
-      return;
-    }
-
-    const sortDayTasks = (items: CalendarTask[]) =>
-      items.sort((a, b) => {
-        const aOrder = a.sortOrder ?? Number.POSITIVE_INFINITY;
-        const bOrder = b.sortOrder ?? Number.POSITIVE_INFINITY;
-        if (aOrder !== bOrder) {
-          return aOrder - bOrder;
-        }
-        return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
-      });
-
-    const getDayTaskIds = (dateKey: string, list: CalendarTask[]) =>
-      sortDayTasks(list.filter(task => !task.done && task.date === dateKey)).map(
-        task => task.id
-      );
-
-    const sourceIds = getDayTaskIds(sourceDateKey, tasks);
-    const destIds =
-      overDateKey === sourceDateKey
-        ? [...sourceIds]
-        : getDayTaskIds(overDateKey, tasks);
-
-    const sourceIndex = sourceIds.indexOf(activeId);
-    if (sourceIndex < 0) {
-      return;
-    }
-
-    const nextSourceIds = [...sourceIds];
-    nextSourceIds.splice(sourceIndex, 1);
-
-    const nextDestIds =
-      overDateKey === sourceDateKey ? nextSourceIds : [...destIds];
-
-    const insertIndex = (() => {
-      if (overId.startsWith("day:")) {
-        return nextDestIds.length;
-      }
-      const index = nextDestIds.indexOf(overId);
-      return index < 0 ? nextDestIds.length : index;
-    })();
-
-    nextDestIds.splice(insertIndex, 0, activeId);
-
-    const getBaseOrder = (dateKey: string, list: CalendarTask[]) => {
-      const day = sortDayTasks(list.filter(task => !task.done && task.date === dateKey));
-      const existingOrders = day
-        .map(task => task.sortOrder)
-        .filter(
-          (value): value is number =>
-            typeof value === "number" && Number.isFinite(value)
-        );
-      return existingOrders.length ? Math.min(...existingOrders) : Date.now();
-    };
-
-    setTasks(prev => {
-      const next = [...prev];
-      const baseSource = getBaseOrder(sourceDateKey, prev);
-      const baseDest =
-        overDateKey === sourceDateKey ? baseSource : getBaseOrder(overDateKey, prev);
-
-      const sourceOrder = new Map(
-        (overDateKey === sourceDateKey ? nextDestIds : nextSourceIds).map((id, index) =>
-          [id, baseSource + index] as const
-        )
-      );
-      const destOrder = new Map(
-        nextDestIds.map((id, index) => [id, baseDest + index] as const)
-      );
-
-      return next.map(task => {
-        if (task.id === activeId) {
-          const nextTask = {
-            ...task,
-            date: overDateKey,
-            sortOrder: destOrder.get(activeId),
-          };
-          return nextTask;
-        }
-
-        if (task.date === sourceDateKey && sourceOrder.has(task.id)) {
-          return { ...task, sortOrder: sourceOrder.get(task.id) };
-        }
-
-        if (task.date === overDateKey && destOrder.has(task.id)) {
-          return { ...task, sortOrder: destOrder.get(task.id) };
-        }
-
-        return task;
-      });
-    });
+    setTasks(prev =>
+      prev.map(task =>
+        task.id === taskId
+          ? { ...task, date: nextDate, sortOrder: Date.now() }
+          : task
+      )
+    );
   };
 
-  const AgendaDayDropZone = ({
+  const DroppableAgendaDay = ({
     dateKey,
     children,
   }: {
     dateKey: string;
     children: ReactNode;
   }) => {
-    const { setNodeRef, isOver } = useDroppable({ id: `day:${dateKey}` });
+    const { setNodeRef, isOver } = useDroppable({
+      id: `day-${dateKey}`,
+      data: { dateKey },
+    });
+
     return (
       <Box
         ref={setNodeRef}
         sx={theme => ({
           borderRadius: getInteractiveItemRadiusPx(theme),
-          minHeight: 36,
           outline: isOver ? `1px solid ${theme.palette.primary.main}` : "1px solid transparent",
           outlineOffset: 2,
         })}
@@ -1311,6 +1199,61 @@ export default function Calendar() {
           boxSizing: "border-box",
           transform: CSS.Transform.toString(stableTransform),
           transition,
+          touchAction: "none",
+          userSelect: "none",
+          "&:hover": {
+            backgroundColor: theme.palette.background.paper,
+          },
+          "&:active": {
+            backgroundColor: theme.palette.background.paper,
+          },
+        })}
+      >
+        {children}
+      </AppCard>
+    );
+  };
+
+  const AgendaDraggableTaskCard = ({
+    taskId,
+    onClick,
+    onContextMenu,
+    children,
+  }: {
+    taskId: string;
+    onClick: () => void;
+    onContextMenu?: (event: React.MouseEvent) => void;
+    children: ReactNode;
+  }) => {
+    const { attributes, listeners, setNodeRef, transform, isDragging } =
+      useDraggable({
+        id: taskId,
+        data: { taskId },
+      });
+
+    const stableTransform = transform
+      ? { ...transform, scaleX: 1, scaleY: 1 }
+      : null;
+
+    return (
+      <AppCard
+        ref={setNodeRef}
+        elevation={0}
+        onClick={onClick}
+        onContextMenu={onContextMenu}
+        {...attributes}
+        {...listeners}
+        sx={theme => ({
+          ...staticCardSx(theme),
+          p: 1,
+          border: 0,
+          borderColor: "transparent",
+          borderRadius: getInteractiveItemRadiusPx(theme),
+          cursor: isDragging ? "grabbing" : "grab",
+          opacity: isDragging ? 0.7 : 1,
+          width: "100%",
+          boxSizing: "border-box",
+          transform: CSS.Transform.toString(stableTransform),
           touchAction: "none",
           userSelect: "none",
           "&:hover": {
@@ -2521,7 +2464,6 @@ export default function Calendar() {
                 >
                   <DndContext
                     sensors={sensors}
-                    collisionDetection={agendaCollisionDetection}
                     onDragEnd={handleAgendaDragEnd}
                   >
                     <Stack spacing={1.25}>
@@ -2549,14 +2491,9 @@ export default function Calendar() {
                           ) : null}
                         </Stack>
 
-                        <AgendaDayDropZone dateKey={section.dateKey}>
+                        <DroppableAgendaDay dateKey={section.dateKey}>
                           <Stack spacing={0.5}>
-                            <SortableContext
-                              items={section.tasks.map(task => task.id)}
-                              strategy={verticalListSortingStrategy}
-                            >
-                              <Stack spacing={0.5}>
-                                {section.tasks.map(task => {
+                            {section.tasks.map(task => {
                                   const subtaskCount = task.subtasks?.length ?? 0;
                                   const taskCategoryId = task.categoryIds?.[0];
                                   const taskCategory = taskCategoryId
@@ -2564,7 +2501,7 @@ export default function Calendar() {
                                     : null;
 
                                   return (
-                                    <DraggableTaskCard
+                                    <AgendaDraggableTaskCard
                                       key={task.id}
                                       taskId={task.id}
                                       onClick={() => handleViewTask(task)}
@@ -2651,11 +2588,9 @@ export default function Calendar() {
                                           </Typography>
                                         ) : null}
                                       </Stack>
-                                    </DraggableTaskCard>
+                                    </AgendaDraggableTaskCard>
                                   );
                                 })}
-                              </Stack>
-                            </SortableContext>
 
                             <InlineAddTaskRow
                               dateKey={section.dateKey}
@@ -2664,7 +2599,7 @@ export default function Calendar() {
                               onFocusChange={handleInlineAddTaskFocusChange}
                             />
                           </Stack>
-                        </AgendaDayDropZone>
+                        </DroppableAgendaDay>
                       </Stack>
                       ))}
                     </Stack>
