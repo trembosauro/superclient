@@ -2043,43 +2043,6 @@ export default function Calendar() {
                   </Button>
                 </Stack>
 
-                {showTaskSearch ? (
-                  <TextField
-                    placeholder="Buscar tarefa"
-                    label="Buscar tarefa"
-                    variant="outlined"
-                    size="medium"
-                    fullWidth
-                    autoFocus
-                    value={taskQuery}
-                    onChange={event => setTaskQuery(event.target.value)}
-                    onKeyDown={event => {
-                      if (event.key === "Escape") {
-                        setTaskQuery("");
-                        setShowTaskSearch(false);
-                      }
-                    }}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          {taskQuery ? (
-                            <IconButton
-                              size="small"
-                              onClick={() => setTaskQuery("")}
-                              aria-label="Limpar busca"
-                              sx={{ width: 48, height: 48 }}
-                            >
-                              <CloseRoundedIcon fontSize="small" />
-                            </IconButton>
-                          ) : (
-                            <Box sx={{ width: 48, height: 48 }} />
-                          )}
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                ) : null}
-
                 <Stack spacing={0.5}>
                   <Box
                     onClick={() => setCategoryFilter([])}
@@ -2326,6 +2289,44 @@ export default function Calendar() {
                 )}
               </Stack>
             ) : null}
+
+            {showTaskSearch ? (
+              <TextField
+                placeholder="Buscar tarefa"
+                label="Buscar tarefa"
+                variant="outlined"
+                size="medium"
+                fullWidth
+                autoFocus
+                value={taskQuery}
+                onChange={event => setTaskQuery(event.target.value)}
+                onKeyDown={event => {
+                  if (event.key === "Escape") {
+                    setTaskQuery("");
+                    setShowTaskSearch(false);
+                  }
+                }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      {taskQuery ? (
+                        <IconButton
+                          size="small"
+                          onClick={() => setTaskQuery("")}
+                          aria-label="Limpar busca"
+                          sx={{ width: 48, height: 48 }}
+                        >
+                          <CloseRoundedIcon fontSize="small" />
+                        </IconButton>
+                      ) : (
+                        <Box sx={{ width: 48, height: 48 }} />
+                      )}
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            ) : null}
+
             <Stack spacing={2}>
               {isCategoryListMode ? (
                 <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -2947,40 +2948,7 @@ export default function Calendar() {
             </Stack>
 
             {showTaskSearch ? (
-              <TextField
-                placeholder="Buscar tarefa"
-                label="Buscar tarefa"
-                variant="outlined"
-                size="medium"
-                fullWidth
-                autoFocus
-                value={taskQuery}
-                onChange={event => setTaskQuery(event.target.value)}
-                onKeyDown={event => {
-                  if (event.key === "Escape") {
-                    setTaskQuery("");
-                    setShowTaskSearch(false);
-                  }
-                }}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      {taskQuery ? (
-                        <IconButton
-                          size="small"
-                          onClick={() => setTaskQuery("")}
-                          aria-label="Limpar busca"
-                          sx={{ width: 48, height: 48 }}
-                        >
-                          <CloseRoundedIcon fontSize="small" />
-                        </IconButton>
-                      ) : (
-                        <Box sx={{ width: 48, height: 48 }} />
-                      )}
-                    </InputAdornment>
-                  ),
-                }}
-              />
+              null
             ) : null}
 
             <CardSection size="xs">
