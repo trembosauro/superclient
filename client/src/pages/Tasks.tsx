@@ -2050,27 +2050,6 @@ export default function Tasks() {
 
   const pageActions = (
     <Stack direction="row" spacing={1} alignItems="center">
-      {isCategoryListMode ? null : (
-        <TextField
-          select
-          size="small"
-          label="Dias"
-          value={agendaDaysCount}
-          onChange={event => {
-            const next = Number(event.target.value);
-            if (agendaDaysOptions.includes(next as (typeof agendaDaysOptions)[number])) {
-              setAgendaDaysCount(next);
-            }
-          }}
-          sx={{ minWidth: 92 }}
-        >
-          {agendaDaysOptions.map(value => (
-            <MenuItem key={`agenda-days-actions-${value}`} value={value}>
-              {value}
-            </MenuItem>
-          ))}
-        </TextField>
-      )}
       <Button
         variant="outlined"
         onClick={() => {
@@ -3843,6 +3822,29 @@ export default function Tasks() {
             title: "Agenda",
             content: (
               <Stack spacing={1.5}>
+                <TextField
+                  select
+                  size="small"
+                  label="Dias"
+                  value={agendaDaysCount}
+                  onChange={event => {
+                    const next = Number(event.target.value);
+                    if (
+                      agendaDaysOptions.includes(
+                        next as (typeof agendaDaysOptions)[number]
+                      )
+                    ) {
+                      setAgendaDaysCount(next);
+                    }
+                  }}
+                  disabled={isCategoryListMode}
+                >
+                  {agendaDaysOptions.map(value => (
+                    <MenuItem key={`agenda-days-settings-${value}`} value={value}>
+                      {value}
+                    </MenuItem>
+                  ))}
+                </TextField>
                 <Box
                   sx={theme => ({
                     display: "flex",
