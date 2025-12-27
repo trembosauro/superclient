@@ -1,21 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Autocomplete,
   Box,
   Button,
-  Checkbox,
-  Chip,
-  Divider,
+  Dialog,
+  DialogContent,
+  IconButton,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { Link as RouterLink } from "wouter";
-import { interactiveCardSx } from "../styles/interactiveCard";
+import { interactiveCardSx, interactiveItemSx } from "../styles/interactiveCard";
 import CardSection from "../components/layout/CardSection";
 import { PageContainer } from "../ui/PageContainer/PageContainer";
-import { CategoryChip } from "../components/CategoryChip";
-import CategoryFilter from "../components/CategoryFilter";
+import { resolveThemeColor } from "../lib/resolveThemeColor";
+import { loadUserStorage, saveUserStorage } from "../userStorage";
+import { useIsMobile } from "../hooks/useMobile";
 
 type Category = {
   id: string;
@@ -28,7 +31,6 @@ type CalendarTask = {
   name: string;
   descriptionHtml?: string;
   categoryIds?: string[];
-  calendarId?: string;
   date: string;
   location?: string;
   startTime?: string;
@@ -37,112 +39,103 @@ type CalendarTask = {
   done?: boolean;
 };
 
-type CalendarSource = {
-  id: string;
-  name: string;
-  color: string;
-  enabled: boolean;
-};
-
 const STORAGE_TASKS = "calendar_tasks_v1";
 const STORAGE_CATEGORIES = "calendar_categories_v1";
-const STORAGE_CALENDARS = "calendar_sources_v1";
 const STORAGE_CATEGORY_FILTER = "sc_calendar_category_filter";
 
-const formatDateKey = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
+const UNCAT_ID = "__uncategorized__";
 
-const parseDateKey = (value: string) => {
-  const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) {
-    return new Date();
-  }
-  return new Date(year, month - 1, day);
-};
-
-const darkenColor = (value: string, factor: number) => {
-  const color = value.replace("#", "");
-  if (color.length !== 6) {
-    return value;
-  }
-  const r = Math.max(
-    0,
-    Math.min(255, Math.floor(parseInt(color.slice(0, 2), 16) * factor))
-  );
-  const g = Math.max(
-    0,
-    Math.min(255, Math.floor(parseInt(color.slice(2, 4), 16) * factor))
-  );
-  const b = Math.max(
-    0,
-    Math.min(255, Math.floor(parseInt(color.slice(4, 6), 16) * factor))
-  );
-  return `#${r.toString(16).padStart(2, "0")}${g
-    .toString(16)
-    .padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
-};
+const normalizeSearch = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
 
 export default function TasksCompleted() {
+  const isMobile = useIsMobile();
   const [tasks, setTasks] = useState<CalendarTask[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [calendarSources, setCalendarSources] = useState<CalendarSource[]>([]);
-  const [calendarFilter, setCalendarFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  const [showTaskSearch, setShowTaskSearch] = useState(false);
+  const [taskQuery, setTaskQuery] = useState("");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const selectedCategoryId = categoryFilter[0] || "";
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_TASKS);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as CalendarTask[];
-        if (Array.isArray(parsed)) {
-          setTasks(parsed);
-          return;
+    let active = true;
+
+    const load = async () => {
+      const fromDb = await loadUserStorage<CalendarTask[]>(STORAGE_TASKS);
+      if (!active) return;
+      if (Array.isArray(fromDb)) {
+        setTasks(fromDb);
+        window.localStorage.setItem(STORAGE_TASKS, JSON.stringify(fromDb));
+        return;
+      }
+
+      const stored = window.localStorage.getItem(STORAGE_TASKS);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as CalendarTask[];
+          if (Array.isArray(parsed)) {
+            setTasks(parsed);
+            void saveUserStorage(STORAGE_TASKS, parsed);
+            return;
+          }
+        } catch {
+          // ignore
         }
-      } catch {}
-    }
-    setTasks([]);
+      }
+      setTasks([]);
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_TASKS, JSON.stringify(tasks));
+    void saveUserStorage(STORAGE_TASKS, tasks);
   }, [tasks]);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_CATEGORIES);
-    if (!stored) {
-      setCategories([]);
-      return;
-    }
-    try {
-      const parsed = JSON.parse(stored) as Category[];
-      if (Array.isArray(parsed)) {
-        setCategories(parsed);
-      }
-    } catch {
-      window.localStorage.removeItem(STORAGE_CATEGORIES);
-      setCategories([]);
-    }
-  }, []);
+    let active = true;
 
-  useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_CALENDARS);
-    if (!stored) {
-      setCalendarSources([]);
-      return;
-    }
-    try {
-      const parsed = JSON.parse(stored) as CalendarSource[];
-      if (Array.isArray(parsed)) {
-        setCalendarSources(parsed);
+    const load = async () => {
+      const fromDb = await loadUserStorage<Category[]>(STORAGE_CATEGORIES);
+      if (!active) return;
+      if (Array.isArray(fromDb)) {
+        setCategories(fromDb);
+        window.localStorage.setItem(STORAGE_CATEGORIES, JSON.stringify(fromDb));
+        return;
       }
-    } catch {
-      window.localStorage.removeItem(STORAGE_CALENDARS);
-      setCalendarSources([]);
-    }
+
+      const stored = window.localStorage.getItem(STORAGE_CATEGORIES);
+      if (!stored) {
+        setCategories([]);
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stored) as Category[];
+        if (Array.isArray(parsed)) {
+          setCategories(parsed);
+          void saveUserStorage(STORAGE_CATEGORIES, parsed);
+          return;
+        }
+      } catch {
+        window.localStorage.removeItem(STORAGE_CATEGORIES);
+      }
+      setCategories([]);
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -167,66 +160,172 @@ export default function TasksCompleted() {
     );
   }, [categoryFilter]);
 
-  const activeCalendarIds = useMemo(
-    () =>
-      new Set(
-        calendarSources.filter(item => item.enabled).map(item => item.id)
-      ),
-    [calendarSources]
-  );
+  const completedTasks = useMemo(() => tasks.filter(task => Boolean(task.done)), [tasks]);
 
-  const doneTasksByDate = useMemo(() => {
+  const filteredCompletedTasks = useMemo(() => {
+    const query = normalizeSearch(taskQuery);
+    return completedTasks
+      .filter(task => {
+        if (!query) return true;
+        return normalizeSearch(task.name).includes(query);
+      })
+      .filter(task => {
+        if (!selectedCategoryId) return true;
+        const primaryCategoryId = task.categoryIds?.[0] || "";
+        return primaryCategoryId === selectedCategoryId;
+      })
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+      });
+  }, [completedTasks, selectedCategoryId, taskQuery]);
+
+  const tasksByCategory = useMemo(() => {
     const map = new Map<string, CalendarTask[]>();
-    tasks.forEach(task => {
-      if (!task.done) {
-        return;
+    filteredCompletedTasks.forEach(task => {
+      const primaryCategoryId = task.categoryIds?.[0] || UNCAT_ID;
+      if (!map.has(primaryCategoryId)) {
+        map.set(primaryCategoryId, []);
       }
-      if (
-        task.calendarId &&
-        calendarSources.length &&
-        !activeCalendarIds.has(task.calendarId)
-      ) {
-        return;
-      }
-      if (
-        calendarFilter.length &&
-        !calendarFilter.includes(task.calendarId || "")
-      ) {
-        return;
-      }
-      if (categoryFilter.length) {
-        const taskCategories = task.categoryIds || [];
-        const hasMatch = taskCategories.some(id => categoryFilter.includes(id));
-        if (!hasMatch) {
-          return;
-        }
-      }
-      const key = task.date;
-      if (!map.has(key)) {
-        map.set(key, []);
-      }
-      map.get(key)?.push(task);
+      map.get(primaryCategoryId)?.push(task);
     });
-    map.forEach(list =>
-      list.sort((a, b) =>
-        a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })
-      )
-    );
     return map;
-  }, [
-    tasks,
-    calendarSources.length,
-    activeCalendarIds,
-    calendarFilter,
-    categoryFilter,
-  ]);
+  }, [filteredCompletedTasks]);
 
-  const agendaDays = useMemo(() => {
-    const days = Array.from(doneTasksByDate.keys())
-      .map(parseDateKey)
-      .sort((a, b) => a.getTime() - b.getTime());
-    return days;
-  }, [doneTasksByDate]);
+  const categorySections = useMemo(() => {
+    if (selectedCategoryId) {
+      const selected = categories.find(cat => cat.id === selectedCategoryId);
+      const list = tasksByCategory.get(selectedCategoryId) || [];
+      if (!selected) {
+        return [] as Array<{ id: string; name: string; color: string; tasks: CalendarTask[] }>;
+      }
+      return [{ id: selected.id, name: selected.name, color: selected.color, tasks: list }];
+    }
+
+    const sections: Array<{ id: string; name: string; color: string; tasks: CalendarTask[] }> = [];
+    categories.forEach(cat => {
+      const list = tasksByCategory.get(cat.id);
+      if (list && list.length) {
+        sections.push({ id: cat.id, name: cat.name, color: cat.color, tasks: list });
+      }
+    });
+
+    const uncategorized = tasksByCategory.get(UNCAT_ID) || [];
+    if (uncategorized.length) {
+      sections.push({
+        id: UNCAT_ID,
+        name: "Sem categoria",
+        color: "mui.grey.900",
+        tasks: uncategorized,
+      });
+    }
+
+    return sections;
+  }, [categories, selectedCategoryId, tasksByCategory]);
+
+  const sidebar = (
+    <CardSection size="xs">
+      <Stack spacing={2}>
+        <Stack spacing={0.5}>
+          <Box
+            onClick={() => {
+              const next = !showTaskSearch;
+              setShowTaskSearch(next);
+              if (!next) {
+                setTaskQuery("");
+              }
+            }}
+            sx={theme => ({
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              px: 1,
+              py: 0.75,
+              cursor: "pointer",
+              borderRadius: "var(--radius-button)",
+              ...interactiveItemSx(theme),
+              backgroundColor: showTaskSearch
+                ? theme.palette.action.selected
+                : undefined,
+            })}
+          >
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <SearchRoundedIcon fontSize="small" />
+              <Typography variant="body2">Busca</Typography>
+            </Stack>
+          </Box>
+        </Stack>
+
+        <Stack spacing={0.5}>
+          <Box
+            onClick={() => setCategoryFilter([])}
+            sx={theme => ({
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              px: 1,
+              py: 0.75,
+              cursor: "pointer",
+              borderRadius: "var(--radius-button)",
+              ...interactiveItemSx(theme),
+              backgroundColor:
+                selectedCategoryId === ""
+                  ? theme.palette.action.selected
+                  : undefined,
+            })}
+          >
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box
+                sx={theme => ({
+                  width: 12,
+                  height: 12,
+                  borderRadius: "50%",
+                  backgroundColor: resolveThemeColor(theme, "mui.grey.900"),
+                  border: 1,
+                  borderColor: "divider",
+                })}
+              />
+              <Typography variant="body2">Todas</Typography>
+            </Stack>
+          </Box>
+          {categories.map(cat => (
+            <Box
+              key={cat.id}
+              onClick={() => setCategoryFilter([cat.id])}
+              sx={theme => ({
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                px: 1,
+                py: 0.75,
+                cursor: "pointer",
+                borderRadius: "var(--radius-button)",
+                ...interactiveItemSx(theme),
+                backgroundColor:
+                  selectedCategoryId === cat.id
+                    ? theme.palette.action.selected
+                    : undefined,
+              })}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box
+                  sx={theme => ({
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    backgroundColor: resolveThemeColor(theme, cat.color),
+                    border: 1,
+                    borderColor: "divider",
+                  })}
+                />
+                <Typography variant="body2">{cat.name}</Typography>
+              </Stack>
+            </Box>
+          ))}
+        </Stack>
+      </Stack>
+    </CardSection>
+  );
 
   return (
     <PageContainer
@@ -235,72 +334,112 @@ export default function TasksCompleted() {
           variant="outlined"
           component={RouterLink}
           href="/tarefas"
-          sx={{ textTransform: "none", fontWeight: 600 }}
+          sx={{ textTransform: "none", fontWeight: 600, whiteSpace: "nowrap" }}
         >
           Tarefas
         </Button>
       }
     >
-      <Stack spacing={3}>
-        <CardSection size="xs">
-          <Stack spacing={2} direction={{ xs: "column", md: "row" }}>
-            <CategoryFilter
-              categories={calendarSources}
-              selectedIds={calendarFilter}
-              onChange={setCalendarFilter}
-              label="Filtrar calendarios"
-              fullWidth
-            />
-            <CategoryFilter
-              categories={categories}
-              selectedIds={categoryFilter}
-              onChange={setCategoryFilter}
-              fullWidth
-            />
-          </Stack>
-        </CardSection>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "280px 1fr" },
+          gap: 2.5,
+        }}
+      >
+        <Stack
+          spacing={2.5}
+          sx={{
+            display: { xs: "none", md: "flex" },
+            position: "sticky",
+            top: 16,
+            alignSelf: "start",
+            height: "fit-content",
+          }}
+        >
+          {sidebar}
+        </Stack>
 
-        {agendaDays.length === 0 ? (
-          <CardSection size="xs">
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              Nenhuma tarefa concluida ainda.
-            </Typography>
-          </CardSection>
-        ) : (
-          <Stack spacing={2}>
-            {agendaDays.map(day => {
-              const dateKey = formatDateKey(day);
-              const dayTasks = doneTasksByDate.get(dateKey) || [];
-              return (
-                <CardSection key={dateKey} size="xs">
+        <Stack spacing={{ xs: 2, md: 2.5 }}>
+          {isMobile ? (
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Button
+                variant="outlined"
+                onClick={() => setMobileSidebarOpen(true)}
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  justifyContent: "space-between",
+                }}
+              >
+                Categorias
+              </Button>
+              <Button
+                variant="outlined"
+                component={RouterLink}
+                href="/tarefas"
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  minWidth: 0,
+                }}
+              >
+                Tarefas
+              </Button>
+            </Stack>
+          ) : null}
+
+          {showTaskSearch ? (
+            <TextField
+              placeholder="Buscar tarefa"
+              label="Buscar tarefa"
+              variant="outlined"
+              size="medium"
+              fullWidth
+              autoFocus
+              value={taskQuery}
+              onChange={event => setTaskQuery(event.target.value)}
+            />
+          ) : null}
+
+          {filteredCompletedTasks.length === 0 ? (
+            <CardSection size="xs">
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                Nenhuma tarefa concluída ainda.
+              </Typography>
+            </CardSection>
+          ) : (
+            <Stack spacing={2}>
+              {categorySections.map(section => (
+                <CardSection key={section.id} size="xs">
                   <Stack spacing={1.5}>
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      justifyContent="space-between"
-                    >
-                      <Stack>
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ fontWeight: 700 }}
-                        >
-                          {day.toLocaleDateString("pt-BR", {
-                            weekday: "short",
-                            day: "2-digit",
-                            month: "short",
-                          })}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ color: "text.secondary" }}
-                        >
-                          {dayTasks.length} tarefas
-                        </Typography>
-                      </Stack>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Box
+                        sx={theme => ({
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          backgroundColor:
+                            section.id === UNCAT_ID
+                              ? resolveThemeColor(theme, "mui.grey.900")
+                              : resolveThemeColor(theme, section.color),
+                          border: 1,
+                          borderColor: "divider",
+                        })}
+                      />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                        {section.name}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        {section.tasks.length}
+                      </Typography>
                     </Stack>
-                    <Divider />
-                    <Stack spacing={1.5}>
-                      {dayTasks.map(task => (
+
+                    <Stack spacing={1.25}>
+                      {section.tasks.map(task => (
                         <CardSection
                           key={task.id}
                           size="compact"
@@ -315,98 +454,156 @@ export default function TasksCompleted() {
                             justifyContent="space-between"
                           >
                             <Stack spacing={0.5}>
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                alignItems="center"
-                              >
-                                <Box
-                                  sx={theme => ({
-                                    width: 8,
-                                    height: 8,
-                                    backgroundColor:
-                                      calendarSources.find(
-                                        source => source.id === task.calendarId
-                                      )?.color || "primary.main",
-                                  })}
-                                />
-                                <Typography
-                                  variant="subtitle2"
-                                  sx={{ fontWeight: 600 }}
-                                >
-                                  {task.name}
-                                </Typography>
-                              </Stack>
-                              <Typography
-                                variant="caption"
-                                sx={{ color: "text.secondary" }}
-                              >
-                                {task.allDay
-                                  ? "Dia todo"
-                                  : [task.startTime, task.endTime]
-                                      .filter(Boolean)
-                                      .join(" - ") || "Horário livre"}
+                              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                {task.name}
                               </Typography>
-                              {task.location ? (
-                                <Typography
-                                  variant="caption"
-                                  sx={{ color: "text.secondary" }}
-                                >
-                                  {task.location}
-                                </Typography>
-                              ) : null}
+                              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                                {task.date}
+                              </Typography>
                             </Stack>
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                            >
-                              {(task.categoryIds || [])
-                                .map(id =>
-                                  categories.find(cat => cat.id === id)
-                                )
-                                .filter(Boolean)
-                                .map(cat => (
-                                  <Chip
-                                    key={cat?.id}
-                                    label={cat?.name}
-                                    size="small"
-                                    sx={{
-                                      color: "#e6edf3",
-                                      backgroundColor: cat
-                                        ? darkenColor(cat.color, 0.5)
-                                        : "transparent",
-                                    }}
-                                  />
-                                ))}
-                              <Button
-                                variant="outlined"
-                                size="small"
-                                onClick={() =>
-                                  setTasks(prev =>
-                                    prev.map(item =>
-                                      item.id === task.id
-                                        ? { ...item, done: false }
-                                        : item
-                                    )
+
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={() =>
+                                setTasks(prev =>
+                                  prev.map(item =>
+                                    item.id === task.id
+                                      ? { ...item, done: false }
+                                      : item
                                   )
-                                }
-                                sx={{ textTransform: "none", fontWeight: 600 }}
-                              >
-                                Desfazer
-                              </Button>
-                            </Stack>
+                                )
+                              }
+                              sx={{ textTransform: "none", fontWeight: 600, minWidth: 0 }}
+                            >
+                              Desfazer
+                            </Button>
                           </Stack>
                         </CardSection>
                       ))}
                     </Stack>
                   </Stack>
                 </CardSection>
-              );
-            })}
+              ))}
+            </Stack>
+          )}
+        </Stack>
+      </Box>
+
+      <Dialog
+        open={mobileSidebarOpen}
+        onClose={() => setMobileSidebarOpen(false)}
+        fullScreen={isMobile}
+        fullWidth
+        maxWidth="sm"
+        disableRestoreFocus
+      >
+        <DialogContent>
+          <Stack spacing={2.5}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                Categorias
+              </Typography>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={() => {
+                    const next = !showTaskSearch;
+                    setShowTaskSearch(next);
+                    if (!next) {
+                      setTaskQuery("");
+                    }
+                  }}
+                  startIcon={<SearchRoundedIcon />}
+                  sx={{ textTransform: "none", fontWeight: 600, minWidth: 0 }}
+                >
+                  Busca
+                </Button>
+                <Tooltip title="Fechar" placement="top">
+                  <IconButton onClick={() => setMobileSidebarOpen(false)} aria-label="Fechar">
+                    <CloseRoundedIcon />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            </Stack>
+
+            <CardSection size="xs">
+              <Stack spacing={0.5}>
+                <Box
+                  onClick={() => {
+                    setCategoryFilter([]);
+                    setMobileSidebarOpen(false);
+                  }}
+                  sx={theme => ({
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    px: 1,
+                    py: 0.75,
+                    cursor: "pointer",
+                    borderRadius: "var(--radius-button)",
+                    ...interactiveItemSx(theme),
+                    backgroundColor:
+                      selectedCategoryId === "" ? theme.palette.action.selected : undefined,
+                  })}
+                >
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Box
+                      sx={theme => ({
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        backgroundColor: resolveThemeColor(theme, "mui.grey.900"),
+                        border: 1,
+                        borderColor: "divider",
+                      })}
+                    />
+                    <Typography variant="body2">Todas</Typography>
+                  </Stack>
+                </Box>
+                {categories.map(cat => (
+                  <Box
+                    key={cat.id}
+                    onClick={() => {
+                      setCategoryFilter([cat.id]);
+                      setMobileSidebarOpen(false);
+                    }}
+                    sx={theme => ({
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      px: 1,
+                      py: 0.75,
+                      cursor: "pointer",
+                      borderRadius: "var(--radius-button)",
+                      ...interactiveItemSx(theme),
+                      backgroundColor:
+                        selectedCategoryId === cat.id
+                          ? theme.palette.action.selected
+                          : undefined,
+                    })}
+                  >
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Box
+                        sx={theme => ({
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          backgroundColor: resolveThemeColor(theme, cat.color),
+                          border: 1,
+                          borderColor: "divider",
+                        })}
+                      />
+                      <Typography variant="body2">{cat.name}</Typography>
+                    </Stack>
+                  </Box>
+                ))}
+              </Stack>
+            </CardSection>
           </Stack>
-        )}
-      </Stack>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }
