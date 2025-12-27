@@ -2390,11 +2390,37 @@ export default function Tasks() {
                     anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
                     transformOrigin={{ vertical: "top", horizontal: "left" }}
                     disableRestoreFocus
+                    slotProps={{
+                      paper: {
+                        sx: theme => ({
+                          mt: 1,
+                          overflow: "visible",
+                          borderRadius: 4,
+                          border: 1,
+                          borderColor: "divider",
+                          backgroundColor: "background.paper",
+                          width: 280,
+                          maxWidth: "calc(100vw - 32px)",
+                          "&::before": {
+                            content: '""',
+                            position: "absolute",
+                            top: -6,
+                            left: 28,
+                            width: 12,
+                            height: 12,
+                            transform: "rotate(45deg)",
+                            backgroundColor: theme.palette.background.paper,
+                            borderLeft: `1px solid ${theme.palette.divider}`,
+                            borderTop: `1px solid ${theme.palette.divider}`,
+                          },
+                        }),
+                      },
+                    }}
                     PaperProps={{
                       sx: theme => ({
                         mt: 1,
                         overflow: "visible",
-                        borderRadius: getInteractiveItemRadiusPx(theme),
+                        borderRadius: 4,
                         border: 1,
                         borderColor: "divider",
                         backgroundColor: "background.paper",
